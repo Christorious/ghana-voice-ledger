@@ -1,0 +1,353 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop, release/* ]
+  pull_request:
+    branches: [ main, develop ]
+  release:
+    types: [ published ]
+
+env:
+  JAVA_VERSION: '17'
+  ANDROID_API_LEVEL: 34
+  ANDROID_BUILD_TOOLS_VERSION: 34.0.0
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Run unit tests
+      run: ./gradlew testGhanaDebugUnitTest --stacktrace
+      
+    - name: Run lint checks
+      run: ./gradlew lintGhanaDebug --stacktrace
+      
+    - name: Generate test report
+      uses: dorny/test-reporter@v1
+      if: success() || failure()
+      with:
+        name: Unit Test Results
+        path: '**/TEST-*.xml'
+        reporter: java-junit
+        
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: |
+          app/build/reports/tests/
+          app/build/reports/lint-results-*
+          
+  instrumented-test:
+    name: Run Instrumented Tests
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Run instrumented tests
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: ${{ env.ANDROID_API_LEVEL }}
+        target: google_apis
+        arch: x86_64
+        profile: Nexus 6
+        script: ./gradlew connectedGhanaDebugAndroidTest --stacktrace
+        
+    - name: Upload instrumented test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: instrumented-test-results
+        path: app/build/reports/androidTests/
+        
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+  build-debug:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+    needs: [test]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Build debug APK
+      run: ./gradlew assembleGhanaDebug --stacktrace
+      
+    - name: Upload debug APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: debug-apk
+        path: app/build/outputs/apk/ghana/debug/*.apk
+        
+  build-staging:
+    name: Build Staging APK
+    runs-on: ubuntu-latest
+    needs: [test, security-scan]
+    if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/release/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Decode keystore
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      run: |
+        mkdir -p keystore
+        echo $KEYSTORE_BASE64 | base64 -d > keystore/ghana-voice-ledger.jks
+        
+    - name: Build staging APK
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      run: ./gradlew assembleGhanaStaging --stacktrace
+      
+    - name: Upload staging APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: staging-apk
+        path: app/build/outputs/apk/ghana/staging/*.apk
+        
+  build-release:
+    name: Build Release APK/AAB
+    runs-on: ubuntu-latest
+    needs: [test, instrumented-test, security-scan]
+    if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Decode keystore
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      run: |
+        mkdir -p keystore
+        echo $KEYSTORE_BASE64 | base64 -d > keystore/ghana-voice-ledger.jks
+        
+    - name: Build release APK
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      run: ./gradlew assembleGhanaRelease --stacktrace
+      
+    - name: Build release AAB
+      env:
+        KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      run: ./gradlew bundleGhanaRelease --stacktrace
+      
+    - name: Upload release APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-apk
+        path: app/build/outputs/apk/ghana/release/*.apk
+        
+    - name: Upload release AAB
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-aab
+        path: app/build/outputs/bundle/ghanaRelease/*.aab
+        
+  deploy-internal:
+    name: Deploy to Internal Testing
+    runs-on: ubuntu-latest
+    needs: [build-release]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download release AAB
+      uses: actions/download-artifact@v3
+      with:
+        name: release-aab
+        path: ./
+        
+    - name: Deploy to Google Play Internal Testing
+      uses: r0adkll/upload-google-play@v1
+      with:
+        serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        packageName: com.voiceledger.ghana
+        releaseFiles: app-ghana-release.aab
+        track: internal
+        status: completed
+        
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-release]
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download release AAB
+      uses: actions/download-artifact@v3
+      with:
+        name: release-aab
+        path: ./
+        
+    - name: Deploy to Google Play Production
+      uses: r0adkll/upload-google-play@v1
+      with:
+        serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        packageName: com.voiceledger.ghana
+        releaseFiles: app-ghana-release.aab
+        track: production
+        status: completed
+        
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [deploy-internal, deploy-production]
+    if: always()
+    
+    steps:
+    - name: Notify Slack on Success
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: "🎉 Ghana Voice Ledger deployment successful!"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        
+    - name: Notify Slack on Failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: "❌ Ghana Voice Ledger deployment failed!"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

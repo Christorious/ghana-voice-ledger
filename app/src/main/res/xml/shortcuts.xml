@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Quick voice recording shortcut -->
+    <shortcut
+        android:shortcutId="quick_record"
+        android:enabled="true"
+        android:icon="@drawable/ic_mic"
+        android:shortcutShortLabel="@string/shortcut_quick_record_short"
+        android:shortcutLongLabel="@string/shortcut_quick_record_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled_message">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.voiceledger.ghana"
+            android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
+            <extra android:name="action" android:value="quick_record" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <!-- View today's transactions -->
+    <shortcut
+        android:shortcutId="today_transactions"
+        android:enabled="true"
+        android:icon="@drawable/ic_today"
+        android:shortcutShortLabel="@string/shortcut_today_short"
+        android:shortcutLongLabel="@string/shortcut_today_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled_message">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.voiceledger.ghana"
+            android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
+            <extra android:name="action" android:value="today_transactions" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <!-- Daily summary -->
+    <shortcut
+        android:shortcutId="daily_summary"
+        android:enabled="true"
+        android:icon="@drawable/ic_summary"
+        android:shortcutShortLabel="@string/shortcut_summary_short"
+        android:shortcutLongLabel="@string/shortcut_summary_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled_message">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.voiceledger.ghana"
+            android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
+            <extra android:name="action" android:value="daily_summary" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    
+    <!-- Settings -->
+    <shortcut
+        android:shortcutId="settings"
+        android:enabled="true"
+        android:icon="@drawable/ic_settings"
+        android:shortcutShortLabel="@string/shortcut_settings_short"
+        android:shortcutLongLabel="@string/shortcut_settings_long"
+        android:shortcutDisabledMessage="@string/shortcut_disabled_message">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.voiceledger.ghana"
+            android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
+            <extra android:name="action" android:value="settings" />
+        </intent>
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

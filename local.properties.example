@@ -1,0 +1,88 @@
+# This file contains the local configuration for the Android project.
+# Copy this file to local.properties and update the paths for your system.
+
+# Location of the Android SDK. This is only used by Gradle.
+# For customization when using a Version Control System, please read the
+# header note.
+sdk.dir=C\:\\Users\\YourUsername\\AppData\\Local\\Android\\Sdk
+
+# Location of the Android NDK (if needed for native code)
+# ndk.dir=C\:\\Users\\YourUsername\\AppData\\Local\\Android\\Sdk\\ndk\\25.1.8937393
+
+# API Keys (DO NOT commit these to version control)
+# Copy these values to your actual local.properties file
+
+# Google Cloud Speech API Key
+GOOGLE_CLOUD_API_KEY=your_google_cloud_api_key_here
+
+# Firebase configuration
+FIREBASE_PROJECT_ID=your_firebase_project_id
+FIREBASE_API_KEY=your_firebase_api_key
+
+# Analytics keys
+ANALYTICS_API_KEY=your_analytics_api_key
+
+# Encryption keys (generate secure keys for production)
+ENCRYPTION_KEY=your_32_character_encryption_key_here
+ENCRYPTION_IV=your_16_character_iv_here
+
+# Database encryption key
+DB_ENCRYPTION_KEY=your_database_encryption_key_here
+
+# Speaker identification model keys
+SPEAKER_MODEL_API_KEY=your_speaker_model_api_key
+
+# Performance monitoring
+PERFORMANCE_API_KEY=your_performance_monitoring_key
+
+# Crash reporting
+CRASH_REPORTING_API_KEY=your_crash_reporting_key
+
+# Build configuration
+BUILD_TOOLS_VERSION=34.0.0
+COMPILE_SDK_VERSION=34
+TARGET_SDK_VERSION=34
+MIN_SDK_VERSION=24
+
+# Signing configuration (for release builds)
+KEYSTORE_FILE=path/to/your/keystore.jks
+KEYSTORE_PASSWORD=your_keystore_password
+KEY_ALIAS=your_key_alias
+KEY_PASSWORD=your_key_password
+
+# ProGuard configuration
+PROGUARD_ENABLED=true
+MINIFY_ENABLED=true
+
+# Development settings
+DEBUG_MODE=true
+LOGGING_ENABLED=true
+PERFORMANCE_MONITORING_ENABLED=false
+
+# Network configuration
+BASE_URL=https://api.voiceledger.com/
+API_TIMEOUT=30000
+RETRY_COUNT=3
+
+# Audio processing settings
+AUDIO_SAMPLE_RATE=16000
+AUDIO_CHANNELS=1
+AUDIO_ENCODING=PCM_16BIT
+MAX_RECORDING_DURATION=300000
+
+# ML Model settings
+MODEL_DOWNLOAD_URL=https://models.voiceledger.com/
+MODEL_VERSION=1.0.0
+AUTO_UPDATE_MODELS=true
+
+# Privacy settings
+DATA_RETENTION_DAYS=365
+ANONYMOUS_ANALYTICS=true
+CRASH_REPORTING_ENABLED=true
+
+# Feature flags
+OFFLINE_MODE_ENABLED=true
+SPEAKER_IDENTIFICATION_ENABLED=true
+MULTI_LANGUAGE_ENABLED=true
+ADVANCED_ANALYTICS_ENABLED=false
+BETA_FEATURES_ENABLED=false

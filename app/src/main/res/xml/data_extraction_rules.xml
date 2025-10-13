@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-extraction-rules>
+    <cloud-backup>
+        <!-- Exclude sensitive data from cloud backup -->
+        <exclude domain="sharedpref" path="encrypted_prefs.xml" />
+        <exclude domain="sharedpref" path="speaker_profiles.xml" />
+        <exclude domain="sharedpref" path="security_settings.xml" />
+        <exclude domain="database" path="voice_ledger.db" />
+        <exclude domain="database" path="voice_ledger.db-shm" />
+        <exclude domain="database" path="voice_ledger.db-wal" />
+        <exclude domain="file" path="audio_recordings/" />
+        <exclude domain="file" path="ml_models/" />
+        <exclude domain="file" path="temp/" />
+        <exclude domain="file" path="cache/" />
+        
+        <!-- Include non-sensitive settings -->
+        <include domain="sharedpref" path="app_settings.xml" />
+        <include domain="sharedpref" path="ui_preferences.xml" />
+        <include domain="sharedpref" path="language_settings.xml" />
+    </cloud-backup>
+    
+    <device-transfer>
+        <!-- More restrictive for device transfer -->
+        <exclude domain="sharedpref" path="encrypted_prefs.xml" />
+        <exclude domain="sharedpref" path="speaker_profiles.xml" />
+        <exclude domain="sharedpref" path="security_settings.xml" />
+        <exclude domain="database" />
+        <exclude domain="file" path="audio_recordings/" />
+        <exclude domain="file" path="ml_models/" />
+        <exclude domain="file" path="temp/" />
+        <exclude domain="file" path="cache/" />
+        
+        <!-- Only include basic app preferences -->
+        <include domain="sharedpref" path="language_settings.xml" />
+    </device-transfer>
+</data-extraction-rules>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="primary">#1976D2</color>
+    <color name="primary_variant">#1565C0</color>
+    <color name="on_primary">#FFFFFF</color>
+    
+    <!-- Secondary Colors -->
+    <color name="secondary">#03DAC6</color>
+    <color name="secondary_variant">#018786</color>
+    <color name="on_secondary">#000000</color>
+    
+    <!-- Background Colors -->
+    <color name="background">#FFFFFF</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="on_background">#000000</color>
+    <color name="on_surface">#000000</color>
+    
+    <!-- Error Colors -->
+    <color name="error">#B00020</color>
+    <color name="on_error">#FFFFFF</color>
+    
+    <!-- Status Colors -->
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FF9800</color>
+    <color name="info">#2196F3</color>
+    
+    <!-- Voice Agent Colors -->
+    <color name="voice_active">#4CAF50</color>
+    <color name="voice_inactive">#9E9E9E</color>
+    <color name="voice_processing">#FF9800</color>
+    <color name="voice_error">#F44336</color>
+    
+    <!-- Transaction Colors -->
+    <color name="income">#4CAF50</color>
+    <color name="expense">#F44336</color>
+    <color name="neutral">#9E9E9E</color>
+    
+    <!-- Dark Theme Colors -->
+    <color name="primary_dark">#0D47A1</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="on_background_dark">#FFFFFF</color>
+    <color name="on_surface_dark">#FFFFFF</color>
+    
+    <!-- Common Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+    
+    <!-- Gray Scale -->
+    <color name="gray_50">#FAFAFA</color>
+    <color name="gray_100">#F5F5F5</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="gray_300">#E0E0E0</color>
+    <color name="gray_400">#BDBDBD</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray_600">#757575</color>
+    <color name="gray_700">#616161</color>
+    <color name="gray_800">#424242</color>
+    <color name="gray_900">#212121</color>
+</resources>

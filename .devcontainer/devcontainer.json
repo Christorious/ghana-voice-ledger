@@ -1,0 +1,47 @@
+{
+  "name": "Ghana Voice Ledger Android Development",
+  "image": "mcr.microsoft.com/devcontainers/java:17",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/android-sdk:1": {
+      "version": "latest",
+      "apiLevel": "34",
+      "buildToolsVersion": "34.0.0",
+      "cmdlineToolsVersion": "latest",
+      "platformToolsVersion": "latest",
+      "emulatorVersion": "latest"
+    },
+    "ghcr.io/devcontainers/features/gradle:1": {
+      "version": "8.4"
+    }
+  },
+  
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "mathiasfrohlich.Kotlin",
+        "vscjava.vscode-gradle",
+        "vscjava.vscode-java-pack",
+        "adelphes.android-dev-ext",
+        "ms-vscode.vscode-json",
+        "redhat.vscode-xml"
+      ],
+      "settings": {
+        "java.home": "/usr/local/sdkman/candidates/java/current",
+        "android.home": "/usr/local/android-sdk",
+        "gradle.nestedProjects": true,
+        "kotlin.languageServer.enabled": true
+      }
+    }
+  },
+  
+  "postCreateCommand": "chmod +x gradlew && ./gradlew build --no-daemon",
+  
+  "forwardPorts": [8080, 5037],
+  
+  "mounts": [
+    "source=${localWorkspaceFolder}/.gradle,target=/home/vscode/.gradle,type=bind,consistency=cached"
+  ],
+  
+  "remoteUser": "vscode"
+}

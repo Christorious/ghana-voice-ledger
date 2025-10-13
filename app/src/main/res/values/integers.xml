@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Google Play Services Version -->
+    <integer name="google_play_services_version">12451000</integer>
+    
+    <!-- Animation Durations -->
+    <integer name="animation_duration_short">200</integer>
+    <integer name="animation_duration_medium">300</integer>
+    <integer name="animation_duration_long">500</integer>
+    
+    <!-- Voice Recognition Settings -->
+    <integer name="voice_recognition_timeout">5000</integer>
+    <integer name="voice_confidence_threshold">75</integer>
+    <integer name="max_recording_duration">30000</integer>
+    
+    <!-- Performance Settings -->
+    <integer name="max_transactions_per_page">50</integer>
+    <integer name="cache_size_mb">10</integer>
+    <integer name="database_version">1</integer>
+    
+    <!-- UI Settings -->
+    <integer name="grid_columns_portrait">1</integer>
+    <integer name="grid_columns_landscape">2</integer>
+    <integer name="max_recent_transactions">10</integer>
+</resources>

@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Ghana Voice Ledger</string>
+    
+    <!-- Dashboard -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="listening_status">Listening Status</string>
+    <string name="market_open">Market Open</string>
+    <string name="market_closed">Market Closed</string>
+    <string name="before_market_hours">Before Market Hours</string>
+    <string name="after_market_hours">After Market Hours</string>
+    <string name="pause_listening">Pause</string>
+    <string name="resume_listening">Resume</string>
+    <string name="todays_sales">Today\'s Sales</string>
+    <string name="sales_count">%d sales today</string>
+    <string name="top_product">Top Product</string>
+    <string name="regular_customers">Regulars</string>
+    <string name="peak_time">Peak Time</string>
+    <string name="recent_transactions">Recent Transactions</string>
+    <string name="no_transactions_today">No transactions yet today</string>
+    <string name="no_transactions_message">Start selling and transactions will appear here automatically</string>
+    <string name="view_history">View History</string>
+    <string name="end_day_summary">End Day Summary</string>
+    <string name="last_transaction">Last transaction: %s</string>
+    <string name="battery_level">%d%%</string>
+    
+    <!-- Navigation -->
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+    
+    <!-- Common -->
+    <string name="loading">Loading...</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="confirm">Confirm</string>
+    
+    <!-- Currency -->
+    <string name="currency_symbol">GH₵</string>
+    <string name="cedis">cedis</string>
+    <string name="pesewas">pesewas</string>
+    
+    <!-- Products -->
+    <string name="tilapia">Tilapia</string>
+    <string name="mackerel">Mackerel</string>
+    <string name="sardines">Sardines</string>
+    <string name="red_fish">Red Fish</string>
+    <string name="catfish">Catfish</string>
+    <string name="croaker">Croaker</string>
+    
+    <!-- Units -->
+    <string name="piece">piece</string>
+    <string name="pieces">pieces</string>
+    <string name="bowl">bowl</string>
+    <string name="bowls">bowls</string>
+    <string name="bucket">bucket</string>
+    <string name="buckets">buckets</string>
+    <string name="tin">tin</string>
+    <string name="tins">tins</string>
+    
+    <!-- Time -->
+    <string name="just_now">Just now</string>
+    <string name="minutes_ago">%dm ago</string>
+    <string name="hours_ago">%dh ago</string>
+    <string name="days_ago">%dd ago</string>
+    
+    <!-- Permissions -->
+    <string name="permission_audio_title">Audio Recording Permission</string>
+    <string name="permission_audio_message">Ghana Voice Ledger needs access to your microphone to automatically detect sales transactions. This is essential for the app to work.</string>
+    <string name="permission_notification_title">Notification Permission</string>
+    <string name="permission_notification_message">Allow notifications to stay informed about your sales activity and app status.</string>
+    
+    <!-- Service -->
+    <string name="service_listening">Listening for transactions...</string>
+    <string name="service_paused">Voice detection paused</string>
+    <string name="service_stopped">Voice detection stopped</string>
+    
+    <!-- Errors -->
+    <string name="error_loading_data">Failed to load data</string>
+    <string name="error_no_permission">Audio permission required</string>
+    <string name="error_service_failed">Voice service failed to start</string>
+    <string name="error_network">Network error</string>
+    <string name="error_unknown">An unknown error occurred</string>
+    
+    <!-- Success Messages -->
+    <string name="listening_started">Voice detection started</string>
+    <string name="listening_paused">Voice detection paused</string>
+    <string name="listening_resumed">Voice detection resumed</string>
+    <string name="summary_generated">Daily summary generated</string>
+    <string name="transaction_saved">Transaction saved</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="language_region">Language &amp; Region</string>
+    <string name="language">Language</string>
+    <string name="market_configuration">Market Configuration</string>
+    <string name="market_hours">Market Hours</string>
+    <string name="voice_recognition">Voice Recognition</string>
+    <string name="voice_profile">Voice Profile</string>
+    <string name="setup_voice_profile">Set Up Voice Profile</string>
+    <string name="voice_confirmation">Voice Confirmation</string>
+    <string name="confidence_threshold">Confidence Threshold</string>
+    <string name="notifications">Notifications</string>
+    <string name="enable_notifications">Enable Notifications</string>
+    <string name="data_privacy">Data &amp; Privacy</string>
+    <string name="auto_backup">Auto Backup</string>
+    <string name="data_retention">Data Retention</string>
+    <string name="export_data">Export Data</string>
+    <string name="delete_all_data">Delete All Data</string>
+    <string name="data_statistics">Data Statistics</string>
+    <string name="app_information">App Information</string>
+    
+    <!-- Settings Messages -->
+    <string name="language_updated">Language updated to %s</string>
+    <string name="market_hours_updated">Market hours updated</string>
+    <string name="notifications_enabled">Notifications enabled</string>
+    <string name="notifications_disabled">Notifications disabled</string>
+    <string name="voice_confirmation_enabled">Voice confirmation enabled</string>
+    <string name="voice_confirmation_disabled">Voice confirmation disabled</string>
+    <string name="confidence_threshold_updated">Confidence threshold updated to %d%%</string>
+    <string name="auto_backup_enabled">Auto backup enabled</string>
+    <string name="auto_backup_disabled">Auto backup disabled</string>
+    <string name="data_retention_updated">Data retention updated to %d days</string>
+    <string name="voice_enrollment_completed">Voice enrollment completed successfully</string>
+    <string name="data_exported">Data exported successfully</string>
+    <string name="data_deleted">All data deleted successfully</string>
+    
+    <!-- Settings Errors -->
+    <string name="invalid_market_hours">Start hour must be before end hour</string>
+    <string name="invalid_confidence_threshold">Confidence threshold must be between 50%% and 100%%</string>
+    <string name="invalid_data_retention">Data retention must be between 30 and 365 days</string>
+    <string name="voice_enrollment_failed">Voice enrollment failed</string>
+    <string name="export_failed">Failed to export data</string>
+    <string name="delete_failed">Failed to delete data</string>
+    
+    <!-- Voice Enrollment -->
+    <string name="voice_enrollment_instructions">Voice enrollment helps improve transaction accuracy by learning your voice patterns.</string>
+    <string name="voice_enrollment_duration">You\'ll be asked to read a few sample phrases. This takes about 2 minutes.</string>
+    <string name="recording_voice">Recording your voice...</string>
+    <string name="processing_voice">Processing voice data...</string>
+    <string name="enrollment_complete">Enrollment Complete!</string>
+    <string name="enrollment_failed">Enrollment Failed</string>
+    <string name="voice_profile_active">Voice profile is active</string>
+    
+    <!-- Data Management -->
+    <string name="export_confirmation">Export all your transaction data and customer information to a CSV file?</string>
+    <string name="delete_confirmation">This will permanently delete all transactions and customer data. This action cannot be undone!</string>
+    <string name="preparing_export">Preparing your data for export...</string>
+    <string name="deleting_data">Deleting all data...</string>
+    
+    <!-- Content Descriptions -->
+    <string name="cd_listening_indicator">Listening status indicator</string>
+    <string name="cd_battery_indicator">Battery level indicator</string>
+    <string name="cd_pause_button">Pause listening button</string>
+    <string name="cd_resume_button">Resume listening button</string>
+    <string name="cd_settings_button">Settings button</string>
+    <string name="cd_transaction_item">Transaction item</string>
+    <string name="cd_back_button">Back button</string>
+    <string name="cd_language_selection">Language selection</string>
+    <string name="cd_market_hours">Market hours configuration</string>
+    <string name="cd_voice_enrollment">Voice enrollment</string>
+    
+    <!-- Privacy and Security -->
+    <string name="privacy_settings">Privacy Settings</string>
+    <string name="data_protection">Data Protection</string>
+    <string name="consent_management">Consent Management</string>
+    <string name="privacy_compliance">Privacy Compliance</string>
+    <string name="security_audit">Security Audit</string>
+    <string name="encryption_settings">Encryption Settings</string>
+    <string name="data_export">Data Export</string>
+    <string name="data_deletion">Data Deletion</string>
+    <string name="voice_processing_consent">Voice Processing Consent</string>
+    <string name="data_storage_consent">Data Storage Consent</string>
+    <string name="analytics_consent">Analytics Consent</string>
+    <string name="cloud_sync_consent">Cloud Sync Consent</string>
+    <string name="speaker_identification_consent">Speaker Identification Consent</string>
+    <string name="consent_status">Consent Status</string>
+    <string name="data_processing">Data Processing</string>
+    <string name="data_management">Data Management</string>
+    <string name="compliance_score">Compliance Score</string>
+    <string name="security_recommendations">Security Recommendations</string>
+</resources>    <!
+-- Onboarding Strings -->
+    <string name="skip">Skip</string>
+    <string name="next">Next</string>
+    <string name="back">Back</string>
+    <string name="get_started">Get Started</string>
+    <string name="onboarding_welcome_title">Welcome to Voice Ledger</string>
+    <string name="onboarding_welcome_description">Your personal voice-powered transaction tracker for Ghana</string>
+    <string name="onboarding_permissions_title">Grant Permissions</string>
+    <string name="onboarding_permissions_description">We need a few permissions to provide the best experience</string>
+    <string name="onboarding_voice_setup_title">Set Up Your Voice</string>
+    <string name="onboarding_voice_setup_description">Train the app to recognize your voice for better accuracy</string>
+    <string name="onboarding_features_title">Explore Features</string>
+    <string name="onboarding_features_description">Discover what Voice Ledger can do for you</string>
+    
+    <!-- Permission Strings -->
+    <string name="microphone_permission">Microphone Access</string>
+    <string name="microphone_permission_description">Required for voice recognition and recording transactions</string>
+    <string name="storage_permission">Storage Access</string>
+    <string name="storage_permission_description">Needed to save your transaction data and voice models</string>
+    <string name="grant_permission">Grant Permission</string>
+    
+    <!-- Voice Enrollment Strings -->
+    <string name="voice_enrollment_progress">Voice Training Progress: %d%%</string>
+    <string name="voice_enrollment_instructions">Speak clearly and follow the prompts to train your voice profile</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
+    
+    <!-- Feature Descriptions -->
+    <string name="feature_voice_recognition">Voice Recognition</string>
+    <string name="feature_voice_recognition_desc">Record transactions using your voice in English, Twi, or Pidgin</string>
+    <string name="feature_daily_summaries">Daily Summaries</string>
+    <string name="feature_daily_summaries_desc">Get automatic summaries of your daily transactions and insights</string>
+    <string name="feature_offline_mode">Offline Mode</string>
+    <string name="feature_offline_mode_desc">Continue recording transactions even without internet connection</string>
+    <string name="feature_privacy">Privacy & Security</string>
+    <string name="feature_privacy_desc">Your data is encrypted and stored securely on your device</string>
+    
+    <!-- Feedback Strings -->
+    <string name="feedback_title">Send Feedback</string>
+    <string name="feedback_type">Feedback Type</string>
+    <string name="bug_report">Bug Report</string>
+    <string name="bug_report_description">Report issues or problems with the app</string>
+    <string name="feature_request">Feature Request</string>
+    <string name="feature_request_description">Suggest new features or improvements</string>
+    <string name="general_feedback">General Feedback</string>
+    <string name="general_feedback_description">Share your thoughts and experiences</string>
+    <string name="overall_rating">Overall Rating</string>
+    <string name="feedback_category">Category</string>
+    <string name="feedback_description">Description</string>
+    <string name="feedback_description_placeholder">Please describe your feedback in detail...</string>
+    <string name="contact_information">Contact Information (Optional)</string>
+    <string name="email_optional">Email (Optional)</string>
+    <string name="include_device_info">Include device information</string>
+    <string name="include_device_info_description">Help us debug issues by including device and app information</string>
+    <string name="submit_feedback">Submit Feedback</string>
+    
+    <!-- Rating Descriptions -->
+    <string name="rating_very_poor">Very Poor</string>
+    <string name="rating_poor">Poor</string>
+    <string name="rating_average">Average</string>
+    <string name="rating_good">Good</string>
+    <string name="rating_excellent">Excellent</string>
+    
+    <!-- Feedback Categories -->
+    <string name="voice_recognition">Voice Recognition</string>
+    <string name="user_interface">User Interface</string>
+    <string name="performance">Performance</string>
+    <string name="accuracy">Accuracy</string>
+    <string name="battery_usage">Battery Usage</string>
+    <string name="offline_mode">Offline Mode</string>
+    <string name="daily_summaries">Daily Summaries</string>
+    <string name="other">Other</string>
+    
+    <!-- Tutorial Strings -->
+    <string name="tutorial_first_time_user">Getting Started</string>
+    <string name="tutorial_voice_training">Voice Training</string>
+    <string name="tutorial_transaction_recording">Recording Transactions</string>
+    <string name="tutorial_daily_summaries">Daily Summaries</string>
+    <string name="tutorial_offline_mode">Offline Mode</string>
+    <string name="tips">Tips</string>
+    <string name="example_phrases">Example Phrases</string>
+    <string name="playing_demo">Playing Demo...</string>
+    <string name="tap_to_play_demo">Tap to play demo</string>
+    <string name="follow_instructions">Follow the instructions below</string>
+    <string name="completed">Completed</string>
+    <string name="try_it_now">Try It Now</string>
+    <string name="practice_instruction">Practice saying the example phrases</string>
+    <string name="practice_complete">Practice Complete!</string>
+    <string name="recording_in_progress">Recording in progress...</string>
+    <string name="tap_to_start_practice">Tap to start practice</string>
+    <string name="complete">Complete</string>
+    <string name="previous">Previous</string>
+    
+    <!-- Tutorial Content -->
+    <string name="tutorial_welcome_title">Welcome to Voice Ledger</string>
+    <string name="tutorial_welcome_description">Let\'s get you started with recording transactions using your voice</string>
+    <string name="tutorial_voice_setup_title">Set Up Your Voice</string>
+    <string name="tutorial_voice_setup_description">Train the app to recognize your voice for better accuracy</string>
+    <string name="tutorial_first_transaction_title">Your First Transaction</string>
+    <string name="tutorial_first_transaction_description">Learn how to record your first transaction using voice commands</string>
+    
+    <!-- Voice Training Tutorial -->
+    <string name="voice_training_intro_title">Voice Training Basics</string>
+    <string name="voice_training_intro_description">Learn how to train your voice for optimal recognition</string>
+    <string name="voice_training_practice_title">Practice Session</string>
+    <string name="voice_training_practice_description">Practice speaking clearly to improve recognition accuracy</string>
+    <string name="voice_training_tip_1">Speak at a normal pace, not too fast or slow</string>
+    <string name="voice_training_tip_2">Use a quiet environment for best results</string>
+    
+    <!-- Transaction Tutorial -->
+    <string name="transaction_basics_title">Recording Transactions</string>
+    <string name="transaction_basics_description">Learn the basic commands for recording sales and purchases</string>
+    <string name="transaction_example_1">I sold 5 bags of rice for 200 cedis</string>
+    <string name="transaction_example_2">Customer bought 3 bottles of water for 6 cedis</string>
+    <string name="transaction_example_3">Purchased 10 kilos of tomatoes for 50 cedis</string>
+    
+    <!-- Daily Summaries Tutorial -->
+    <string name="daily_summaries_intro_title">Daily Summaries</string>
+    <string name="daily_summaries_intro_description">Learn how to view and understand your daily transaction summaries</string>
+    
+    <!-- Offline Mode Tutorial -->
+    <string name="offline_mode_intro_title">Working Offline</string>
+    <string name="offline_mode_intro_description">Learn how to use Voice Ledger without an internet connection</string>
+    
+    <!-- Example Phrases -->
+    <string name="example_phrase_1">Record new transaction</string>
+    <string name="example_phrase_2">Show today\'s summary</string> 
+   
+    <!-- App Shortcuts -->
+    <string name="shortcut_quick_record_short">Quick Record</string>
+    <string name="shortcut_quick_record_long">Start voice recording</string>
+    <string name="shortcut_today_short">Today</string>
+    <string name="shortcut_today_long">View today\'s transactions</string>
+    <string name="shortcut_summary_short">Summary</string>
+    <string name="shortcut_summary_long">View daily summary</string>
+    <string name="shortcut_settings_short">Settings</string>
+    <string name="shortcut_settings_long">Open app settings</string>
+    <string name="shortcut_disabled_message">This shortcut is currently disabled</string>
+    
+    <!-- Notification Channels -->
+    <string name="default_notification_channel_id">voice_ledger_default</string>
+</resources>

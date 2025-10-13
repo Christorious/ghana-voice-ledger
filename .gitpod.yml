@@ -1,0 +1,45 @@
+image: gitpod/workspace-android
+
+tasks:
+  - name: Setup Android Development
+    init: |
+      # Install required Android SDK components
+      yes | sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+      yes | sdkmanager "system-images;android-34;google_apis;x86_64"
+      
+      # Make gradlew executable
+      chmod +x gradlew
+      
+      # Download dependencies
+      ./gradlew build --no-daemon
+      
+    command: |
+      echo "🚀 Ghana Voice Ledger Android Development Environment Ready!"
+      echo "📱 Available commands:"
+      echo "  ./gradlew assembleDebug     - Build debug APK"
+      echo "  ./gradlew test              - Run unit tests"
+      echo "  ./gradlew lint              - Run code analysis"
+      echo "  ./gradlew installDebug      - Install on connected device"
+
+ports:
+  - port: 8080
+    onOpen: ignore
+  - port: 5037
+    onOpen: ignore
+
+vscode:
+  extensions:
+    - mathiasfrohlich.Kotlin
+    - vscjava.vscode-gradle
+    - vscjava.vscode-java-pack
+    - adelphes.android-dev-ext
+
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: true
+    addCheck: true
+    addComment: false
+    addBadge: true

@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.VoiceLedger" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_variant</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorSecondaryVariant">@color/secondary_variant</item>
+        <item name="colorOnSecondary">@color/on_secondary</item>
+        
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnBackground">@color/on_background</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        
+        <!-- Error colors -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_error</item>
+        
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/primary_variant</item>
+        <item name="android:windowLightStatusBar">false</item>
+        
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/surface</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        
+        <!-- Window properties -->
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:windowContentTransitions">true</item>
+        <item name="android:windowActivityTransitions">true</item>
+        
+        <!-- Typography -->
+        <item name="textAppearanceHeadline1">@style/TextAppearance.VoiceLedger.Headline1</item>
+        <item name="textAppearanceHeadline2">@style/TextAppearance.VoiceLedger.Headline2</item>
+        <item name="textAppearanceHeadline3">@style/TextAppearance.VoiceLedger.Headline3</item>
+        <item name="textAppearanceBody1">@style/TextAppearance.VoiceLedger.Body1</item>
+        <item name="textAppearanceBody2">@style/TextAppearance.VoiceLedger.Body2</item>
+        <item name="textAppearanceCaption">@style/TextAppearance.VoiceLedger.Caption</item>
+    </style>
+    
+    <!-- Splash screen theme -->
+    <style name="Theme.VoiceLedger.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/primary</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="windowSplashScreenAnimationDuration">1000</item>
+        <item name="postSplashScreenTheme">@style/Theme.VoiceLedger</item>
+    </style>
+    
+    <!-- Typography styles -->
+    <style name="TextAppearance.VoiceLedger.Headline1" parent="TextAppearance.Material3.HeadlineLarge">
+        <item name="android:fontFamily">@font/roboto_bold</item>
+        <item name="android:textSize">32sp</item>
+        <item name="android:textColor">@color/on_background</item>
+    </style>
+    
+    <style name="TextAppearance.VoiceLedger.Headline2" parent="TextAppearance.Material3.HeadlineMedium">
+        <item name="android:fontFamily">@font/roboto_bold</item>
+        <item name="android:textSize">28sp</item>
+        <item name="android:textColor">@color/on_background</item>
+    </style>
+    
+    <style name="TextAppearance.VoiceLedger.Headline3" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:fontFamily">@font/roboto_medium</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textColor">@color/on_background</item>
+    </style>
+    
+    <style name="TextAppearance.VoiceLedger.Body1" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:fontFamily">@font/roboto_regular</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textColor">@color/on_background</item>
+    </style>
+    
+    <style name="TextAppearance.VoiceLedger.Body2" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:fontFamily">@font/roboto_regular</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/on_surface</item>
+    </style>
+    
+    <style name="TextAppearance.VoiceLedger.Caption" parent="TextAppearance.Material3.BodySmall">
+        <item name="android:fontFamily">@font/roboto_regular</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/gray_600</item>
+    </style>
+    
+    <!-- Button styles -->
+    <style name="Widget.VoiceLedger.Button" parent="Widget.Material3.Button">
+        <item name="android:textAppearance">@style/TextAppearance.VoiceLedger.Button</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:paddingStart">24dp</item>
+        <item name="android:paddingEnd">24dp</item>
+    </style>
+    
+    <style name="Widget.VoiceLedger.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textAppearance">@style/TextAppearance.VoiceLedger.Button</item>
+        <item name="cornerRadius">8dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">@color/primary</item>
+    </style>
+    
+    <style name="Widget.VoiceLedger.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textAppearance">@style/TextAppearance.VoiceLedger.Button</item>
+    </style>
+    
+    <style name="TextAppearance.VoiceLedger.Button" parent="TextAppearance.Material3.LabelLarge">
+        <item name="android:fontFamily">@font/roboto_medium</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textAllCaps">false</item>
+    </style>
+    
+    <!-- Card styles -->
+    <style name="Widget.VoiceLedger.Card" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">12dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="android:layout_margin">8dp</item>
+    </style>
+    
+    <!-- Voice Agent specific styles -->
+    <style name="Widget.VoiceLedger.VoiceButton">
+        <item name="android:layout_width">80dp</item>
+        <item name="android:layout_height">80dp</item>
+        <item name="android:background">@drawable/voice_button_background</item>
+        <item name="android:elevation">8dp</item>
+        <item name="android:stateListAnimator">@animator/voice_button_animator</item>
+    </style>
+    
+    <!-- Transaction item styles -->
+    <style name="Widget.VoiceLedger.TransactionCard" parent="Widget.VoiceLedger.Card">
+        <item name="cardCornerRadius">8dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="android:layout_marginStart">16dp</item>
+        <item name="android:layout_marginEnd">16dp</item>
+        <item name="android:layout_marginTop">4dp</item>
+        <item name="android:layout_marginBottom">4dp</item>
+    </style>
+    
+    <!-- Settings styles -->
+    <style name="Widget.VoiceLedger.SettingsItem">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:minHeight">56dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:gravity">center_vertical</item>
+    </style>
+</resources>

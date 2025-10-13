@@ -21,6 +21,8 @@ jobs:
         
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
+      env:
+        SKIP_JDK_VERSION_CHECK: true
       
     - name: Make gradlew executable
       run: chmod +x ./gradlew

@@ -39,12 +39,16 @@
   - Handle audio permissions and error cases
   - _Requirements: 1.1, 1.2, 1.3, 1.6, 6.1, 6.2_
 
+
+
 - [-] 3.2 Integrate Voice Activity Detection (VAD)
 
   - Add WebRTC VAD library dependency and native integration
   - Implement VADProcessor with real-time speech detection
   - Configure noise threshold adaptation for market environments
   - Add smart sleep functionality when no speech detected for 30 seconds
+
+
   - _Requirements: 1.5, 6.3, 6.4, 6.5_
 
 - [ ] 4. Machine Learning Pipeline
@@ -63,6 +67,8 @@
 
   - Set up Google Cloud Speech-to-Text API client with en-GH locale
   - Implement streaming recognition for real-time processing
+
+
   - Add support for Twi and Ga languages with code-switching detection
   - Create offline fallback using Whisper.cpp integration
   - Handle network errors and API rate limiting
@@ -109,6 +115,8 @@
 
 
 - [x] 5.2 Build transaction history and search functionality
+
+
   - Create HistoryScreen with searchable transaction list
   - Implement filtering by date range, product, customer, and amount
   - Add transaction detail view with conversation snippets
@@ -138,6 +146,8 @@
 - [x] 6.2 Build summary presentation and voice output
 
 
+
+
   - Create SummaryScreen with visual dashboard and insights
   - Implement text-to-speech for summary reading in user's language
   - Add export functionality for summary data
@@ -152,6 +162,9 @@
 - [ ] 7.1 Implement battery optimization strategies
   - Add PowerManager for smart sleep and CPU throttling
   - Implement market hours enforcement (6 AM - 6 PM)
+
+
+
 
 
 

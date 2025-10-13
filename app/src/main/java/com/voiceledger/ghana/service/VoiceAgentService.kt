@@ -20,6 +20,17 @@ import androidx.core.content.ContextCompat
 import com.voiceledger.ghana.R
 import com.voiceledger.ghana.domain.repository.AudioMetadataRepository
 import com.voiceledger.ghana.data.local.entity.AudioMetadata
+import com.voiceledger.ghana.ml.vad.VADManager
+import com.voiceledger.ghana.ml.vad.VADType
+import com.voiceledger.ghana.ml.vad.SleepMode
+import com.voiceledger.ghana.ml.speaker.SpeakerIdentifier
+import com.voiceledger.ghana.ml.speaker.SpeakerType
+import com.voiceledger.ghana.ml.speaker.SpeakerResult
+import com.voiceledger.ghana.ml.transaction.TransactionProcessor
+import com.voiceledger.ghana.ml.speech.SpeechRecognitionManager
+import com.voiceledger.ghana.ml.speech.TranscriptionResult
+import com.voiceledger.ghana.offline.OfflineQueueManager
+import com.voiceledger.ghana.offline.NetworkUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -70,6 +81,24 @@ class VoiceAgentService : Service() {
     @Inject
     lateinit var audioMetadataRepository: AudioMetadataRepository
     
+    @Inject
+    lateinit var vadManager: VADManager
+    
+    @Inject
+    lateinit var speakerIdentifier: SpeakerIdentifier
+    
+    @Inject
+    lateinit var transactionProcessor: TransactionProcessor
+    
+    @Inject
+    lateinit var speechRecognitionManager: SpeechRecognitionManager
+    
+    @Inject
+    lateinit var powerManager: PowerManager
+    
+    @Inject
+    lateinit var offlineQueueManager: OfflineQueueManager
+    
     private val binder = VoiceAgentBinder()
     private val serviceScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
     
@@ -98,6 +127,35 @@ class VoiceAgentService : Service() {
         super.onCreate()
         createNotificationChannel()
         acquireWakeLock()
+        
+        // Initialize all ML components
+        serviceScope.launch {
+            vadManager.initialize(VADType.CUSTOM)
+            speakerIdentifier.initialize()
+            speechRecognitionManager.optimizeForMarketEnvironment()
+            
+            // Initialize network monitoring
+            NetworkUtils.initialize(this@VoiceAgentService)
+            
+            // Listen to sleep mode changes
+            vadManager.sleepModeChanges.collect { sleepMode ->
+                handleSleepModeChange(sleepMode)
+            }
+        }
+        
+        // Monitor power state for battery optimization
+        serviceScope.launch {
+            powerManager.powerState.collect { powerState ->
+                handlePowerStateChange(powerState)
+            }
+        }
+        
+        // Monitor network state for offline functionality
+        serviceScope.launch {
+            NetworkUtils.networkState.collect { networkState ->
+                handleNetworkStateChange(networkState)
+            }
+        }
     }
     
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -114,6 +172,13 @@ class VoiceAgentService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         stopListening()
+        vadManager.destroy()
+        speakerIdentifier.cleanup()
+        speechRecognitionManager.cleanup()
+        transactionProcessor.cleanup()
+        powerManager.cleanup()
+        offlineQueueManager.cleanup()
+        NetworkUtils.cleanup()
         releaseWakeLock()
         serviceScope.cancel()
     }
@@ -137,6 +202,10 @@ class VoiceAgentService : Service() {
         try {
             initializeAudioRecord()
             startForegroundService()
+            
+            // Start VAD processing
+            vadManager.startProcessing()
+            
             startRecordingLoop()
             
             _listeningState.value = ListeningState.LISTENING
@@ -168,6 +237,9 @@ class VoiceAgentService : Service() {
         isRecording.set(false)
         isPaused.set(false)
         isInSleepMode.set(false)
+        
+        // Stop VAD processing
+        vadManager.stopProcessing()
         
         recordingJob?.cancel()
         audioRecord?.stop()
@@ -281,7 +353,7 @@ class VoiceAgentService : Service() {
                         val hasActivity = detectActivity(buffer, samplesRead)
                         
                         if (hasActivity) {
-                            wakeFromSleep()
+                            vadManager.forceWakeUp()
                             break
                         }
                     }
@@ -306,11 +378,40 @@ class VoiceAgentService : Service() {
         val processingStartTime = System.currentTimeMillis()
         
         try {
-            // Calculate audio quality metrics
-            val rms = calculateRMS(buffer, samplesRead)
-            val hasActivity = rms > SILENCE_THRESHOLD
+            // Convert to byte array for VAD processing
+            val audioBytes = convertShortsToBytes(buffer, samplesRead)
+            
+            // Process with VAD Manager
+            val vadResult = vadManager.processAudioSample(audioBytes)
+            
+            val hasActivity = vadResult.isSpeech && vadResult.confidence > 0.3f
+            
+            // Speaker identification and speech recognition for speech segments
+            var speakerResult: SpeakerResult? = null
+            var transcriptionResult: com.voiceledger.ghana.ml.speech.TranscriptionResult? = null
             
             if (hasActivity) {
+                // Identify speaker
+                speakerResult = speakerIdentifier.identifySpeaker(audioBytes)
+                
+                // Transcribe speech
+                transcriptionResult = speechRecognitionManager.transcribe(audioBytes)
+                
+                // Process transaction if we have a good transcription
+                if (transcriptionResult.isSuccess && transcriptionResult.transcript.isNotBlank()) {
+                    val isSeller = speakerResult?.speakerType == SpeakerType.SELLER
+                    val speakerId = speakerResult?.speakerId ?: "unknown"
+                    
+                    transactionProcessor.processUtterance(
+                        transcript = transcriptionResult.transcript,
+                        speakerId = speakerId,
+                        isSeller = isSeller,
+                        confidence = transcriptionResult.confidence,
+                        timestamp = timestamp,
+                        audioChunkId = chunkId
+                    )
+                }
+                
                 lastActivityTime = timestamp
                 speechChunksDetected++
             }
@@ -321,19 +422,19 @@ class VoiceAgentService : Service() {
             val metadata = AudioMetadata(
                 chunkId = chunkId,
                 timestamp = timestamp,
-                vadScore = if (hasActivity) rms.toFloat() else 0f,
+                vadScore = vadResult.confidence,
                 speechDetected = hasActivity,
-                speakerDetected = false, // Will be updated by speaker identification
-                speakerId = null,
-                speakerConfidence = null,
-                audioQuality = rms.toFloat(),
+                speakerDetected = speakerResult != null && speakerResult.speakerType != SpeakerType.UNKNOWN,
+                speakerId = speakerResult?.speakerId,
+                speakerConfidence = speakerResult?.confidence,
+                audioQuality = vadResult.energyLevel,
                 durationMs = CHUNK_DURATION_MS,
                 processingTimeMs = System.currentTimeMillis() - processingStartTime,
                 contributedToTransaction = false,
                 transactionId = null,
                 errorMessage = null,
                 batteryLevel = getBatteryLevel(),
-                powerSavingMode = isInSleepMode.get()
+                powerSavingMode = vadManager.shouldUsePowerSavingMode()
             )
             
             // Store metadata
@@ -344,7 +445,8 @@ class VoiceAgentService : Service() {
                 audioProcessingCallback?.onAudioChunkProcessed(
                     buffer.copyOf(samplesRead),
                     chunkId,
-                    timestamp
+                    timestamp,
+                    speakerResult
                 )
             }
             
@@ -386,9 +488,183 @@ class VoiceAgentService : Service() {
     /**
      * Detect audio activity for sleep mode wake-up
      */
-    private fun detectActivity(buffer: ShortArray, length: Int): Boolean {
-        val rms = calculateRMS(buffer, length)
-        return rms > SILENCE_THRESHOLD
+    private suspend fun detectActivity(buffer: ShortArray, length: Int): Boolean {
+        val audioBytes = convertShortsToBytes(buffer, length)
+        val vadResult = vadManager.processAudioSample(audioBytes)
+        return vadResult.isSpeech && vadResult.confidence > 0.3f
+    }
+    
+    /**
+     * Convert short array to byte array for VAD processing
+     */
+    private fun convertShortsToBytes(buffer: ShortArray, length: Int): ByteArray {
+        val bytes = ByteArray(length * 2)
+        for (i in 0 until length) {
+            val sample = buffer[i]
+            bytes[i * 2] = (sample.toInt() and 0xFF).toByte()
+            bytes[i * 2 + 1] = ((sample.toInt() shr 8) and 0xFF).toByte()
+        }
+        return bytes
+    }
+    
+    /**
+     * Handle sleep mode changes from VAD Manager
+     */
+    private fun handleSleepModeChange(sleepMode: SleepMode) {
+        when (sleepMode) {
+            SleepMode.AWAKE -> {
+                if (isInSleepMode.get()) {
+                    wakeFromSleep()
+                }
+            }
+            SleepMode.LIGHT_SLEEP -> {
+                if (!isInSleepMode.get()) {
+                    enterSleepMode()
+                }
+            }
+            SleepMode.DEEP_SLEEP -> {
+                if (!isInSleepMode.get()) {
+                    enterSleepMode()
+                }
+            }
+        }
+    }
+    
+    /**
+     * Handle power state changes from Power Manager
+     */
+    private fun handlePowerStateChange(powerState: PowerState) {
+        when (powerState.powerMode) {
+            PowerMode.NORMAL -> {
+                // Resume normal operation if paused due to power saving
+                if (isPaused.get() && isRecording.get()) {
+                    resumeFromPowerSave()
+                }
+            }
+            PowerMode.POWER_SAVE -> {
+                // Reduce processing frequency but keep running
+                adjustProcessingForPowerSave()
+            }
+            PowerMode.CRITICAL_SAVE -> {
+                // Minimal processing only
+                adjustProcessingForCriticalSave()
+            }
+            PowerMode.SLEEP -> {
+                // Market closed - pause service
+                if (isRecording.get()) {
+                    pauseForMarketClosure()
+                }
+            }
+        }
+    }
+    
+    /**
+     * Resume from power save mode
+     */
+    private fun resumeFromPowerSave() {
+        if (isPaused.get() && isRecording.get()) {
+            isPaused.set(false)
+            _listeningState.value = ListeningState.LISTENING
+            startRecordingLoop()
+        }
+    }
+    
+    /**
+     * Adjust processing for power save mode
+     */
+    private fun adjustProcessingForPowerSave() {
+        // Reduce VAD sensitivity to save CPU
+        vadManager.setConfiguration(
+            adaptiveMode = true,
+            batteryOptimization = true
+        )
+    }
+    
+    /**
+     * Adjust processing for critical save mode
+     */
+    private fun adjustProcessingForCriticalSave() {
+        // Further reduce processing
+        vadManager.setConfiguration(
+            adaptiveMode = true,
+            batteryOptimization = true
+        )
+        
+        // Use longer processing intervals
+        recordingJob?.cancel()
+        if (isRecording.get() && !isPaused.get()) {
+            startCriticalSaveRecording()
+        }
+    }
+    
+    /**
+     * Pause service for market closure
+     */
+    private fun pauseForMarketClosure() {
+        pauseListening()
+        _listeningState.value = ListeningState.SLEEPING
+    }
+    
+    /**
+     * Start recording with critical save optimizations
+     */
+    private fun startCriticalSaveRecording() {
+        recordingJob = serviceScope.launch {
+            audioRecord?.startRecording()
+            isRecording.set(true)
+            
+            val buffer = ShortArray(SAMPLES_PER_CHUNK)
+            
+            while (isRecording.get() && !isPaused.get()) {
+                try {
+                    val samplesRead = audioRecord?.read(buffer, 0, buffer.size) ?: 0
+                    
+                    if (samplesRead > 0) {
+                        processAudioChunk(buffer, samplesRead)
+                    }
+                    
+                    // Longer delay for critical save mode
+                    delay(2000) // 2 seconds instead of 10ms
+                    
+                } catch (e: Exception) {
+                    _listeningState.value = ListeningState.ERROR("Recording error: ${e.message}")
+                    break
+                }
+            }
+        }
+    }
+    
+    /**
+     * Handle network state changes for offline functionality
+     */
+    private fun handleNetworkStateChange(networkState: com.voiceledger.ghana.offline.NetworkState) {
+        serviceScope.launch {
+            if (networkState.isAvailable) {
+                // Network is back - process pending offline operations
+                offlineQueueManager.processAllPendingOperations()
+                
+                // Update speech recognition to use online mode if preferred
+                speechRecognitionManager.setPreferOnlineRecognition(true)
+            } else {
+                // Network lost - ensure offline mode
+                speechRecognitionManager.setPreferOnlineRecognition(false)
+                
+                // Update listening state to show offline status
+                if (_listeningState.value is ListeningState.LISTENING) {
+                    updateNotificationForOfflineMode()
+                }
+            }
+        }
+    }
+    
+    /**
+     * Update notification to show offline status
+     */
+    private fun updateNotificationForOfflineMode() {
+        val notification = createNotification().apply {
+            // Update notification to show offline status
+        }
+        startForeground(NOTIFICATION_ID, notification)
     }
     
     /**
@@ -608,7 +884,12 @@ sealed class ListeningState {
  * Audio processing callback interface
  */
 interface AudioProcessingCallback {
-    suspend fun onAudioChunkProcessed(audioData: ShortArray, chunkId: String, timestamp: Long)
+    suspend fun onAudioChunkProcessed(
+        audioData: ShortArray, 
+        chunkId: String, 
+        timestamp: Long,
+        speakerResult: SpeakerResult? = null
+    )
 }
 
 /**

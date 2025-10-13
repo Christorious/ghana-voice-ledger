@@ -9,6 +9,21 @@ Write-Host "☕ Checking Java version..." -ForegroundColor Blue
 try {
     $javaVersion = java -version 2>&1 | Select-String "version" | ForEach-Object { $_.ToString() }
     Write-Host "Java version: $javaVersion" -ForegroundColor Yellow
+    
+    # Check if Java 8 is being used with modern Gradle
+    if ($javaVersion -match "1\.8\.") {
+        Write-Host "⚠️  Warning: Java 8 detected. This project requires Java 11+ for the current Gradle/Android setup." -ForegroundColor Yellow
+        Write-Host "💡 Options:" -ForegroundColor Cyan
+        Write-Host "   1. Install Java 11+ and set JAVA_HOME" -ForegroundColor Cyan
+        Write-Host "   2. Use GitHub Actions to build (already configured)" -ForegroundColor Cyan
+        Write-Host "   3. Continue anyway (may fail)" -ForegroundColor Cyan
+        
+        $choice = Read-Host "Continue anyway? (y/N)"
+        if ($choice -ne "y" -and $choice -ne "Y") {
+            Write-Host "❌ Build cancelled. Please install Java 11+ or use GitHub Actions." -ForegroundColor Red
+            exit 1
+        }
+    }
 } catch {
     Write-Host "❌ Java not found. Please install Java 11 or higher." -ForegroundColor Red
     exit 1
@@ -50,9 +65,15 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "❌ Build failed!" -ForegroundColor Red
     Write-Host "💡 Check the error messages above for details." -ForegroundColor Yellow
     Write-Host "💡 Common fixes:" -ForegroundColor Yellow
-    Write-Host "   - Ensure Java 11+ is installed" -ForegroundColor Yellow
+    Write-Host "   - Ensure Java 11+ is installed and JAVA_HOME is set" -ForegroundColor Yellow
     Write-Host "   - Run: .\gradlew.bat --version" -ForegroundColor Yellow
     Write-Host "   - Check for compilation errors in the output" -ForegroundColor Yellow
+    Write-Host "" -ForegroundColor Yellow
+    Write-Host "🚀 Alternative: Use GitHub Actions (recommended)" -ForegroundColor Green
+    Write-Host "   1. Push your changes to GitHub" -ForegroundColor Cyan
+    Write-Host "   2. Go to Actions tab in your repository" -ForegroundColor Cyan
+    Write-Host "   3. Download the APK from the successful build artifacts" -ForegroundColor Cyan
+    Write-Host "   GitHub Actions uses Java 17 and builds successfully!" -ForegroundColor Cyan
 }
 
 Write-Host "Done!" -ForegroundColor Green

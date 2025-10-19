@@ -202,6 +202,11 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
 
+    // App Center SDK
+    val appCenterSdkVersion = "5.0.4"
+    implementation("com.microsoft.appcenter:appcenter-analytics:$appCenterSdkVersion")
+    implementation("com.microsoft.appcenter:appcenter-crashes:$appCenterSdkVersion")
+
     // Google Cloud Speech
     implementation("com.google.cloud:google-cloud-speech:4.21.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")

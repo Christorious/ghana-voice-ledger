@@ -5,10 +5,11 @@ plugins {
     id("dagger.hilt.android.plugin")
     id("kotlin-parcelize")
     id("androidx.room")
-    id("com.google.gms.google-services")
-    id("com.google.firebase.crashlytics")
-    id("com.google.firebase.firebase-perf")
-    id("com.google.firebase.appdistribution")
+    // Temporarily disabled for testing build without Firebase
+    // id("com.google.gms.google-services")
+    // id("com.google.firebase.crashlytics")
+    // id("com.google.firebase.firebase-perf")
+    // id("com.google.firebase.appdistribution")
 }
 
 android {
@@ -195,13 +196,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
-    // Firebase
-    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-    implementation("com.google.firebase:firebase-analytics-ktx")
-    implementation("com.google.firebase:firebase-crashlytics-ktx")
-    implementation("com.google.firebase:firebase-perf-ktx")
-    implementation("com.google.firebase:firebase-messaging-ktx")
-    implementation("com.google.firebase:firebase-config-ktx")
+    // Firebase - Temporarily disabled for testing build
+    // implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+    // implementation("com.google.firebase:firebase-analytics-ktx")
+    // implementation("com.google.firebase:firebase-crashlytics-ktx")
+    // implementation("com.google.firebase:firebase-perf-ktx")
+    // implementation("com.google.firebase:firebase-messaging-ktx")
+    // implementation("com.google.firebase:firebase-config-ktx")
 
     // App Center SDK
     val appCenterSdkVersion = "5.0.4"

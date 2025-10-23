@@ -158,13 +158,13 @@ jobs:
       run: chmod +x gradlew
       
     - name: Build debug APK
-      run: ./gradlew assembleGhanaDebug --stacktrace
+      run: ./gradlew assembleDebug --stacktrace
       
     - name: Upload debug APK
       uses: actions/upload-artifact@v4
       with:
         name: debug-apk
-        path: app/build/outputs/apk/ghana/debug/*.apk
+        path: app/build/outputs/apk/debug/*.apk
         
   build-staging:
     name: Build Staging APK

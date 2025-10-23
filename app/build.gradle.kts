@@ -1,10 +1,11 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("dagger.hilt.android.plugin")
     id("kotlin-parcelize")
-    id("androidx.room")
     // Temporarily disabled for testing build without Firebase
     // id("com.google.gms.google-services")
     // id("com.google.firebase.crashlytics")
@@ -36,7 +37,7 @@ android {
         }
 
         // Build config fields from local.properties or environment variables
-        val properties = java.util.Properties()
+        val properties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
             properties.load(localPropertiesFile.inputStream())
@@ -124,10 +125,6 @@ android {
         }
     }
 
-    room {
-        schemaDirectory("$projectDir/schemas")
-    }
-
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
@@ -209,9 +206,9 @@ dependencies {
     implementation("com.microsoft.appcenter:appcenter-analytics:$appCenterSdkVersion")
     implementation("com.microsoft.appcenter:appcenter-crashes:$appCenterSdkVersion")
 
-    // Google Cloud Speech
-    implementation("com.google.cloud:google-cloud-speech:4.21.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    // Google Cloud Speech - Temporarily disabled for build
+    // implementation("com.google.cloud:google-cloud-speech:4.21.0")
+    // implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 
     // TensorFlow Lite
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
@@ -222,8 +219,8 @@ dependencies {
     // Audio Processing
     implementation("com.github.wendykierp:JTransforms:3.1")
     
-    // WebRTC VAD (Voice Activity Detection)
-    implementation("org.webrtc:google-webrtc:1.0.32006")
+    // WebRTC VAD (Voice Activity Detection) - Temporarily disabled for build
+    // implementation("org.webrtc:google-webrtc:1.0.32006")
 
     // Security & Encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

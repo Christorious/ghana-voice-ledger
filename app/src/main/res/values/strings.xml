@@ -184,8 +184,8 @@
     <string name="data_management">Data Management</string>
     <string name="compliance_score">Compliance Score</string>
     <string name="security_recommendations">Security Recommendations</string>
-</resources>    <!
--- Onboarding Strings -->
+    
+    <!-- Onboarding Strings -->
     <string name="skip">Skip</string>
     <string name="next">Next</string>
     <string name="back">Back</string>
@@ -208,7 +208,6 @@
     
     <!-- Voice Enrollment Strings -->
     <string name="voice_enrollment_progress">Voice Training Progress: %d%%</string>
-    <string name="voice_enrollment_instructions">Speak clearly and follow the prompts to train your voice profile</string>
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
     
@@ -219,7 +218,7 @@
     <string name="feature_daily_summaries_desc">Get automatic summaries of your daily transactions and insights</string>
     <string name="feature_offline_mode">Offline Mode</string>
     <string name="feature_offline_mode_desc">Continue recording transactions even without internet connection</string>
-    <string name="feature_privacy">Privacy & Security</string>
+    <string name="feature_privacy">Privacy &amp; Security</string>
     <string name="feature_privacy_desc">Your data is encrypted and stored securely on your device</string>
     
     <!-- Feedback Strings -->
@@ -249,7 +248,7 @@
     <string name="rating_excellent">Excellent</string>
     
     <!-- Feedback Categories -->
-    <string name="voice_recognition">Voice Recognition</string>
+    <string name="feedback_voice_recognition">Voice Recognition</string>
     <string name="user_interface">User Interface</string>
     <string name="performance">Performance</string>
     <string name="accuracy">Accuracy</string>

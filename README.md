@@ -102,6 +102,8 @@ app/
    ./gradlew connectedAndroidTest
    ```
 
+> 📘 For a complete onboarding checklist, secrets configuration, recommended build commands, and feature toggle reference, see the top-level [Developer Guide](DEVELOPER_GUIDE.md).
+
 ### Configuration
 
 #### Required API Keys

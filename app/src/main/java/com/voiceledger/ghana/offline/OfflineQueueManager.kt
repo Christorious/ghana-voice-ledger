@@ -17,8 +17,63 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Manages offline operations queue for when network is unavailable
- * Handles queuing, persistence, and retry logic for offline operations
+ * # OfflineQueueManager
+ *
+ * Central coordinator for all background work that must be deferred when the device is offline
+ * or low on resources. The manager maintains an in-memory + persisted queue of operations,
+ * schedules retry/backoff workflows, and exposes queue health via reactive state flows.
+ *
+ * ## Operation Lifecycle
+ *
+ * ```
+ * enqueueOperation()
+ *        │
+ *        ▼
+ * [Persist + cache operation]
+ *        │
+ *        ▼
+ * [Network available?] ──► No ──► Wait for connectivity / WorkManager
+ *        │ Yes
+ *        ▼
+ * processOperation()
+ *        │
+ *        ├─► Success ──► markOperationCompleted()
+ *        │
+ *        └─► Failure ──► handleOperationError()
+ *                          │
+ *                          ├─► Retries remaining ──► scheduleRetry()
+ *                          │
+ *                          └─► Exhausted ──► markOperationFailed()
+ * ```
+ *
+ * ## WorkManager Integration
+ *
+ * - A periodic worker (`OfflineSyncWorker`) runs every 15 minutes (or sooner when triggered)
+ *   to process pending operations when network connectivity becomes available.
+ * - A one-time worker (`OfflineRetryWorker`) is scheduled with exponential backoff whenever an
+ *   operation fails but still has retries left.
+ *
+ * ## Queue State Reporting
+ *
+ * The class exposes a `StateFlow<OfflineQueueState>` that reports:
+ * - Total operations
+ * - Pending/failed/processing counts
+ * - Last sync attempt timestamp
+ * - Current network availability (as seen by `NetworkUtils`)
+ *
+ * ## Configuration
+ *
+ * `configure()` allows runtime tuning of retry attempts, delay, and queue size limits, ensuring
+ * the queue can adapt to market conditions (e.g., unstable connectivity or high volume).
+ *
+ * ## Threading Model
+ *
+ * All heavy lifting occurs on a dedicated `Dispatchers.IO` coroutine scope to avoid blocking
+ * the main thread. WorkManager callbacks run independently but converge back through enqueue
+ * and process APIs.
+ *
+ * @param context Application context used for WorkManager scheduling and network checks
+ * @param database Room database used for persisting queued operations (stubbed in current impl)
  */
 @Singleton
 class OfflineQueueManager @Inject constructor(

@@ -116,6 +116,10 @@ app/
 
 ## Development
 
+### Dependency Management
+- Dependencies and plugin versions are centralized in `gradle/libs.versions.toml` via the Gradle Version Catalog.
+- Use the provided `libs` aliases in build scripts instead of hardcoding version numbers.
+
 ### Code Style
 - Follow Kotlin coding conventions
 - Use ktlint for code formatting

@@ -1,8 +1,8 @@
 package com.voiceledger.ghana.di
 
 import android.content.Context
-import androidx.room.Room
 import com.voiceledger.ghana.data.local.dao.*
+import com.voiceledger.ghana.data.local.database.DatabaseFactory
 import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import com.voiceledger.ghana.data.repository.*
 import com.voiceledger.ghana.domain.repository.*
@@ -11,7 +11,6 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Qualifier
 import javax.inject.Singleton
 
 /**
@@ -22,34 +21,22 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
     
+    private const val USE_ENCRYPTION = false
+    private const val DATABASE_PASSPHRASE = "ghana_voice_ledger_secure_key_2024"
+    
     /**
-     * Provides the main Room database instance
-     * Uses encrypted database in production for security
+     * Provides the main Room database instance.
+     * Centralizes creation logic through DatabaseFactory, which handles both
+     * encrypted and non-encrypted configurations with shared builder setup.
      */
     @Provides
     @Singleton
     fun provideVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
-        return Room.databaseBuilder(
-            context.applicationContext,
-            VoiceLedgerDatabase::class.java,
-            VoiceLedgerDatabase.DATABASE_NAME
+        return DatabaseFactory.createDatabase(
+            context = context,
+            encrypted = USE_ENCRYPTION,
+            passphrase = if (USE_ENCRYPTION) DATABASE_PASSPHRASE else null
         )
-            .addMigrations(*com.voiceledger.ghana.data.local.database.DatabaseMigrations.getAllMigrations())
-            .addCallback(VoiceLedgerDatabase.DatabaseCallback())
-            .build()
-    }
-    
-    /**
-     * Provides encrypted database instance for production use
-     * This would be used when security is required
-     */
-    @Provides
-    @Singleton
-    @EncryptedDatabase
-    fun provideEncryptedVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
-        // In production, the passphrase would come from secure storage or user input
-        val passphrase = "ghana_voice_ledger_secure_key_2024"
-        return VoiceLedgerDatabase.getEncryptedDatabase(context, passphrase)
     }
     
     // DAO Providers
@@ -122,11 +109,3 @@ object DatabaseModule {
         return AudioMetadataRepositoryImpl(audioMetadataDao)
     }
 }
-
-/**
- * Qualifier annotation for encrypted database
- * Used when we need the encrypted version of the database
- */
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class EncryptedDatabase

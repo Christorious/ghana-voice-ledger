@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
@@ -16,6 +17,30 @@ plugins {
 android {
     namespace = "com.voiceledger.ghana"
     compileSdk = 34
+
+    // Load signing configuration
+    val keystorePropertiesFile = rootProject.file("keystore.properties")
+    val keystoreProperties = Properties()
+    if (keystorePropertiesFile.exists()) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+
+    signingConfigs {
+        create("release") {
+            if (keystoreProperties.containsKey("RELEASE_KEYSTORE_FILE")) {
+                storeFile = file(keystoreProperties["RELEASE_KEYSTORE_FILE"] as String)
+                storePassword = keystoreProperties["RELEASE_KEYSTORE_PASSWORD"] as String
+                keyAlias = keystoreProperties["RELEASE_KEY_ALIAS"] as String
+                keyPassword = keystoreProperties["RELEASE_KEY_PASSWORD"] as String
+                
+                // Enable v2 and v3 signing for better security and compatibility
+                enableV1Signing = true
+                enableV2Signing = true
+                enableV3Signing = true
+                enableV4Signing = true
+            }
+        }
+    }
 
     defaultConfig {
         applicationId = "com.voiceledger.ghana"
@@ -56,6 +81,43 @@ android {
         buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("dev") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            
+            buildConfigField("String", "API_BASE_URL", "\"https://api-dev.voiceledger.com/\"")
+            buildConfigField("boolean", "OFFLINE_MODE_ENABLED", "false")
+            buildConfigField("boolean", "SPEAKER_IDENTIFICATION_ENABLED", "true")
+            buildConfigField("boolean", "MULTI_LANGUAGE_ENABLED", "true")
+            buildConfigField("boolean", "BETA_FEATURES_ENABLED", "true")
+        }
+        
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            
+            buildConfigField("String", "API_BASE_URL", "\"https://api-staging.voiceledger.com/\"")
+            buildConfigField("boolean", "OFFLINE_MODE_ENABLED", "true")
+            buildConfigField("boolean", "SPEAKER_IDENTIFICATION_ENABLED", "true")
+            buildConfigField("boolean", "MULTI_LANGUAGE_ENABLED", "true")
+            buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
+        }
+        
+        create("prod") {
+            dimension = "environment"
+            
+            buildConfigField("String", "API_BASE_URL", "\"https://api.voiceledger.com/\"")
+            buildConfigField("boolean", "OFFLINE_MODE_ENABLED", "true")
+            buildConfigField("boolean", "SPEAKER_IDENTIFICATION_ENABLED", "false")
+            buildConfigField("boolean", "MULTI_LANGUAGE_ENABLED", "true")
+            buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
+        }
+    }
+
     buildTypes {
         debug {
             isDebuggable = true
@@ -70,6 +132,13 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            isDebuggable = false
+            isJniDebuggable = false
+            isRenderscriptDebuggable = false
+            
+            // Apply signing configuration if available
+            signingConfig = signingConfigs.findByName("release")
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -77,6 +146,11 @@ android {
             
             buildConfigField("boolean", "DEBUG_MODE", "false")
             buildConfigField("boolean", "LOGGING_ENABLED", "false")
+            buildConfigField("boolean", "ENABLE_PERFORMANCE_MONITORING", "false")
+            
+            // Add version information for release builds
+            buildConfigField("String", "BUILD_TYPE", "\"release\"")
+            buildConfigField("long", "BUILD_TIME", "${System.currentTimeMillis()}L")
         }
         
         create("beta") {
@@ -128,6 +202,17 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+    }
+    
+    // Create alias tasks to avoid ambiguity in automated checks
+    task("checkDebugAarMetadata") {
+        dependsOn("checkDevDebugAarMetadata", "checkStagingDebugAarMetadata", "checkProdDebugAarMetadata")
+        description = "Alias for checking debug AAR metadata for all variants"
+    }
+    
+    task("checkReleaseAarMetadata") {
+        dependsOn("checkDevReleaseAarMetadata", "checkStagingReleaseAarMetadata", "checkProdReleaseAarMetadata")
+        description = "Alias for checking release AAR metadata for all variants"
     }
 }
 

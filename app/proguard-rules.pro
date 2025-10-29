@@ -20,24 +20,45 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
-# Keep all classes in the main package
+# Keep all classes in the main package but allow obfuscation
 -keep class com.voiceledger.ghana.** { *; }
-
-# Keep data classes and entities
 -keep class com.voiceledger.ghana.data.local.entity.** { *; }
 -keep class com.voiceledger.ghana.domain.model.** { *; }
+-keep class com.voiceledger.ghana.presentation.** { *; }
 
-# Keep Room database classes
+# Keep Room database classes and annotations
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class *
 -keep @androidx.room.Dao class *
+-keep @androidx.room.Database class *
+-keep class * extends androidx.room.migration.Migration
 -dontwarn androidx.room.paging.**
+-keep class androidx.room.paging.** { *; }
 
-# Keep Hilt/Dagger generated classes
+# Keep all Room entities and model classes used in database
+-keepclassmembers class * extends androidx.room.RoomDatabase {
+    public *** get*();
+    public *** *();
+}
+
+# Keep Hilt/Dagger generated classes and annotations
 -keep class dagger.hilt.** { *; }
 -keep class * extends dagger.hilt.android.HiltAndroidApp
 -keep @dagger.hilt.android.AndroidEntryPoint class *
+-keep @dagger.hilt.android.lifecycle.HiltViewModel class *
 -keep @javax.inject.Singleton class *
+-keep @dagger.Module class *
+-keep @dagger.Component class *
+-keep @dagger.Provides class *
+-keep class * extends dagger.android.AndroidInjector
+
+# Keep Hilt generated classes
+-keep class * extends dagger.hilt.android.lifecycle.HiltViewModel
+-keep class * extends dagger.hilt.android.HiltAndroidApp
+-keep class * extends dagger.android.AndroidInjector
+-keepclasseswithmembers class * {
+    @dagger.hilt.android.AndroidEntryPoint <methods>;
+}
 
 # Keep Retrofit and OkHttp
 -keepattributes Signature, InnerClasses, EnclosingMethod
@@ -72,10 +93,21 @@
   @com.google.gson.annotations.SerializedName <fields>;
 }
 
-# Keep TensorFlow Lite
+# Keep TensorFlow Lite and related classes
 -keep class org.tensorflow.lite.** { *; }
 -keep class org.tensorflow.lite.support.** { *; }
+-keep class org.tensorflow.lite.gpu.** { *; }
+-keep class org.tensorflow.lite.nnapi.** { *; }
 -dontwarn org.tensorflow.lite.**
+
+# Keep TensorFlow Lite interpreter and models
+-keep class * extends org.tensorflow.lite.Interpreter
+-keep class org.tensorflow.lite.Interpreter$Options
+-keep class org.tensorflow.lite.Tensor
+
+# Keep audio processing for TensorFlow Lite models
+-keep class com.voiceledger.ghana.data.ml.** { *; }
+-keep class com.voiceledger.ghana.domain.service.speech.** { *; }
 
 # Keep Google Cloud Speech API
 -keep class com.google.cloud.speech.** { *; }
@@ -90,13 +122,34 @@
 -dontwarn com.google.firebase.**
 -dontwarn com.google.android.gms.**
 
-# Keep Compose
+# Keep Compose classes and related components
 -keep class androidx.compose.** { *; }
 -keep class androidx.compose.runtime.** { *; }
 -keep class androidx.compose.ui.** { *; }
 -keep class androidx.compose.foundation.** { *; }
 -keep class androidx.compose.material3.** { *; }
+-keep class androidx.compose.material.** { *; }
+-keep class androidx.compose.animation.** { *; }
 -dontwarn androidx.compose.**
+
+# Keep Compose runtime and compiler generated classes
+-keepclassmembers class androidx.compose.** {
+    @androidx.compose.runtime.Composable *;
+}
+
+# Keep navigation with Compose
+-keep class androidx.navigation.compose.** { *; }
+
+# Keep Compose UI classes that might be reflected
+-keepclassmembers class * extends androidx.compose.ui.node.ModifierNode {
+    *;
+}
+
+# Keep data classes used in Compose
+-keepclassmembers class * {
+    @androidx.compose.runtime.Immutable *;
+    @androidx.compose.runtime.Stable *;
+}
 
 # Keep Coroutines
 -keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}

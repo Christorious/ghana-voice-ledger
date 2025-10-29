@@ -11,7 +11,10 @@ import androidx.work.WorkManager
 import com.microsoft.appcenter.AppCenter
 import com.microsoft.appcenter.analytics.Analytics
 import com.microsoft.appcenter.crashes.Crashes
+import com.voiceledger.ghana.security.SecurityManager
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -21,8 +24,23 @@ class VoiceLedgerApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
+    @Inject
+    lateinit var securityManager: SecurityManager
+
     override fun onCreate() {
         super.onCreate()
+        
+        runBlocking(Dispatchers.IO) {
+            try {
+                securityManager.ensureDatabaseKey()
+            } catch (e: SecurityException) {
+                Timber.e(e, "Database encryption key unavailable")
+                throw e
+            } catch (e: Exception) {
+                Timber.e(e, "Unexpected error while initializing database encryption key")
+                throw SecurityException("Failed to initialize database encryption key", e)
+            }
+        }
         
         // Initialize App Center (for analytics and crash reporting)
         initializeAppCenter()

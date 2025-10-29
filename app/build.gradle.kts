@@ -45,8 +45,7 @@ android {
 
         buildConfigField("String", "GOOGLE_CLOUD_API_KEY", "\"${properties.getProperty("GOOGLE_CLOUD_API_KEY") ?: System.getenv("GOOGLE_CLOUD_API_KEY") ?: ""}\"")
         buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${properties.getProperty("FIREBASE_PROJECT_ID") ?: System.getenv("FIREBASE_PROJECT_ID") ?: "ghana-voice-ledger"}\"")
-        buildConfigField("String", "ENCRYPTION_KEY", "\"${properties.getProperty("ENCRYPTION_KEY") ?: System.getenv("ENCRYPTION_KEY") ?: "12345678901234567890123456789012"}\"")
-        buildConfigField("String", "DB_ENCRYPTION_KEY", "\"${properties.getProperty("DB_ENCRYPTION_KEY") ?: System.getenv("DB_ENCRYPTION_KEY") ?: "98765432109876543210987654321098"}\"")
+        // Database encryption keys are generated at runtime via the Android Keystore
         buildConfigField("String", "APP_CENTER_SECRET", "\"${properties.getProperty("APP_CENTER_SECRET") ?: System.getenv("APP_CENTER_SECRET") ?: ""}\"")
         buildConfigField("boolean", "OFFLINE_MODE_ENABLED", "${properties.getProperty("OFFLINE_MODE_ENABLED") ?: System.getenv("OFFLINE_MODE_ENABLED") ?: "true"}")
         buildConfigField("boolean", "SPEAKER_IDENTIFICATION_ENABLED", "${properties.getProperty("SPEAKER_IDENTIFICATION_ENABLED") ?: System.getenv("SPEAKER_IDENTIFICATION_ENABLED") ?: "false"}")

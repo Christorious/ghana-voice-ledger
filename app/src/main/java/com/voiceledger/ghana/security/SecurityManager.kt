@@ -304,16 +304,128 @@ class SecurityManager @Inject constructor(
     
     /**
      * Sanitize input by removing or escaping dangerous characters
+     * @deprecated Use context-specific sanitization methods instead
+     * @see sanitizeForDisplay
+     * @see sanitizeForFileName
+     * @see sanitizeForQuery
      */
+    @Deprecated("Use sanitizeForDisplay, sanitizeForFileName, or sanitizeForQuery instead")
     fun sanitizeInput(input: String): String {
-        return input
+        return sanitizeForDisplay(input)
+    }
+    
+    /**
+     * Sanitize input for safe display in UI
+     * Escapes HTML/XML special characters to prevent XSS attacks
+     * 
+     * @param input The user-provided string to sanitize
+     * @param maxLength Maximum allowed length (default: 1000 characters)
+     * @return Sanitized string safe for display
+     */
+    fun sanitizeForDisplay(input: String, maxLength: Int = 1000): String {
+        if (input.isEmpty()) return input
+        
+        val truncated = if (input.length > maxLength) {
+            input.substring(0, maxLength)
+        } else {
+            input
+        }
+        
+        return truncated
+            .replace("&", "&amp;")
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
             .replace("'", "&#x27;")
-            .replace("&", "&amp;")
-            .replace(";", "&#x3B;")
+            .replace("/", "&#x2F;")
+            .replace("\n", " ")
+            .replace("\r", "")
+            .replace("\t", " ")
+            .replace(Regex("\\s+"), " ")
             .trim()
+    }
+    
+    /**
+     * Sanitize input for safe use in filenames
+     * Removes or replaces characters that could cause filesystem issues or path traversal attacks
+     * 
+     * @param input The filename to sanitize
+     * @param maxLength Maximum allowed length (default: 200 characters)
+     * @return Sanitized filename safe for filesystem operations
+     */
+    fun sanitizeForFileName(input: String, maxLength: Int = 200): String {
+        if (input.isEmpty()) return "unnamed"
+        
+        val reservedNames = setOf(
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        )
+        
+        var sanitized = input
+            .replace(Regex("[\\\\/:*?\"<>|]"), "_")
+            .replace(Regex("\\.\\.+"), "_")
+            .replace(" ", "_")
+            .replace(Regex("[^a-zA-Z0-9._-]"), "")
+            .replace(Regex("_{2,}"), "_")
+            .trim('_')
+            .trim('.')
+        
+        if (sanitized.isEmpty()) {
+            sanitized = "unnamed"
+        }
+        
+        val nameWithoutExt = sanitized.substringBeforeLast('.')
+        val extension = if (sanitized.contains('.')) {
+            "." + sanitized.substringAfterLast('.').take(10)
+        } else {
+            ""
+        }
+        
+        val baseName = nameWithoutExt.take(maxLength - extension.length)
+        sanitized = baseName + extension
+        
+        val upperName = sanitized.uppercase().substringBefore('.')
+        if (upperName in reservedNames) {
+            sanitized = "_$sanitized"
+        }
+        
+        return sanitized
+    }
+    
+    /**
+     * Sanitize input for safe use in database queries
+     * While Room handles SQL injection via parameterized queries, this helps with:
+     * - LIKE query wildcards
+     * - Full-text search special characters
+     * - Whitespace normalization
+     * 
+     * @param input The query text to sanitize
+     * @param maxLength Maximum allowed length (default: 500 characters)
+     * @param escapeWildcards Whether to escape SQL LIKE wildcards (% and _)
+     * @return Sanitized string safe for query operations
+     */
+    fun sanitizeForQuery(input: String, maxLength: Int = 500, escapeWildcards: Boolean = false): String {
+        if (input.isEmpty()) return input
+        
+        val truncated = if (input.length > maxLength) {
+            input.substring(0, maxLength)
+        } else {
+            input
+        }
+        
+        var sanitized = truncated
+            .replace(Regex("[\\x00-\\x1F\\x7F]"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        
+        if (escapeWildcards) {
+            sanitized = sanitized
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+        }
+        
+        return sanitized
     }
     
     /**

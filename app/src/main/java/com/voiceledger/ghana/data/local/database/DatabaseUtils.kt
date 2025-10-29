@@ -3,6 +3,7 @@ package com.voiceledger.ghana.data.local.database
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.voiceledger.ghana.security.SecurityManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -21,7 +22,11 @@ object DatabaseUtils {
     /**
      * Create a backup of the current database
      */
-    suspend fun backupDatabase(context: Context, database: VoiceLedgerDatabase): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun backupDatabase(
+        context: Context, 
+        database: VoiceLedgerDatabase,
+        securityManager: SecurityManager
+    ): Result<String> = withContext(Dispatchers.IO) {
         try {
             // Close database connections
             database.close()
@@ -32,7 +37,8 @@ object DatabaseUtils {
             }
             
             val timestamp = dateFormat.format(Date())
-            val backupFileName = "voice_ledger_backup_$timestamp.db"
+            val sanitizedTimestamp = securityManager.sanitizeForFileName("voice_ledger_backup_$timestamp")
+            val backupFileName = "$sanitizedTimestamp.db"
             val backupFile = File(backupDir, backupFileName)
             
             val currentDbFile = context.getDatabasePath(VoiceLedgerDatabase.DATABASE_NAME)
@@ -199,12 +205,17 @@ object DatabaseUtils {
     /**
      * Export database to JSON format
      */
-    suspend fun exportToJson(context: Context, database: VoiceLedgerDatabase): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun exportToJson(
+        context: Context, 
+        database: VoiceLedgerDatabase,
+        securityManager: SecurityManager
+    ): Result<String> = withContext(Dispatchers.IO) {
         try {
             // This would be implemented to export all data to JSON format
             // For now, return a placeholder
             val timestamp = dateFormat.format(Date())
-            val exportFileName = "voice_ledger_export_$timestamp.json"
+            val sanitizedFilename = securityManager.sanitizeForFileName("voice_ledger_export_$timestamp")
+            val exportFileName = "$sanitizedFilename.json"
             val exportFile = File(context.getExternalFilesDir(null), exportFileName)
             
             // TODO: Implement actual JSON export logic

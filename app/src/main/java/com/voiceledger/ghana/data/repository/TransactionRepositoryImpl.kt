@@ -3,6 +3,7 @@ package com.voiceledger.ghana.data.repository
 import com.voiceledger.ghana.data.local.dao.TransactionDao
 import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.domain.repository.TransactionRepository
+import com.voiceledger.ghana.security.SecurityManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
@@ -16,7 +17,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class TransactionRepositoryImpl @Inject constructor(
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val securityManager: SecurityManager
 ) : TransactionRepository {
     
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -178,12 +180,16 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override fun searchTransactions(query: String): Flow<List<Transaction>> {
+        val sanitizedQuery = securityManager.sanitizeForQuery(query)
+        if (sanitizedQuery.isBlank()) {
+            return getAllTransactions()
+        }
         return getAllTransactions().map { transactions ->
             transactions.filter { transaction ->
-                transaction.product.contains(query, ignoreCase = true) ||
-                transaction.transcriptSnippet.contains(query, ignoreCase = true) ||
-                transaction.amount.toString().contains(query) ||
-                transaction.customerId?.contains(query, ignoreCase = true) == true
+                transaction.product.contains(sanitizedQuery, ignoreCase = true) ||
+                transaction.transcriptSnippet.contains(sanitizedQuery, ignoreCase = true) ||
+                transaction.amount.toString().contains(sanitizedQuery) ||
+                transaction.customerId?.contains(sanitizedQuery, ignoreCase = true) == true
             }
         }
     }

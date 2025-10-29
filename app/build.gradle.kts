@@ -6,12 +6,19 @@ plugins {
     id("kotlin-kapt")
     id("dagger.hilt.android.plugin")
     id("kotlin-parcelize")
-    // Temporarily disabled for testing build without Firebase
-    // id("com.google.gms.google-services")
-    // id("com.google.firebase.crashlytics")
-    // id("com.google.firebase.firebase-perf")
-    // id("com.google.firebase.appdistribution")
 }
+
+// Apply Firebase plugins conditionally based on feature toggle
+val firebaseEnabled = project.findProperty("feature.firebase.enabled")?.toString()?.toBoolean() ?: false
+if (firebaseEnabled) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+    apply(plugin = "com.google.firebase.firebase-perf")
+    apply(plugin = "com.google.firebase.appdistribution")
+}
+
+val googleCloudSpeechEnabled = project.findProperty("feature.googleCloudSpeech.enabled")?.toString()?.toBoolean() ?: false
+val webRtcEnabled = project.findProperty("feature.webrtc.enabled")?.toString()?.toBoolean() ?: false
 
 android {
     namespace = "com.voiceledger.ghana"
@@ -55,6 +62,9 @@ android {
         buildConfigField("boolean", "DEBUG_MODE", "true")
         buildConfigField("boolean", "LOGGING_ENABLED", "true")
         buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
+        buildConfigField("boolean", "FEATURE_FIREBASE_ENABLED", "$firebaseEnabled")
+        buildConfigField("boolean", "FEATURE_GOOGLE_CLOUD_SPEECH_ENABLED", "$googleCloudSpeechEnabled")
+        buildConfigField("boolean", "FEATURE_WEBRTC_ENABLED", "$webRtcEnabled")
     }
 
     buildTypes {
@@ -193,22 +203,24 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
-    // Firebase - Temporarily disabled for testing build
-    // implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-    // implementation("com.google.firebase:firebase-analytics-ktx")
-    // implementation("com.google.firebase:firebase-crashlytics-ktx")
-    // implementation("com.google.firebase:firebase-perf-ktx")
-    // implementation("com.google.firebase:firebase-messaging-ktx")
-    // implementation("com.google.firebase:firebase-config-ktx")
+    if (firebaseEnabled) {
+        implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+        implementation("com.google.firebase:firebase-analytics-ktx")
+        implementation("com.google.firebase:firebase-crashlytics-ktx")
+        implementation("com.google.firebase:firebase-perf-ktx")
+        implementation("com.google.firebase:firebase-messaging-ktx")
+        implementation("com.google.firebase:firebase-config-ktx")
+    }
 
     // App Center SDK
     val appCenterSdkVersion = "5.0.4"
     implementation("com.microsoft.appcenter:appcenter-analytics:$appCenterSdkVersion")
     implementation("com.microsoft.appcenter:appcenter-crashes:$appCenterSdkVersion")
 
-    // Google Cloud Speech - Temporarily disabled for build
-    // implementation("com.google.cloud:google-cloud-speech:4.21.0")
-    // implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    if (googleCloudSpeechEnabled) {
+        implementation("com.google.cloud:google-cloud-speech:4.21.0")
+        implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    }
 
     // TensorFlow Lite
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
@@ -218,9 +230,10 @@ dependencies {
 
     // Audio Processing
     implementation("com.github.wendykierp:JTransforms:3.1")
-    
-    // WebRTC VAD (Voice Activity Detection) - Temporarily disabled for build
-    // implementation("org.webrtc:google-webrtc:1.0.32006")
+
+    if (webRtcEnabled) {
+        implementation("org.webrtc:google-webrtc:1.0.32006")
+    }
 
     // Security & Encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

@@ -1,6 +1,7 @@
 package com.voiceledger.ghana.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
@@ -12,7 +13,14 @@ import com.voiceledger.ghana.domain.service.*
  * Entity representing a comprehensive daily summary of transactions
  * Contains aggregated data and insights for a specific day
  */
-@Entity(tableName = "daily_summaries")
+@Entity(
+    tableName = "daily_summaries",
+    indices = [
+        Index(value = ["synced"]),
+        Index(value = ["timestamp"]),
+        Index(value = ["date", "synced"])
+    ]
+)
 @TypeConverters(DailySummaryConverters::class)
 data class DailySummary(
     @PrimaryKey

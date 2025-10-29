@@ -2,18 +2,17 @@ package com.voiceledger.ghana.offline
 
 import android.content.Context
 import androidx.work.*
-import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
+import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
+import com.voiceledger.ghana.data.local.entity.toEntity
+import com.voiceledger.ghana.data.local.entity.toOfflineOperation
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
@@ -21,11 +20,12 @@ import javax.inject.Singleton
  * Handles queuing, persistence, and retry logic for offline operations
  */
 @Singleton
-class OfflineQueueManager @Inject constructor(
+class OfflineQueueManager(
     @ApplicationContext private val context: Context,
-    private val database: VoiceLedgerDatabase
+    private val operationDao: OfflineOperationDao,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
     
     private val _queueState = MutableStateFlow(OfflineQueueState())
     val queueState: StateFlow<OfflineQueueState> = _queueState.asStateFlow()
@@ -75,16 +75,28 @@ class OfflineQueueManager @Inject constructor(
      * Process a single operation
      */
     private suspend fun processOperation(operation: OfflineOperation): Boolean {
+        val processingOperation = operation.copy(
+            status = OperationStatus.PROCESSING,
+            lastAttempt = System.currentTimeMillis()
+        )
+        pendingOperations[operation.id] = processingOperation
+        persistOperation(processingOperation)
+        updateQueueState()
+        
         return try {
-            when (operation.type) {
-                OperationType.TRANSACTION_SYNC -> processTransactionSync(operation)
-                OperationType.SUMMARY_SYNC -> processSummarySync(operation)
-                OperationType.SPEAKER_PROFILE_SYNC -> processSpeakerProfileSync(operation)
-                OperationType.BACKUP_DATA -> processBackupData(operation)
-                OperationType.DELETE_DATA -> processDeleteData(operation)
+            val result = when (operation.type) {
+                OperationType.TRANSACTION_SYNC -> processTransactionSync(processingOperation)
+                OperationType.SUMMARY_SYNC -> processSummarySync(processingOperation)
+                OperationType.SPEAKER_PROFILE_SYNC -> processSpeakerProfileSync(processingOperation)
+                OperationType.BACKUP_DATA -> processBackupData(processingOperation)
+                OperationType.DELETE_DATA -> processDeleteData(processingOperation)
             }
+            if (result) {
+                markOperationCompleted(processingOperation)
+            }
+            result
         } catch (e: Exception) {
-            handleOperationError(operation, e)
+            handleOperationError(processingOperation, e)
             false
         }
     }
@@ -142,10 +154,19 @@ class OfflineQueueManager @Inject constructor(
         val currentAttempts = retryAttempts.getOrDefault(operation.id, 0)
         
         if (currentAttempts < maxRetryAttempts) {
-            retryAttempts[operation.id] = currentAttempts + 1
-            scheduleRetry(operation, currentAttempts + 1)
+            val newRetryCount = currentAttempts + 1
+            retryAttempts[operation.id] = newRetryCount
+            
+            val updatedOperation = operation.copy(
+                status = OperationStatus.PENDING,
+                lastAttempt = System.currentTimeMillis()
+            )
+            pendingOperations[operation.id] = updatedOperation
+            persistOperation(updatedOperation)
+            
+            scheduleRetry(operation, newRetryCount)
+            updateQueueState()
         } else {
-            // Max retries reached, mark as failed
             markOperationFailed(operation, error)
         }
     }
@@ -181,8 +202,8 @@ class OfflineQueueManager @Inject constructor(
         )
         
         pendingOperations[operation.id] = failedOperation
-        persistOperation(failedOperation)
         retryAttempts.remove(operation.id)
+        persistOperation(failedOperation)
         updateQueueState()
     }
     
@@ -270,9 +291,17 @@ class OfflineQueueManager @Inject constructor(
      */
     private fun loadPersistedOperations() {
         scope.launch {
-            // Implementation would load from database
-            // For now, we'll start with empty queue
-            updateQueueState()
+            try {
+                val persistedOperations = operationDao.getAllOperations()
+                persistedOperations.forEach { entity ->
+                    val operation = entity.toOfflineOperation()
+                    pendingOperations[operation.id] = operation
+                    retryAttempts[operation.id] = entity.retryCount
+                }
+                updateQueueState()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
     
@@ -280,15 +309,19 @@ class OfflineQueueManager @Inject constructor(
      * Persist operation to database
      */
     private suspend fun persistOperation(operation: OfflineOperation) {
-        // Implementation would save to database
-        // For now, we'll just keep in memory
+        withContext(ioDispatcher) {
+            val retryCount = retryAttempts[operation.id] ?: 0
+            operationDao.insertOrReplace(operation.toEntity(retryCount))
+        }
     }
     
     /**
      * Remove persisted operation from database
      */
     private suspend fun removePersistedOperation(operationId: String) {
-        // Implementation would remove from database
+        withContext(ioDispatcher) {
+            operationDao.deleteOperationById(operationId)
+        }
     }
     
     /**

@@ -11,26 +11,27 @@ object DatabaseMigrations {
     
     /**
      * Migration from version 1 to 2
-     * Example: Adding new columns or tables
+     * Adds offline_operations table for persistent offline queue
      */
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            // Example migrations (to be implemented when needed):
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS offline_operations (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    type TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    priority TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    errorMessage TEXT,
+                    lastAttempt INTEGER,
+                    retryCount INTEGER NOT NULL DEFAULT 0
+                )
+            """)
             
-            // Add new column to transactions table
-            // database.execSQL("ALTER TABLE transactions ADD COLUMN payment_method TEXT")
-            
-            // Create new table for payment methods
-            // database.execSQL("""
-            //     CREATE TABLE payment_methods (
-            //         id TEXT PRIMARY KEY NOT NULL,
-            //         name TEXT NOT NULL,
-            //         is_active INTEGER NOT NULL DEFAULT 1
-            //     )
-            // """)
-            
-            // Add indexes for better performance
-            // database.execSQL("CREATE INDEX index_transactions_payment_method ON transactions(payment_method)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_status ON offline_operations(status)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_priority ON offline_operations(priority)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_timestamp ON offline_operations(timestamp)")
         }
     }
     

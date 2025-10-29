@@ -3,7 +3,7 @@ package com.voiceledger.ghana.offline
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.work.WorkManager
-import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
+import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,7 +25,7 @@ class OfflineQueueManagerTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private lateinit var context: Context
-    private lateinit var database: VoiceLedgerDatabase
+    private lateinit var operationDao: OfflineOperationDao
     private lateinit var workManager: WorkManager
     private lateinit var offlineQueueManager: OfflineQueueManager
 
@@ -34,8 +34,13 @@ class OfflineQueueManagerTest {
         Dispatchers.setMain(testDispatcher)
         
         context = mockk(relaxed = true)
-        database = mockk(relaxed = true)
+        operationDao = mockk(relaxed = true)
         workManager = mockk(relaxed = true)
+        
+        // Mock DAO operations
+        coEvery { operationDao.getAllOperations() } returns emptyList()
+        coEvery { operationDao.insertOrReplace(any()) } returns Unit
+        coEvery { operationDao.deleteOperationById(any()) } returns Unit
         
         // Mock NetworkUtils
         mockkObject(NetworkUtils)
@@ -45,7 +50,7 @@ class OfflineQueueManagerTest {
         mockkStatic(WorkManager::class)
         every { WorkManager.getInstance(any()) } returns workManager
         
-        offlineQueueManager = OfflineQueueManager(context, database)
+        offlineQueueManager = OfflineQueueManager(context, operationDao, testDispatcher)
     }
 
     @After
@@ -81,7 +86,7 @@ class OfflineQueueManagerTest {
         offlineQueueManager.enqueueOperation(operation)
         
         // Then - Should be in queue
-        advanceTimeBy(100) // Allow state update
+        advanceUntilIdle()
         val state = offlineQueueManager.queueState.value
         assertEquals(1, state.totalOperations)
         assertEquals(1, state.pendingOperations)
@@ -103,7 +108,7 @@ class OfflineQueueManagerTest {
         offlineQueueManager.enqueueOperation(operation)
         
         // Then - Should attempt to process immediately
-        advanceTimeBy(2000) // Allow processing time
+        advanceUntilIdle()
         // Operation should be processed (implementation would remove it from queue)
     }
 
@@ -123,7 +128,7 @@ class OfflineQueueManagerTest {
         offlineQueueManager.enqueueOperation(operation)
         
         // Then - Should remain in queue
-        advanceTimeBy(100)
+        advanceUntilIdle()
         val state = offlineQueueManager.queueState.value
         assertEquals(1, state.totalOperations)
         assertEquals(1, state.pendingOperations)
@@ -160,7 +165,7 @@ class OfflineQueueManagerTest {
         }
         
         // Then - All should be queued
-        advanceTimeBy(100)
+        advanceUntilIdle()
         val state = offlineQueueManager.queueState.value
         assertEquals(3, state.totalOperations)
         
@@ -187,7 +192,7 @@ class OfflineQueueManagerTest {
         }
         
         // Then - Should not exceed max size
-        advanceTimeBy(100)
+        advanceUntilIdle()
         val state = offlineQueueManager.queueState.value
         assertTrue(state.totalOperations <= 2)
     }
@@ -212,7 +217,7 @@ class OfflineQueueManagerTest {
         offlineQueueManager.processAllPendingOperations()
         
         // Then - All operations should be processed
-        advanceTimeBy(5000) // Allow processing time
+        advanceUntilIdle()
         // Implementation would remove processed operations from queue
     }
 
@@ -225,7 +230,7 @@ class OfflineQueueManagerTest {
         offlineQueueManager.clearFailedOperations()
         
         // Then - Failed operations should be removed
-        advanceTimeBy(100)
+        advanceUntilIdle()
         val state = offlineQueueManager.queueState.value
         assertEquals(0, state.failedOperations)
     }
@@ -268,7 +273,7 @@ class OfflineQueueManagerTest {
         offlineQueueManager.enqueueOperation(highPriorityOp)
         
         // Then - Both should be queued
-        advanceTimeBy(100)
+        advanceUntilIdle()
         val state = offlineQueueManager.queueState.value
         assertEquals(2, state.totalOperations)
         
@@ -303,7 +308,7 @@ class OfflineQueueManagerTest {
         offlineQueueManager.enqueueOperation(operation)
         
         // Then - Should handle complex data correctly
-        advanceTimeBy(100)
+        advanceUntilIdle()
         val state = offlineQueueManager.queueState.value
         assertEquals(1, state.totalOperations)
     }

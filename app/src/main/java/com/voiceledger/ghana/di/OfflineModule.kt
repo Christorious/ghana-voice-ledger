@@ -26,7 +26,10 @@ object OfflineModule {
         @ApplicationContext context: Context,
         database: VoiceLedgerDatabase
     ): OfflineQueueManager {
-        return OfflineQueueManager(context, database)
+        return OfflineQueueManager(
+            context = context,
+            operationDao = database.offlineOperationDao()
+        )
     }
 
     @Provides

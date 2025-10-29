@@ -24,7 +24,7 @@ android {
         versionCode = 1
         versionName = "1.0.0"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner = "com.voiceledger.ghana.HiltTestRunner"
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -225,6 +225,7 @@ dependencies {
     // Security & Encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.biometric:biometric:1.1.0")
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
 
     // Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")

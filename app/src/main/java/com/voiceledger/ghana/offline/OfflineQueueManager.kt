@@ -2,9 +2,10 @@ package com.voiceledger.ghana.offline
 
 import android.content.Context
 import androidx.work.*
-import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
+import com.voiceledger.ghana.data.local.entity.OfflineOperationEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +24,7 @@ import javax.inject.Singleton
 @Singleton
 class OfflineQueueManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val database: VoiceLedgerDatabase
+    private val offlineOperationDao: com.voiceledger.ghana.data.local.dao.OfflineOperationDao
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
@@ -247,6 +248,15 @@ class OfflineQueueManager @Inject constructor(
     }
     
     /**
+     * Get all pending items as Flow
+     */
+    fun getPendingItems(): Flow<List<OfflineOperation>> {
+        return kotlinx.coroutines.flow.flow {
+            emit(pendingOperations.values.toList())
+        }
+    }
+    
+    /**
      * Update queue state
      */
     private fun updateQueueState() {
@@ -270,8 +280,10 @@ class OfflineQueueManager @Inject constructor(
      */
     private fun loadPersistedOperations() {
         scope.launch {
-            // Implementation would load from database
-            // For now, we'll start with empty queue
+            val persisted = offlineOperationDao.getAllOperationsSync()
+            persisted.forEach { entity ->
+                pendingOperations[entity.id] = entity.toDomain()
+            }
             updateQueueState()
         }
     }
@@ -280,15 +292,14 @@ class OfflineQueueManager @Inject constructor(
      * Persist operation to database
      */
     private suspend fun persistOperation(operation: OfflineOperation) {
-        // Implementation would save to database
-        // For now, we'll just keep in memory
+        offlineOperationDao.upsertOperation(operation.toEntity())
     }
     
     /**
      * Remove persisted operation from database
      */
     private suspend fun removePersistedOperation(operationId: String) {
-        // Implementation would remove from database
+        offlineOperationDao.deleteOperation(operationId)
     }
     
     /**
@@ -347,7 +358,8 @@ data class OfflineOperation(
     val priority: OperationPriority = OperationPriority.NORMAL,
     val status: OperationStatus = OperationStatus.PENDING,
     val errorMessage: String? = null,
-    val lastAttempt: Long? = null
+    val lastAttempt: Long? = null,
+    val retryCount: Int = 0
 )
 
 /**
@@ -432,4 +444,39 @@ class OfflineRetryWorker(
             Result.failure()
         }
     }
+}
+
+/**
+ * Extension functions for converting between domain and entity models
+ */
+fun OfflineOperation.toEntity(): OfflineOperationEntity {
+    return OfflineOperationEntity(
+        id = id,
+        type = type.name,
+        data = data,
+        timestamp = timestamp,
+        priority = priority.name,
+        status = status.name,
+        errorMessage = errorMessage,
+        lastAttempt = lastAttempt,
+        retryCount = retryCount
+    )
+}
+
+fun OfflineOperationEntity.toDomain(): OfflineOperation {
+    val typeEnum = runCatching { OperationType.valueOf(type) }.getOrElse { OperationType.TRANSACTION_SYNC }
+    val priorityEnum = runCatching { OperationPriority.valueOf(priority) }.getOrElse { OperationPriority.NORMAL }
+    val statusEnum = runCatching { OperationStatus.valueOf(status) }.getOrElse { OperationStatus.PENDING }
+
+    return OfflineOperation(
+        id = id,
+        type = typeEnum,
+        data = data,
+        timestamp = timestamp,
+        priority = priorityEnum,
+        status = statusEnum,
+        errorMessage = errorMessage,
+        lastAttempt = lastAttempt,
+        retryCount = retryCount
+    )
 }

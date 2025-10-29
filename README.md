@@ -98,9 +98,14 @@ app/
 
 5. **Run tests**
    ```bash
+   # Run unit tests
    ./gradlew test
-   ./gradlew connectedAndroidTest
+   
+   # Run integration tests (requires connected device/emulator)
+   ./gradlew connectedDebugAndroidTest
    ```
+   
+   For detailed integration test documentation, see [INTEGRATION_TESTS.md](INTEGRATION_TESTS.md)
 
 ### Configuration
 

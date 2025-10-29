@@ -22,6 +22,10 @@ object NetworkUtils {
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     
+    // Test mode flag to override network availability for testing
+    private var testMode = false
+    private var testNetworkAvailable = false
+    
     /**
      * Initialize network monitoring
      */
@@ -32,11 +36,31 @@ object NetworkUtils {
     }
     
     /**
+     * Set network availability for testing purposes
+     * Only works when test mode is enabled
+     */
+    fun setNetworkAvailable(available: Boolean) {
+        testMode = true
+        testNetworkAvailable = available
+    }
+    
+    /**
+     * Reset test mode
+     */
+    fun resetTestMode() {
+        testMode = false
+        testNetworkAvailable = false
+    }
+    
+    /**
      * Check if network is available
      */
     fun isNetworkAvailable(context: Context): Boolean {
+        if (testMode) {
+            return testNetworkAvailable
+        }
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        
+
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork ?: return false
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
@@ -48,25 +72,31 @@ object NetworkUtils {
             networkInfo?.isConnected == true
         }
     }
-    
+
     /**
      * Check if network is metered (mobile data)
      */
     fun isNetworkMetered(context: Context): Boolean {
+        if (testMode) {
+            return false
+        }
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         return connectivityManager.isActiveNetworkMetered
     }
-    
+
     /**
      * Get network type
      */
     fun getNetworkType(context: Context): NetworkType {
+        if (testMode) {
+            return if (testNetworkAvailable) NetworkType.WIFI else NetworkType.NONE
+        }
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork ?: return NetworkType.NONE
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkType.NONE
-            
+
             return when {
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkType.WIFI
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkType.MOBILE
@@ -76,7 +106,7 @@ object NetworkUtils {
         } else {
             @Suppress("DEPRECATION")
             val networkInfo = connectivityManager.activeNetworkInfo ?: return NetworkType.NONE
-            
+
             return when (networkInfo.type) {
                 ConnectivityManager.TYPE_WIFI -> NetworkType.WIFI
                 ConnectivityManager.TYPE_MOBILE -> NetworkType.MOBILE
@@ -85,19 +115,22 @@ object NetworkUtils {
             }
         }
     }
-    
+
     /**
      * Estimate network quality based on connection type and capabilities
      */
     fun estimateNetworkQuality(context: Context): NetworkQuality {
         if (!isNetworkAvailable(context)) return NetworkQuality.NONE
-        
+
+        if (testMode) {
+            return if (testNetworkAvailable) NetworkQuality.GOOD else NetworkQuality.NONE
+        }
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork ?: return NetworkQuality.NONE
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkQuality.NONE
-            
+
             return when {
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
                     // WiFi is generally good quality

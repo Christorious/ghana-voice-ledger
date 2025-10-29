@@ -3,8 +3,6 @@ package com.voiceledger.ghana.data.local.database
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 import com.voiceledger.ghana.data.local.dao.*
 import com.voiceledger.ghana.data.local.entity.*
@@ -19,9 +17,10 @@ import com.voiceledger.ghana.data.local.entity.*
         DailySummary::class,
         SpeakerProfile::class,
         ProductVocabulary::class,
-        AudioMetadata::class
+        AudioMetadata::class,
+        OfflineOperationEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class VoiceLedgerDatabase : RoomDatabase() {
@@ -31,6 +30,7 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
     abstract fun speakerProfileDao(): SpeakerProfileDao
     abstract fun productVocabularyDao(): ProductVocabularyDao
     abstract fun audioMetadataDao(): AudioMetadataDao
+    abstract fun offlineOperationDao(): OfflineOperationDao
     
     companion object {
         const val DATABASE_NAME = "voice_ledger_database"
@@ -45,7 +45,7 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
                     VoiceLedgerDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2) // Future migrations
+                    .addMigrations(*DatabaseMigrations.getAllMigrations())
                     .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance
@@ -64,21 +64,9 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(net.sqlcipher.room.SupportFactory(passphrase.toByteArray()))
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(*DatabaseMigrations.getAllMigrations())
                 .addCallback(DatabaseCallback())
                 .build()
-        }
-        
-        /**
-         * Future migration from version 1 to 2
-         * Placeholder for when we need to update the schema
-         */
-        private val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Future schema changes will go here
-                // Example:
-                // database.execSQL("ALTER TABLE transactions ADD COLUMN new_column TEXT")
-            }
         }
     }
     

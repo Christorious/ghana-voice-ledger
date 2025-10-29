@@ -5,6 +5,7 @@ import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.domain.repository.ProductVocabularyRepository
 import com.voiceledger.ghana.domain.repository.AudioMetadataRepository
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
@@ -147,8 +148,7 @@ class TransactionProcessor @Inject constructor(
      * Get transaction statistics
      */
     suspend fun getTransactionStats(): TransactionStats {
-        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-            .format(java.util.Date())
+        val today = DateUtils.getTodayDateString()
         
         return TransactionStats(
             todayTotal = transactionRepository.getTotalSalesForDate(today),

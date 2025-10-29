@@ -46,24 +46,19 @@ class DashboardViewModel @Inject constructor(
                 // Combine multiple data sources
                 combine(
                     transactionRepository.getTodaysTransactions(),
+                    transactionRepository.getTodaysAnalytics(),
                     dailySummaryRepository.getTodaysSummaryFlow(),
                     speakerProfileRepository.getRegularCustomers(),
                     voiceAgentServiceManager.serviceState
-                ) { transactions, summary, customers, serviceState ->
-                    
-                    val totalSales = transactionRepository.getTodaysTotalSales()
-                    val transactionCount = transactions.size
-                    val topProduct = transactionRepository.getTodaysTopProduct()
-                    val peakHour = transactionRepository.getTodaysPeakHour()
-                    val uniqueCustomers = transactionRepository.getTodaysUniqueCustomerCount()
+                ) { transactions, analytics, summary, customers, serviceState ->
                     
                     Pair(
                         DashboardData(
-                            totalSales = totalSales,
-                            transactionCount = transactionCount,
-                            topProduct = topProduct ?: "No sales yet",
-                            peakHour = peakHour ?: "N/A",
-                            uniqueCustomers = uniqueCustomers,
+                            totalSales = analytics.totalSales,
+                            transactionCount = analytics.transactionCount,
+                            topProduct = analytics.topProduct ?: "No sales yet",
+                            peakHour = analytics.peakHour ?: "N/A",
+                            uniqueCustomers = analytics.uniqueCustomers,
                             regularCustomers = customers.size,
                             recentTransactions = transactions.take(10),
                             isListening = serviceState.isListening,

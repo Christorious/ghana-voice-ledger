@@ -19,14 +19,36 @@ object NetworkUtils {
     private val _networkState = MutableStateFlow(NetworkState())
     val networkState: StateFlow<NetworkState> = _networkState.asStateFlow()
     
+    private var appContext: Context? = null
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    
+    private fun resolveContext(context: Context? = null): Context? {
+        val resolved = context?.applicationContext ?: appContext
+        if (appContext == null && resolved != null) {
+            appContext = resolved
+        }
+        return resolved
+    }
+    
+    private fun obtainConnectivityManager(context: Context? = null): ConnectivityManager? {
+        connectivityManager?.let { return it }
+        val resolvedContext = resolveContext(context) ?: return null
+        val manager = resolvedContext.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        connectivityManager = manager
+        return manager
+    }
     
     /**
      * Initialize network monitoring
      */
     fun initialize(context: Context) {
-        connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val applicationContext = context.applicationContext
+        if (appContext != null) {
+            stopNetworkMonitoring()
+        }
+        appContext = applicationContext
+        obtainConnectivityManager(applicationContext)
         startNetworkMonitoring()
         updateNetworkState()
     }
@@ -34,14 +56,14 @@ object NetworkUtils {
     /**
      * Check if network is available
      */
-    fun isNetworkAvailable(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    fun isNetworkAvailable(context: Context? = null): Boolean {
+        val connectivityManager = obtainConnectivityManager(context) ?: return false
         
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork ?: return false
             val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
-            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+                capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } else {
             @Suppress("DEPRECATION")
             val networkInfo = connectivityManager.activeNetworkInfo
@@ -52,16 +74,16 @@ object NetworkUtils {
     /**
      * Check if network is metered (mobile data)
      */
-    fun isNetworkMetered(context: Context): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    fun isNetworkMetered(context: Context? = null): Boolean {
+        val connectivityManager = obtainConnectivityManager(context) ?: return false
         return connectivityManager.isActiveNetworkMetered
     }
     
     /**
      * Get network type
      */
-    fun getNetworkType(context: Context): NetworkType {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    fun getNetworkType(context: Context? = null): NetworkType {
+        val connectivityManager = obtainConnectivityManager(context) ?: return NetworkType.NONE
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork ?: return NetworkType.NONE
@@ -89,10 +111,10 @@ object NetworkUtils {
     /**
      * Estimate network quality based on connection type and capabilities
      */
-    fun estimateNetworkQuality(context: Context): NetworkQuality {
+    fun estimateNetworkQuality(context: Context? = null): NetworkQuality {
         if (!isNetworkAvailable(context)) return NetworkQuality.NONE
         
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val connectivityManager = obtainConnectivityManager(context) ?: return NetworkQuality.NONE
         
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = connectivityManager.activeNetwork ?: return NetworkQuality.NONE
@@ -114,7 +136,7 @@ object NetworkUtils {
             }
         } else {
             // Fallback for older Android versions
-            return when (getNetworkType(context)) {
+            return when (getNetworkType()) {
                 NetworkType.WIFI -> NetworkQuality.GOOD
                 NetworkType.MOBILE -> NetworkQuality.FAIR
                 NetworkType.ETHERNET -> NetworkQuality.EXCELLENT
@@ -128,7 +150,9 @@ object NetworkUtils {
      */
     private fun startNetworkMonitoring() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            networkCallback = object : ConnectivityManager.NetworkCallback() {
+            stopNetworkMonitoring()
+            val connectivityManager = obtainConnectivityManager() ?: return
+            val callback = object : ConnectivityManager.NetworkCallback() {
                 override fun onAvailable(network: Network) {
                     updateNetworkState()
                 }
@@ -141,47 +165,61 @@ object NetworkUtils {
                     updateNetworkState()
                 }
             }
+            networkCallback = callback
             
             val networkRequest = NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
                 .build()
             
-            connectivityManager?.registerNetworkCallback(networkRequest, networkCallback!!)
+            runCatching { connectivityManager.registerNetworkCallback(networkRequest, callback) }
         }
+    }
+    
+    /**
+     * Stop monitoring network changes
+     */
+    private fun stopNetworkMonitoring() {
+        networkCallback?.let { callback ->
+            runCatching { connectivityManager?.unregisterNetworkCallback(callback) }
+        }
+        networkCallback = null
     }
     
     /**
      * Update network state
      */
     private fun updateNetworkState() {
-        connectivityManager?.let { cm ->
-            val context = cm as? Context ?: return
-            
-            _networkState.value = NetworkState(
-                isAvailable = isNetworkAvailable(context),
-                isMetered = isNetworkMetered(context),
-                networkType = getNetworkType(context),
-                networkQuality = estimateNetworkQuality(context),
-                lastUpdate = System.currentTimeMillis()
-            )
+        val context = resolveContext() ?: return
+        val connectivityManager = obtainConnectivityManager(context)
+        val timestamp = System.currentTimeMillis()
+        
+        if (connectivityManager == null) {
+            _networkState.value = NetworkState(lastUpdate = timestamp)
+            return
         }
+        
+        _networkState.value = NetworkState(
+            isAvailable = isNetworkAvailable(),
+            isMetered = isNetworkMetered(),
+            networkType = getNetworkType(),
+            networkQuality = estimateNetworkQuality(),
+            lastUpdate = timestamp
+        )
     }
     
     /**
      * Stop network monitoring
      */
     fun cleanup() {
-        networkCallback?.let { callback ->
-            connectivityManager?.unregisterNetworkCallback(callback)
-        }
-        networkCallback = null
+        stopNetworkMonitoring()
         connectivityManager = null
+        appContext = null
     }
     
     /**
      * Check if network is suitable for sync operations
      */
-    fun isSuitableForSync(context: Context, requireUnmetered: Boolean = false): Boolean {
+    fun isSuitableForSync(context: Context? = null, requireUnmetered: Boolean = false): Boolean {
         if (!isNetworkAvailable(context)) return false
         
         if (requireUnmetered && isNetworkMetered(context)) return false
@@ -193,7 +231,7 @@ object NetworkUtils {
     /**
      * Get recommended sync strategy based on network conditions
      */
-    fun getRecommendedSyncStrategy(context: Context): SyncStrategy {
+    fun getRecommendedSyncStrategy(context: Context? = null): SyncStrategy {
         if (!isNetworkAvailable(context)) return SyncStrategy.OFFLINE_ONLY
         
         val isMetered = isNetworkMetered(context)

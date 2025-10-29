@@ -29,14 +29,7 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
-        return Room.databaseBuilder(
-            context.applicationContext,
-            VoiceLedgerDatabase::class.java,
-            VoiceLedgerDatabase.DATABASE_NAME
-        )
-            .addMigrations(*com.voiceledger.ghana.data.local.database.DatabaseMigrations.getAllMigrations())
-            .addCallback(VoiceLedgerDatabase.DatabaseCallback())
-            .build()
+        return VoiceLedgerDatabase.getDatabase(context)
     }
     
     /**

@@ -3,7 +3,6 @@ package com.voiceledger.ghana.data.local.database
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 import com.voiceledger.ghana.data.local.dao.*
@@ -47,7 +46,7 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
                     VoiceLedgerDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2) // Future migrations
+                    .addMigrations(*DatabaseMigrations.getAllMigrations())
                     .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance
@@ -66,7 +65,7 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
                 DATABASE_NAME
             )
                 .openHelperFactory(net.sqlcipher.room.SupportFactory(passphrase.toByteArray()))
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(*DatabaseMigrations.getAllMigrations())
                 .addCallback(DatabaseCallback())
                 .build()
         }

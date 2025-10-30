@@ -79,6 +79,11 @@ android {
         buildConfigField("boolean", "DEBUG_MODE", "true")
         buildConfigField("boolean", "LOGGING_ENABLED", "true")
         buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
+        
+        // Feature toggles for external services
+        buildConfigField("boolean", "FIREBASE_ENABLED", "${properties.getProperty("FIREBASE_ENABLED") ?: System.getenv("FIREBASE_ENABLED") ?: "false"}")
+        buildConfigField("boolean", "GOOGLE_CLOUD_SPEECH_ENABLED", "${properties.getProperty("GOOGLE_CLOUD_SPEECH_ENABLED") ?: System.getenv("GOOGLE_CLOUD_SPEECH_ENABLED") ?: "false"}")
+        buildConfigField("boolean", "WEBRTC_ENABLED", "${properties.getProperty("WEBRTC_ENABLED") ?: System.getenv("WEBRTC_ENABLED") ?: "false"}")
     }
 
     flavorDimensions += "environment"
@@ -93,6 +98,11 @@ android {
             buildConfigField("boolean", "SPEAKER_IDENTIFICATION_ENABLED", "true")
             buildConfigField("boolean", "MULTI_LANGUAGE_ENABLED", "true")
             buildConfigField("boolean", "BETA_FEATURES_ENABLED", "true")
+            
+            // Enable all features in dev
+            buildConfigField("boolean", "FIREBASE_ENABLED", "true")
+            buildConfigField("boolean", "GOOGLE_CLOUD_SPEECH_ENABLED", "true")
+            buildConfigField("boolean", "WEBRTC_ENABLED", "true")
         }
         
         create("staging") {
@@ -105,6 +115,11 @@ android {
             buildConfigField("boolean", "SPEAKER_IDENTIFICATION_ENABLED", "true")
             buildConfigField("boolean", "MULTI_LANGUAGE_ENABLED", "true")
             buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
+            
+            // Enable selective features in staging
+            buildConfigField("boolean", "FIREBASE_ENABLED", "true")
+            buildConfigField("boolean", "GOOGLE_CLOUD_SPEECH_ENABLED", "false")
+            buildConfigField("boolean", "WEBRTC_ENABLED", "false")
         }
         
         create("prod") {
@@ -115,6 +130,11 @@ android {
             buildConfigField("boolean", "SPEAKER_IDENTIFICATION_ENABLED", "false")
             buildConfigField("boolean", "MULTI_LANGUAGE_ENABLED", "true")
             buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
+            
+            // Minimal features in production
+            buildConfigField("boolean", "FIREBASE_ENABLED", "false")
+            buildConfigField("boolean", "GOOGLE_CLOUD_SPEECH_ENABLED", "false")
+            buildConfigField("boolean", "WEBRTC_ENABLED", "false")
         }
     }
 
@@ -277,21 +297,25 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    // Firebase - Temporarily disabled for testing build
-    // implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-    // implementation("com.google.firebase:firebase-analytics-ktx")
-    // implementation("com.google.firebase:firebase-crashlytics-ktx")
-    // implementation("com.google.firebase:firebase-perf-ktx")
-    // implementation("com.google.firebase:firebase-messaging-ktx")
-    // implementation("com.google.firebase:firebase-config-ktx")
+    // Firebase - Feature toggled via build flags
+    if (project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
+        implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+        implementation("com.google.firebase:firebase-analytics-ktx")
+        implementation("com.google.firebase:firebase-crashlytics-ktx")
+        implementation("com.google.firebase:firebase-perf-ktx")
+        implementation("com.google.firebase:firebase-messaging-ktx")
+        implementation("com.google.firebase:firebase-config-ktx")
+    }
 
     // App Center SDK
     implementation(libs.appcenter.analytics)
     implementation(libs.appcenter.crashes)
 
-    // Google Cloud Speech - Temporarily disabled for build
-    // implementation("com.google.cloud:google-cloud-speech:4.21.0")
-    // implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    // Google Cloud Speech - Feature toggled via build flags
+    if (project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
+        implementation("com.google.cloud:google-cloud-speech:4.21.0")
+        implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    }
 
     // TensorFlow Lite
     implementation(libs.tensorflow.lite)
@@ -302,8 +326,10 @@ dependencies {
     // Audio Processing
     implementation(libs.jtransforms)
     
-    // WebRTC VAD (Voice Activity Detection) - Temporarily disabled for build
-    // implementation("org.webrtc:google-webrtc:1.0.32006")
+    // WebRTC VAD (Voice Activity Detection) - Feature toggled via build flags
+    if (project.hasProperty("WEBRTC_ENABLED") && project.property("WEBRTC_ENABLED") == "true") {
+        implementation("org.webrtc:google-webrtc:1.0.32006")
+    }
 
     // Security & Encryption
     implementation(libs.androidx.security.crypto)

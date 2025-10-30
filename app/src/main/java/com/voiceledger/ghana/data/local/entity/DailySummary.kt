@@ -3,6 +3,7 @@ package com.voiceledger.ghana.data.local.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.Index
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.google.gson.Gson
@@ -16,6 +17,10 @@ import com.voiceledger.ghana.domain.service.*
 @Entity(
     tableName = "daily_summaries",
     indices = [
+        Index(value = ["date"], unique = true),
+        Index(value = ["timestamp"]),
+        Index(value = ["totalSales"]),
+        Index(value = ["synced"])
         Index(value = ["synced"]),
         Index(value = ["timestamp"]),
         Index(value = ["date", "synced"])

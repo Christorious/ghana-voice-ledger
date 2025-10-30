@@ -1,8 +1,17 @@
 package com.voiceledger.ghana.data.local.database
 
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.voiceledger.ghana.data.local.dao.AudioMetadataDao
+import com.voiceledger.ghana.data.local.dao.DailySummaryDao
+import com.voiceledger.ghana.data.local.dao.ProductVocabularyDao
+import com.voiceledger.ghana.data.local.dao.SpeakerProfileDao
+import com.voiceledger.ghana.data.local.dao.TransactionDao
+import com.voiceledger.ghana.data.local.entity.AudioMetadata
+import com.voiceledger.ghana.data.local.entity.DailySummary
+import com.voiceledger.ghana.data.local.entity.ProductVocabulary
+import com.voiceledger.ghana.data.local.entity.SpeakerProfile
+import com.voiceledger.ghana.data.local.entity.Transaction
 import androidx.room.migration.Migration
 import androidx.room.withTransaction
 import androidx.sqlite.db.SupportSQLiteDatabase
@@ -20,8 +29,8 @@ import kotlinx.coroutines.launch
 import timber.log.Timber
 
 /**
- * Main Room database for Ghana Voice Ledger
- * Includes all entities and provides access to DAOs
+ * Main Room database for Ghana Voice Ledger.
+ * Includes all entities and provides access to DAOs.
  */
 @Database(
     entities = [
@@ -37,12 +46,15 @@ import timber.log.Timber
     exportSchema = true
 )
 abstract class VoiceLedgerDatabase : RoomDatabase() {
-    
+
     abstract fun transactionDao(): TransactionDao
     abstract fun dailySummaryDao(): DailySummaryDao
     abstract fun speakerProfileDao(): SpeakerProfileDao
     abstract fun productVocabularyDao(): ProductVocabularyDao
     abstract fun audioMetadataDao(): AudioMetadataDao
+
+    companion object {
+        const val DATABASE_NAME = "voice_ledger_database"
     abstract fun offlineOperationDao(): OfflineOperationDao
     
     companion object {

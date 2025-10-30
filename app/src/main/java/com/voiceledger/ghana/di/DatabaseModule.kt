@@ -1,8 +1,8 @@
 package com.voiceledger.ghana.di
 
 import android.content.Context
-import androidx.room.Room
 import com.voiceledger.ghana.data.local.dao.*
+import com.voiceledger.ghana.data.local.database.DatabaseFactory
 import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import com.voiceledger.ghana.data.repository.*
 import com.voiceledger.ghana.domain.repository.*
@@ -25,13 +25,22 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
     
+    private const val USE_ENCRYPTION = false
+    private const val DATABASE_PASSPHRASE = "ghana_voice_ledger_secure_key_2024"
+    
     /**
-     * Provides the main Room database instance
-     * Uses encrypted database in production for security
+     * Provides the main Room database instance.
+     * Centralizes creation logic through DatabaseFactory, which handles both
+     * encrypted and non-encrypted configurations with shared builder setup.
      */
     @Provides
     @Singleton
     fun provideVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
+        return DatabaseFactory.createDatabase(
+            context = context,
+            encrypted = USE_ENCRYPTION,
+            passphrase = if (USE_ENCRYPTION) DATABASE_PASSPHRASE else null
+        )
         return VoiceLedgerDatabase.getDatabase(context)
     fun provideVoiceLedgerDatabase(
         @ApplicationContext context: Context,
@@ -150,11 +159,3 @@ object DatabaseModule {
         return AudioMetadataRepositoryImpl(audioMetadataDao)
     }
 }
-
-/**
- * Qualifier annotation for encrypted database
- * Used when we need the encrypted version of the database
- */
-@Qualifier
-@Retention(AnnotationRetention.BINARY)
-annotation class EncryptedDatabase

@@ -59,8 +59,15 @@ object DatabaseUtils {
     
     /**
      * Restore database from backup file
+     * @param context Application context
+     * @param backupFilePath Path to the backup file
+     * @param database Current database instance to close before restore
      */
-    suspend fun restoreDatabase(context: Context, backupFilePath: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun restoreDatabase(
+        context: Context,
+        backupFilePath: String,
+        database: VoiceLedgerDatabase
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val backupFile = File(backupFilePath)
             if (!backupFile.exists()) {
@@ -69,10 +76,8 @@ object DatabaseUtils {
             
             val currentDbFile = context.getDatabasePath(VoiceLedgerDatabase.DATABASE_NAME)
             
-            // Close any existing database connections
-            VoiceLedgerDatabase.getDatabase(context).close()
+            database.close()
             
-            // Copy backup file to current database location
             backupFile.copyTo(currentDbFile, overwrite = true)
             
             Result.success(Unit)

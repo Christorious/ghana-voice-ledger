@@ -14,7 +14,13 @@ import androidx.room.Index
         Index(value = ["timestamp"]),
         Index(value = ["product"]),
         Index(value = ["customerId"]),
-        Index(value = ["date"]) // For daily queries
+        Index(value = ["date"]),
+        Index(value = ["needsReview"]),
+        Index(value = ["synced"]),
+        Index(value = ["date", "customerId"]),
+        Index(value = ["date", "needsReview"]),
+        Index(value = ["synced", "timestamp"]),
+        Index(value = ["customerId", "timestamp"])
     ]
 )
 data class Transaction(

@@ -26,7 +26,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.voiceledger.ghana.R
 import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.presentation.theme.VoiceLedgerTheme
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**
@@ -404,7 +406,8 @@ private fun TransactionItem(
     transaction: Transaction,
     formatCurrency: (Double) -> String
 ) {
-    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val timeFormat = DateTimeFormatter.ofPattern("HH:mm")
+    val zoneId = ZoneId.systemDefault()
     
     Card(
         modifier = Modifier.fillMaxWidth()
@@ -429,7 +432,7 @@ private fun TransactionItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = timeFormat.format(Date(transaction.timestamp)),
+                        text = timeFormat.format(Instant.ofEpochMilli(transaction.timestamp).atZone(zoneId).toLocalTime()),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

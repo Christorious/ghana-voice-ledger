@@ -452,8 +452,7 @@ class UsageDashboardService @Inject constructor(
     }
     
     private fun getCurrentDateString(): String {
-        return java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            .format(Date())
+        return java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd"))
     }
     
     private fun getAppVersion(): String {

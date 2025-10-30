@@ -3,6 +3,7 @@ package com.voiceledger.ghana.ml.speaker
 import android.util.Log
 import com.voiceledger.ghana.data.local.entity.AudioMetadata
 import com.voiceledger.ghana.domain.repository.AudioMetadataRepository
+import com.voiceledger.ghana.security.SecurityManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

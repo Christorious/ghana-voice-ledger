@@ -30,6 +30,7 @@ object OfflineModule {
             context = context,
             operationDao = database.offlineOperationDao()
         )
+        return OfflineQueueManager(context, database.offlineOperationDao())
     }
 
     @Provides

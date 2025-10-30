@@ -2,6 +2,7 @@ package com.voiceledger.ghana.domain.repository
 
 import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.data.repository.TransactionStats
+import com.voiceledger.ghana.domain.model.TransactionAnalytics
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -20,6 +21,9 @@ interface TransactionRepository {
     fun getTransactionsByTimeRange(startTime: Long, endTime: Long): Flow<List<Transaction>>
     fun getTransactionsByAmountRange(minAmount: Double, maxAmount: Double): Flow<List<Transaction>>
     fun searchTransactions(query: String): Flow<List<Transaction>>
+    
+    // Analytics flow
+    fun getTodaysAnalytics(): Flow<TransactionAnalytics>
     
     // Analytics operations
     suspend fun getTotalSalesForDate(date: String): Double

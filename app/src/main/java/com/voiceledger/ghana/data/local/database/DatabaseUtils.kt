@@ -3,11 +3,13 @@ package com.voiceledger.ghana.data.local.database
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.voiceledger.ghana.security.SecurityManager
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * Utility functions for database operations
@@ -16,12 +18,16 @@ import java.util.*
 object DatabaseUtils {
     
     private const val BACKUP_DIRECTORY = "database_backups"
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault())
+    private val backupDateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
     
     /**
      * Create a backup of the current database
      */
-    suspend fun backupDatabase(context: Context, database: VoiceLedgerDatabase): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun backupDatabase(
+        context: Context, 
+        database: VoiceLedgerDatabase,
+        securityManager: SecurityManager
+    ): Result<String> = withContext(Dispatchers.IO) {
         try {
             // Close database connections
             database.close()
@@ -32,6 +38,9 @@ object DatabaseUtils {
             }
             
             val timestamp = dateFormat.format(Date())
+            val sanitizedTimestamp = securityManager.sanitizeForFileName("voice_ledger_backup_$timestamp")
+            val backupFileName = "$sanitizedTimestamp.db"
+            val timestamp = LocalDateTime.now().format(backupDateFormat)
             val backupFileName = "voice_ledger_backup_$timestamp.db"
             val backupFile = File(backupDir, backupFileName)
             
@@ -50,8 +59,15 @@ object DatabaseUtils {
     
     /**
      * Restore database from backup file
+     * @param context Application context
+     * @param backupFilePath Path to the backup file
+     * @param database Current database instance to close before restore
      */
-    suspend fun restoreDatabase(context: Context, backupFilePath: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun restoreDatabase(
+        context: Context,
+        backupFilePath: String,
+        database: VoiceLedgerDatabase
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val backupFile = File(backupFilePath)
             if (!backupFile.exists()) {
@@ -60,10 +76,8 @@ object DatabaseUtils {
             
             val currentDbFile = context.getDatabasePath(VoiceLedgerDatabase.DATABASE_NAME)
             
-            // Close any existing database connections
-            VoiceLedgerDatabase.getDatabase(context).close()
+            database.close()
             
-            // Copy backup file to current database location
             backupFile.copyTo(currentDbFile, overwrite = true)
             
             Result.success(Unit)
@@ -199,12 +213,17 @@ object DatabaseUtils {
     /**
      * Export database to JSON format
      */
-    suspend fun exportToJson(context: Context, database: VoiceLedgerDatabase): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun exportToJson(
+        context: Context, 
+        database: VoiceLedgerDatabase,
+        securityManager: SecurityManager
+    ): Result<String> = withContext(Dispatchers.IO) {
         try {
             // This would be implemented to export all data to JSON format
             // For now, return a placeholder
             val timestamp = dateFormat.format(Date())
-            val exportFileName = "voice_ledger_export_$timestamp.json"
+            val sanitizedFilename = securityManager.sanitizeForFileName("voice_ledger_export_$timestamp")
+            val exportFileName = "$sanitizedFilename.json"
             val exportFile = File(context.getExternalFilesDir(null), exportFileName)
             
             // TODO: Implement actual JSON export logic

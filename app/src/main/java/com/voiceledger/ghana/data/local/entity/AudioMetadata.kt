@@ -1,8 +1,8 @@
 package com.voiceledger.ghana.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 
 /**
  * Audio metadata entity for tracking processed audio chunks
@@ -13,7 +13,11 @@ import androidx.room.Index
     indices = [
         Index(value = ["timestamp"]),
         Index(value = ["speakerDetected"]),
-        Index(value = ["vadScore"])
+        Index(value = ["vadScore"]),
+        Index(value = ["speechDetected"]),
+        Index(value = ["contributedToTransaction"]),
+        Index(value = ["transactionId"]),
+        Index(value = ["powerSavingMode"])
     ]
 )
 data class AudioMetadata(

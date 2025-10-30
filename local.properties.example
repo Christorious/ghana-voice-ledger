@@ -22,12 +22,9 @@ FIREBASE_API_KEY=your_firebase_api_key
 # Analytics keys
 ANALYTICS_API_KEY=your_analytics_api_key
 
-# Encryption keys (generate secure keys for production)
-ENCRYPTION_KEY=your_32_character_encryption_key_here
-ENCRYPTION_IV=your_16_character_iv_here
-
-# Database encryption key
-DB_ENCRYPTION_KEY=your_database_encryption_key_here
+# Database encryption
+# Database encryption keys are generated automatically at runtime via the Android Keystore.
+# No manual configuration is required, but ensure devices have secure lock screen credentials.
 
 # Speaker identification model keys
 SPEAKER_MODEL_API_KEY=your_speaker_model_api_key

@@ -107,6 +107,20 @@ app/
    
    For detailed integration test documentation, see [INTEGRATION_TESTS.md](INTEGRATION_TESTS.md)
 
+6. **Generate coverage reports**
+   ```bash
+   ./gradlew jacocoTestReport
+   ```
+
+   The HTML report is available at `app/build/reports/jacoco/jacocoTestReport/html/index.html`. To enforce the 70% minimum coverage threshold locally, run:
+
+   ```bash
+   ./gradlew jacocoTestCoverageVerification
+   ```
+
+   See [docs/COVERAGE.md](docs/COVERAGE.md) for detailed coverage guidance.
+> 📘 For a complete onboarding checklist, secrets configuration, recommended build commands, and feature toggle reference, see the top-level [Developer Guide](DEVELOPER_GUIDE.md).
+
 ### Configuration
 
 #### Required API Keys
@@ -121,10 +135,14 @@ app/
 
 ## Development
 
+### Dependency Management
+- Dependencies and plugin versions are centralized in `gradle/libs.versions.toml` via the Gradle Version Catalog.
+- Use the provided `libs` aliases in build scripts instead of hardcoding version numbers.
+
 ### Code Style
 - Follow Kotlin coding conventions
 - Use ktlint for code formatting
-- Maintain 80% test coverage minimum
+- Maintain 70% test coverage minimum (enforced by JaCoCo)
 
 ### Architecture Guidelines
 - Follow Clean Architecture principles
@@ -226,6 +244,7 @@ app/
 - [API Documentation](docs/API.md)
 - [User Guide](docs/USER_GUIDE.md)
 - [Developer Guide](docs/DEVELOPER_GUIDE.md)
+- [Code Coverage Guide](docs/COVERAGE.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ### Community

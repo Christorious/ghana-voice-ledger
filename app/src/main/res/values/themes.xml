@@ -54,41 +54,44 @@
     
     <!-- Typography styles -->
     <style name="TextAppearance.VoiceLedger.Headline1" parent="TextAppearance.Material3.HeadlineLarge">
-        <item name="android:fontFamily">@font/roboto_bold</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">32sp</item>
         <item name="android:textColor">@color/on_background</item>
     </style>
     
     <style name="TextAppearance.VoiceLedger.Headline2" parent="TextAppearance.Material3.HeadlineMedium">
-        <item name="android:fontFamily">@font/roboto_bold</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">28sp</item>
         <item name="android:textColor">@color/on_background</item>
     </style>
     
     <style name="TextAppearance.VoiceLedger.Headline3" parent="TextAppearance.Material3.HeadlineSmall">
-        <item name="android:fontFamily">@font/roboto_medium</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">24sp</item>
         <item name="android:textColor">@color/on_background</item>
     </style>
     
     <style name="TextAppearance.VoiceLedger.Body1" parent="TextAppearance.Material3.BodyLarge">
-        <item name="android:fontFamily">@font/roboto_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/on_background</item>
     </style>
     
     <style name="TextAppearance.VoiceLedger.Body2" parent="TextAppearance.Material3.BodyMedium">
-        <item name="android:fontFamily">@font/roboto_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textColor">@color/on_surface</item>
     </style>
     
     <style name="TextAppearance.VoiceLedger.Caption" parent="TextAppearance.Material3.BodySmall">
-        <item name="android:fontFamily">@font/roboto_regular</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">12sp</item>
         <item name="android:textColor">@color/gray_600</item>
     </style>
     
+    <!-- Base widget style -->
+    <style name="Widget.VoiceLedger" parent="Widget.Material3.Button" />
+
     <!-- Button styles -->
     <style name="Widget.VoiceLedger.Button" parent="Widget.Material3.Button">
         <item name="android:textAppearance">@style/TextAppearance.VoiceLedger.Button</item>
@@ -110,7 +113,7 @@
     </style>
     
     <style name="TextAppearance.VoiceLedger.Button" parent="TextAppearance.Material3.LabelLarge">
-        <item name="android:fontFamily">@font/roboto_medium</item>
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:textSize">14sp</item>
         <item name="android:textAllCaps">false</item>
     </style>

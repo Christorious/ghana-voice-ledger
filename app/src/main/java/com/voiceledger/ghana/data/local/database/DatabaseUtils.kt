@@ -3,11 +3,12 @@ package com.voiceledger.ghana.data.local.database
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * Utility functions for database operations
@@ -16,7 +17,7 @@ import java.util.*
 object DatabaseUtils {
     
     private const val BACKUP_DIRECTORY = "database_backups"
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault())
+    private val backupDateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")
     
     /**
      * Create a backup of the current database
@@ -31,7 +32,7 @@ object DatabaseUtils {
                 backupDir.mkdirs()
             }
             
-            val timestamp = dateFormat.format(Date())
+            val timestamp = LocalDateTime.now().format(backupDateFormat)
             val backupFileName = "voice_ledger_backup_$timestamp.db"
             val backupFile = File(backupDir, backupFileName)
             

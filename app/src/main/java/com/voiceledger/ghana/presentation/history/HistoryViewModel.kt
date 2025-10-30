@@ -9,7 +9,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.*
 import javax.inject.Inject
 
@@ -36,8 +39,9 @@ class HistoryViewModel @Inject constructor(
         currency = Currency.getInstance("GHS")
     }
     
-    private val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
-    private val timeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    private val zoneId = ZoneId.systemDefault()
     
     init {
         loadTransactionHistory()
@@ -184,11 +188,11 @@ class HistoryViewModel @Inject constructor(
     }
     
     fun formatDate(timestamp: Long): String {
-        return dateFormatter.format(Date(timestamp))
+        return dateFormatter.format(Instant.ofEpochMilli(timestamp).atZone(zoneId).toLocalDate())
     }
     
     fun formatTime(timestamp: Long): String {
-        return timeFormatter.format(Date(timestamp))
+        return timeFormatter.format(Instant.ofEpochMilli(timestamp).atZone(zoneId).toLocalTime())
     }
     
     fun clearMessage() {
@@ -270,7 +274,10 @@ class HistoryViewModel @Inject constructor(
     
     private fun parseDate(dateString: String?): Date? {
         return try {
-            dateString?.let { SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(it) }
+            dateString?.let { 
+                Date.from(LocalDate.parse(it, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                    .atStartOfDay(zoneId).toInstant())
+            }
         } catch (e: Exception) {
             null
         }

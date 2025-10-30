@@ -7,6 +7,7 @@ import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.domain.repository.DailySummaryRepository
 import com.voiceledger.ghana.domain.repository.SpeakerProfileRepository
 import com.voiceledger.ghana.service.VoiceAgentServiceManager
+import com.voiceledger.ghana.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -46,24 +47,19 @@ class DashboardViewModel @Inject constructor(
                 // Combine multiple data sources
                 combine(
                     transactionRepository.getTodaysTransactions(),
+                    transactionRepository.getTodaysAnalytics(),
                     dailySummaryRepository.getTodaysSummaryFlow(),
                     speakerProfileRepository.getRegularCustomers(),
                     voiceAgentServiceManager.serviceState
-                ) { transactions, summary, customers, serviceState ->
-                    
-                    val totalSales = transactionRepository.getTodaysTotalSales()
-                    val transactionCount = transactions.size
-                    val topProduct = transactionRepository.getTodaysTopProduct()
-                    val peakHour = transactionRepository.getTodaysPeakHour()
-                    val uniqueCustomers = transactionRepository.getTodaysUniqueCustomerCount()
+                ) { transactions, analytics, summary, customers, serviceState ->
                     
                     Pair(
                         DashboardData(
-                            totalSales = totalSales,
-                            transactionCount = transactionCount,
-                            topProduct = topProduct ?: "No sales yet",
-                            peakHour = peakHour ?: "N/A",
-                            uniqueCustomers = uniqueCustomers,
+                            totalSales = analytics.totalSales,
+                            transactionCount = analytics.transactionCount,
+                            topProduct = analytics.topProduct ?: "No sales yet",
+                            peakHour = analytics.peakHour ?: "N/A",
+                            uniqueCustomers = analytics.uniqueCustomers,
                             regularCustomers = customers.size,
                             recentTransactions = transactions.take(10),
                             isListening = serviceState.isListening,
@@ -204,8 +200,7 @@ class DashboardViewModel @Inject constructor(
     }
     
     fun getCurrentDate(): String {
-        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return dateFormat.format(Date())
+        return DateUtils.getTodayDateString()
     }
     
     fun getBatteryStatusColor(): androidx.compose.ui.graphics.Color {

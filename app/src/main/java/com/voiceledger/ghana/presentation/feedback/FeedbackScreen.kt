@@ -404,9 +404,9 @@ enum class FeedbackCategory(
     VOICE_RECOGNITION(R.string.voice_recognition, Icons.Default.RecordVoiceOver),
     USER_INTERFACE(R.string.user_interface, Icons.Default.Smartphone),
     PERFORMANCE(R.string.performance, Icons.Default.Speed),
-    ACCURACY(R.string.accuracy, Icons.Default.Accuracy),
-    BATTERY_USAGE(R.string.battery_usage, Icons.Default.Battery_Full),
+    ACCURACY(R.string.accuracy, Icons.Default.Check),
+    BATTERY_USAGE(R.string.battery_usage, Icons.Default.BatteryFull),
     OFFLINE_MODE(R.string.offline_mode, Icons.Default.CloudOff),
-    DAILY_SUMMARIES(R.string.daily_summaries, Icons.Default.Analytics),
+    DAILY_SUMMARIES(R.string.daily_summaries, Icons.Default.Assessment),
     OTHER(R.string.other, Icons.Default.MoreHoriz)
 }

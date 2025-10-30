@@ -7,9 +7,11 @@ import com.voiceledger.ghana.data.local.dao.MonthlySummary
 import com.voiceledger.ghana.data.local.entity.DailySummary
 import com.voiceledger.ghana.domain.repository.DailySummaryRepository
 import com.voiceledger.ghana.domain.service.DailySummaryGenerator
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.Flow
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -24,8 +26,7 @@ class DailySummaryRepositoryImpl @Inject constructor(
     private val dailySummaryGenerator: DailySummaryGenerator
 ) : DailySummaryRepository {
     
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    private val timeFormat = DateTimeFormatter.ofPattern("HH:mm")
     
     override fun getAllSummaries(): Flow<List<DailySummary>> {
         return dailySummaryDao.getAllSummaries()
@@ -40,12 +41,12 @@ class DailySummaryRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysSummary(): DailySummary? {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getSummaryByDate(today)
     }
     
     override fun getTodaysSummaryFlow(): Flow<DailySummary?> {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getSummaryByDateFlow(today)
     }
     
@@ -151,18 +152,11 @@ class DailySummaryRepositoryImpl @Inject constructor(
     }
     
     override suspend fun deleteOldSummaries(daysToKeep: Int) {
-        val cutoffDate = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, -daysToKeep)
-        }.time
-        val cutoffDateString = dateFormat.format(cutoffDate)
-        dailySummaryDao.deleteOldSummaries(cutoffDateString)
+        val cutoffDate = DateUtils.getDateDaysAgo(daysToKeep)
+        dailySummaryDao.deleteOldSummaries(cutoffDate)
     }
     
     private fun getPreviousDate(date: String): String {
-        val calendar = Calendar.getInstance()
-        val currentDate = dateFormat.parse(date)
-        calendar.time = currentDate ?: Date()
-        calendar.add(Calendar.DAY_OF_YEAR, -1)
-        return dateFormat.format(calendar.time)
+        return DateUtils.parseDate(date).minusDays(1).format(DateUtils.DATE_FORMATTER)
     }
 }

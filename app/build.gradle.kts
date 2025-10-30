@@ -25,6 +25,18 @@ plugins {
     // id("com.google.firebase.appdistribution")
 }
 
+// Apply Firebase plugins conditionally based on feature toggle
+val firebaseEnabled = project.findProperty("feature.firebase.enabled")?.toString()?.toBoolean() ?: false
+if (firebaseEnabled) {
+    apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
+    apply(plugin = "com.google.firebase.firebase-perf")
+    apply(plugin = "com.google.firebase.appdistribution")
+}
+
+val googleCloudSpeechEnabled = project.findProperty("feature.googleCloudSpeech.enabled")?.toString()?.toBoolean() ?: false
+val webRtcEnabled = project.findProperty("feature.webrtc.enabled")?.toString()?.toBoolean() ?: false
+
 android {
     namespace = "com.voiceledger.ghana"
     compileSdk = 34
@@ -90,6 +102,9 @@ android {
         buildConfigField("boolean", "DEBUG_MODE", "true")
         buildConfigField("boolean", "LOGGING_ENABLED", "true")
         buildConfigField("boolean", "BETA_FEATURES_ENABLED", "false")
+        buildConfigField("boolean", "FEATURE_FIREBASE_ENABLED", "$firebaseEnabled")
+        buildConfigField("boolean", "FEATURE_GOOGLE_CLOUD_SPEECH_ENABLED", "$googleCloudSpeechEnabled")
+        buildConfigField("boolean", "FEATURE_WEBRTC_ENABLED", "$webRtcEnabled")
         
         // Feature toggles for external services
         buildConfigField("boolean", "FIREBASE_ENABLED", "${properties.getProperty("FIREBASE_ENABLED") ?: System.getenv("FIREBASE_ENABLED") ?: "false"}")
@@ -389,6 +404,10 @@ dependencies {
     implementation(libs.gson)
 
     // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    if (firebaseEnabled) {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
@@ -406,6 +425,7 @@ dependencies {
     implementation(libs.appcenter.analytics)
     implementation(libs.appcenter.crashes)
 
+    if (googleCloudSpeechEnabled) {
     // Google Cloud Speech - Feature toggled via build flags
     if (project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
         implementation("com.google.cloud:google-cloud-speech:4.21.0")
@@ -419,6 +439,9 @@ dependencies {
     implementation(libs.tensorflow.lite.gpu)
 
     // Audio Processing
+    implementation("com.github.wendykierp:JTransforms:3.1")
+
+    if (webRtcEnabled) {
     implementation(libs.jtransforms)
     
     // WebRTC VAD (Voice Activity Detection) - Feature toggled via build flags

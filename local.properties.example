@@ -83,3 +83,11 @@ SPEAKER_IDENTIFICATION_ENABLED=true
 MULTI_LANGUAGE_ENABLED=true
 ADVANCED_ANALYTICS_ENABLED=false
 BETA_FEATURES_ENABLED=false
+
+# Build-time feature toggles (Optional service integrations)
+# These are defined in gradle.properties. Override here if needed for local development.
+# See README.md for more details on feature toggles.
+#
+# feature.firebase.enabled=false           # Enable Firebase plugins & dependencies
+# feature.googleCloudSpeech.enabled=false  # Enable Google Cloud Speech SDK
+# feature.webrtc.enabled=false             # Enable WebRTC voice activity detection

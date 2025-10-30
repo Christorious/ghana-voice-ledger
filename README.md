@@ -124,14 +124,32 @@ app/
 ### Configuration
 
 #### Required API Keys
-- **Google Cloud Speech API**: For cloud-based speech recognition
-- **Firebase**: For analytics and crash reporting
-- **TensorFlow Lite**: For offline ML models
+- **TensorFlow Lite**: For offline ML models (always required)
+
+#### Optional API Keys (Feature-Dependent)
+- **Google Cloud Speech API**: Required when `feature.googleCloudSpeech.enabled=true`
+- **Firebase**: Required when `feature.firebase.enabled=true`
 
 #### Optional Configuration
 - **Performance Monitoring**: Enable detailed performance tracking
 - **Advanced Analytics**: Enhanced user behavior analytics
 - **Beta Features**: Access to experimental features
+
+#### Feature Toggles
+Optional service integrations are controlled via Gradle properties. Update `gradle.properties` or provide `-P` flags when invoking Gradle.
+
+| Property | Description | BuildConfig flag | Default |
+| --- | --- | --- | --- |
+| `feature.firebase.enabled` | Enables Firebase plugins (Google Services, Crashlytics, Performance Monitoring, App Distribution) and related dependencies. | `BuildConfig.FEATURE_FIREBASE_ENABLED` | `false` |
+| `feature.googleCloudSpeech.enabled` | Includes the Google Cloud Speech SDK and Google Auth dependency. | `BuildConfig.FEATURE_GOOGLE_CLOUD_SPEECH_ENABLED` | `false` |
+| `feature.webrtc.enabled` | Adds the WebRTC voice activity detection dependency. | `BuildConfig.FEATURE_WEBRTC_ENABLED` | `false` |
+
+To enable a feature locally, set the property to `true` in `gradle.properties` or pass it on the command line:
+```bash
+./gradlew assembleDebug -Pfeature.firebase.enabled=true
+```
+Remember to supply the corresponding API keys in `local.properties` when enabling Firebase or Google Cloud Speech.
+
 
 ## Development
 

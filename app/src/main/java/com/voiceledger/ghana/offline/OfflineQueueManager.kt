@@ -3,6 +3,9 @@ package com.voiceledger.ghana.offline
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
+import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
+import com.voiceledger.ghana.data.local.entity.toEntity
+import com.voiceledger.ghana.data.local.entity.toOfflineOperation
 import com.voiceledger.ghana.data.local.entity.OfflineOperationEntity
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -11,8 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
 import com.voiceledger.ghana.data.local.entity.OfflineOperation
@@ -24,11 +25,31 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
+import javax.inject.Singleton
 
 /**
  * Manager for offline operations queue
  * Handles durable storage and retry logic for offline operations
  */
+@Singleton
+class OfflineQueueManager(
+    @ApplicationContext private val context: Context,
+    private val operationDao: OfflineOperationDao,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    
+    private val _queueState = MutableStateFlow(OfflineQueueState())
+    val queueState: StateFlow<OfflineQueueState> = _queueState.asStateFlow()
+    
+    // In-memory queue for fast access
+    private val pendingOperations = ConcurrentHashMap<String, OfflineOperation>()
+    private val retryAttempts = ConcurrentHashMap<String, Int>()
+    
+    // Configuration
+    private var maxRetryAttempts = 3
+    private var retryDelayMs = 30_000L // 30 seconds
+    private var maxQueueSize = 1000
 class OfflineQueueManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val offlineOperationDao: com.voiceledger.ghana.data.local.dao.OfflineOperationDao
@@ -60,6 +81,77 @@ class OfflineQueueManager @Inject constructor(
             priority = 1 // High priority for transactions
         )
         
+        // Try immediate sync if network is available
+        if (NetworkUtils.isNetworkAvailable(context)) {
+            processOperation(operation)
+        }
+    }  
+  
+    /**
+     * Process a single operation
+     */
+    private suspend fun processOperation(operation: OfflineOperation): Boolean {
+        val processingOperation = operation.copy(
+            status = OperationStatus.PROCESSING,
+            lastAttempt = System.currentTimeMillis()
+        )
+        pendingOperations[operation.id] = processingOperation
+        persistOperation(processingOperation)
+        updateQueueState()
+        
+        return try {
+            val result = when (operation.type) {
+                OperationType.TRANSACTION_SYNC -> processTransactionSync(processingOperation)
+                OperationType.SUMMARY_SYNC -> processSummarySync(processingOperation)
+                OperationType.SPEAKER_PROFILE_SYNC -> processSpeakerProfileSync(processingOperation)
+                OperationType.BACKUP_DATA -> processBackupData(processingOperation)
+                OperationType.DELETE_DATA -> processDeleteData(processingOperation)
+            }
+            if (result) {
+                markOperationCompleted(processingOperation)
+            }
+            result
+        } catch (e: Exception) {
+            handleOperationError(processingOperation, e)
+            false
+        }
+    }
+    
+    /**
+     * Process transaction sync operation
+     */
+    private suspend fun processTransactionSync(operation: OfflineOperation): Boolean {
+        // Implementation would sync transaction data to cloud
+        // For now, simulate success
+        delay(1000) // Simulate network call
+        return true
+    }
+    
+    /**
+     * Process summary sync operation
+     */
+    private suspend fun processSummarySync(operation: OfflineOperation): Boolean {
+        // Implementation would sync summary data to cloud
+        delay(800)
+        return true
+    }
+    
+    /**
+     * Process speaker profile sync operation
+     */
+    private suspend fun processSpeakerProfileSync(operation: OfflineOperation): Boolean {
+        // Implementation would sync speaker profile data
+        delay(1200)
+        return true
+    }
+    
+    /**
+     * Process backup data operation
+     */
+    private suspend fun processBackupData(operation: OfflineOperation): Boolean {
+        // Implementation would backup data to cloud storage
+        delay(2000)
+        return true
         offlineOperationDao.insertOperation(operation)
         scheduleSyncWork()
     }
@@ -96,6 +188,22 @@ class OfflineQueueManager @Inject constructor(
             priority = 3 // Lower priority for summaries
         )
         
+        if (currentAttempts < maxRetryAttempts) {
+            val newRetryCount = currentAttempts + 1
+            retryAttempts[operation.id] = newRetryCount
+            
+            val updatedOperation = operation.copy(
+                status = OperationStatus.PENDING,
+                lastAttempt = System.currentTimeMillis()
+            )
+            pendingOperations[operation.id] = updatedOperation
+            persistOperation(updatedOperation)
+            
+            scheduleRetry(operation, newRetryCount)
+            updateQueueState()
+        } else {
+            markOperationFailed(operation, error)
+        }
         offlineOperationDao.insertOperation(operation)
         scheduleSyncWork()
     }
@@ -142,6 +250,11 @@ class OfflineQueueManager @Inject constructor(
             failureCount = failureCount,
             results = results
         )
+        
+        pendingOperations[operation.id] = failedOperation
+        retryAttempts.remove(operation.id)
+        persistOperation(failedOperation)
+        updateQueueState()
     }
     
     /**
@@ -245,6 +358,17 @@ class OfflineQueueManager @Inject constructor(
      */
     private fun loadPersistedOperations() {
         scope.launch {
+            try {
+                val persistedOperations = operationDao.getAllOperations()
+                persistedOperations.forEach { entity ->
+                    val operation = entity.toOfflineOperation()
+                    pendingOperations[operation.id] = operation
+                    retryAttempts[operation.id] = entity.retryCount
+                }
+                updateQueueState()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             val persisted = offlineOperationDao.getAllOperationsSync()
             persisted.forEach { entity ->
                 pendingOperations[entity.id] = entity.toDomain()
@@ -261,6 +385,10 @@ class OfflineQueueManager @Inject constructor(
      * Update transaction on remote server
      */
     private suspend fun persistOperation(operation: OfflineOperation) {
+        withContext(ioDispatcher) {
+            val retryCount = retryAttempts[operation.id] ?: 0
+            operationDao.insertOrReplace(operation.toEntity(retryCount))
+        }
         offlineOperationDao.upsertOperation(operation.toEntity())
     private suspend fun updateTransactionOnServer(transactionId: String, transactionData: String): Boolean {
         // Implementation would depend on your API client
@@ -272,6 +400,9 @@ class OfflineQueueManager @Inject constructor(
      * Sync summary to remote server
      */
     private suspend fun removePersistedOperation(operationId: String) {
+        withContext(ioDispatcher) {
+            operationDao.deleteOperationById(operationId)
+        }
         offlineOperationDao.deleteOperation(operationId)
     private suspend fun syncSummaryToServer(summaryData: String): Boolean {
         // Implementation would depend on your API client

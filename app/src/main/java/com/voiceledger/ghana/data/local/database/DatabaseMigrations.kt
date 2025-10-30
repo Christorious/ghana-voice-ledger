@@ -11,6 +11,10 @@ object DatabaseMigrations {
     
     /**
      * Migration from version 1 to 2
+     * Adds offline_operations table for persistent offline queue
+     */
+    val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
      * Adds offline_operations table for offline-first architecture
      */
     val MIGRATION_1_2 = object : Migration(1, 2) {
@@ -22,6 +26,8 @@ object DatabaseMigrations {
                     type TEXT NOT NULL,
                     data TEXT NOT NULL,
                     timestamp INTEGER NOT NULL,
+                    priority TEXT NOT NULL,
+                    status TEXT NOT NULL,
                     priority TEXT NOT NULL DEFAULT 'NORMAL',
                     status TEXT NOT NULL DEFAULT 'PENDING',
                     errorMessage TEXT,
@@ -30,6 +36,9 @@ object DatabaseMigrations {
                 )
             """)
             
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_status ON offline_operations(status)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_priority ON offline_operations(priority)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_timestamp ON offline_operations(timestamp)")
             // Create indexes for efficient querying
             database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_timestamp ON offline_operations(timestamp)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_type ON offline_operations(type)")

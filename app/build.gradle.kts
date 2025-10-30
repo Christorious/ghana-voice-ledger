@@ -1,4 +1,15 @@
+import java.math.BigDecimal
 import java.util.Properties
+import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
+import org.gradle.testing.jacoco.tasks.JacocoReport
+
+plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
+    id("dagger.hilt.android.plugin")
+    id("kotlin-parcelize")
+    id("jacoco")
 import java.io.FileInputStream
 
 plugins {
@@ -147,6 +158,9 @@ android {
             
             buildConfigField("boolean", "DEBUG_MODE", "true")
             buildConfigField("boolean", "LOGGING_ENABLED", "true")
+            
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
         }
         
         release {
@@ -234,6 +248,78 @@ android {
         dependsOn("checkDevReleaseAarMetadata", "checkStagingReleaseAarMetadata", "checkProdReleaseAarMetadata")
         description = "Alias for checking release AAR metadata for all variants"
     }
+}
+
+jacoco {
+    toolVersion = "0.8.11"
+}
+
+val coverageExclusions = listOf(
+    "**/R.class",
+    "**/R$*.class",
+    "**/BuildConfig.*",
+    "**/Manifest*.*",
+    "**/*Test*.*",
+    "**/*_Factory.*",
+    "**/*_MembersInjector.*",
+    "**/*_GeneratedInjector.*",
+    "**/*Dagger*.*",
+    "**/*Hilt*.*",
+    "**/hilt_aggregated_deps/**",
+    "**/dagger/hilt/internal/**"
+)
+
+val coverageSourceDirs = files("src/main/java", "src/main/kotlin")
+
+val coverageClassDirs = files(
+    fileTree("${buildDir}/tmp/kotlin-classes/debug") {
+        exclude(coverageExclusions)
+    },
+    fileTree("${buildDir}/intermediates/javac/debug/classes") {
+        exclude(coverageExclusions)
+    }
+)
+
+val coverageExecutionData = fileTree(buildDir) {
+    include("**/*.exec", "**/*.ec")
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    group = "verification"
+    description = "Generates JaCoCo coverage reports for the debug build."
+
+    dependsOn("testDebugUnitTest")
+    classDirectories.setFrom(coverageClassDirs)
+    sourceDirectories.setFrom(coverageSourceDirs)
+    executionData.setFrom(coverageExecutionData)
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+}
+
+tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    group = "verification"
+    description = "Verifies that code coverage meets the minimum threshold of 70%."
+
+    dependsOn("jacocoTestReport")
+    classDirectories.setFrom(coverageClassDirs)
+    sourceDirectories.setFrom(coverageSourceDirs)
+    executionData.setFrom(coverageExecutionData)
+
+    violationRules {
+        rule {
+            limit {
+                minimum = BigDecimal("0.70")
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("jacocoTestCoverageVerification")
 }
 
 dependencies {

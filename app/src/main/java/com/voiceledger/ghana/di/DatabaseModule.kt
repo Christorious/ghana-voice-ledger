@@ -6,11 +6,14 @@ import com.voiceledger.ghana.data.local.dao.*
 import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import com.voiceledger.ghana.data.repository.*
 import com.voiceledger.ghana.domain.repository.*
+import com.voiceledger.ghana.security.SecurityManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import net.sqlcipher.database.SQLiteDatabase
+import net.sqlcipher.room.SupportFactory
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -29,14 +32,12 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
-        return Room.databaseBuilder(
-            context.applicationContext,
-            VoiceLedgerDatabase::class.java,
-            VoiceLedgerDatabase.DATABASE_NAME
-        )
-            .addMigrations(*com.voiceledger.ghana.data.local.database.DatabaseMigrations.getAllMigrations())
-            .addCallback(VoiceLedgerDatabase.DatabaseCallback())
-            .build()
+        return VoiceLedgerDatabase.getDatabase(context)
+    fun provideVoiceLedgerDatabase(
+        @ApplicationContext context: Context,
+        securityManager: SecurityManager
+    ): VoiceLedgerDatabase {
+        return buildEncryptedDatabase(context, securityManager)
     }
     
     /**
@@ -46,10 +47,32 @@ object DatabaseModule {
     @Provides
     @Singleton
     @EncryptedDatabase
-    fun provideEncryptedVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
-        // In production, the passphrase would come from secure storage or user input
-        val passphrase = "ghana_voice_ledger_secure_key_2024"
-        return VoiceLedgerDatabase.getEncryptedDatabase(context, passphrase)
+    fun provideEncryptedVoiceLedgerDatabase(
+        @ApplicationContext context: Context,
+        securityManager: SecurityManager
+    ): VoiceLedgerDatabase {
+        return buildEncryptedDatabase(context, securityManager)
+    }
+    
+    private fun buildEncryptedDatabase(
+        context: Context,
+        securityManager: SecurityManager
+    ): VoiceLedgerDatabase {
+        val passphraseChars = securityManager.getDatabasePassphrase().toCharArray()
+        return try {
+            val passphraseBytes = SQLiteDatabase.getBytes(passphraseChars)
+            Room.databaseBuilder(
+                context.applicationContext,
+                VoiceLedgerDatabase::class.java,
+                VoiceLedgerDatabase.DATABASE_NAME
+            )
+                .openHelperFactory(SupportFactory(passphraseBytes))
+                .addMigrations(*com.voiceledger.ghana.data.local.database.DatabaseMigrations.getAllMigrations())
+                .addCallback(VoiceLedgerDatabase.DatabaseCallback())
+                .build()
+        } finally {
+            passphraseChars.fill('\u0000')
+        }
     }
     
     // DAO Providers
@@ -77,6 +100,11 @@ object DatabaseModule {
     @Provides
     fun provideAudioMetadataDao(database: VoiceLedgerDatabase): AudioMetadataDao {
         return database.audioMetadataDao()
+    }
+    
+    @Provides
+    fun provideOfflineOperationDao(database: VoiceLedgerDatabase): OfflineOperationDao {
+        return database.offlineOperationDao()
     }
     
     // Repository Providers

@@ -4,17 +4,17 @@
         <set>
             <objectAnimator
                 android:duration="100"
-                android:property="translationZ"
+                android:propertyName="translationZ"
                 android:valueTo="12dp"
                 android:valueType="floatType" />
             <objectAnimator
                 android:duration="100"
-                android:property="scaleX"
+                android:propertyName="scaleX"
                 android:valueTo="0.95"
                 android:valueType="floatType" />
             <objectAnimator
                 android:duration="100"
-                android:property="scaleY"
+                android:propertyName="scaleY"
                 android:valueTo="0.95"
                 android:valueType="floatType" />
         </set>
@@ -23,17 +23,17 @@
         <set>
             <objectAnimator
                 android:duration="100"
-                android:property="translationZ"
+                android:propertyName="translationZ"
                 android:valueTo="8dp"
                 android:valueType="floatType" />
             <objectAnimator
                 android:duration="100"
-                android:property="scaleX"
+                android:propertyName="scaleX"
                 android:valueTo="1.0"
                 android:valueType="floatType" />
             <objectAnimator
                 android:duration="100"
-                android:property="scaleY"
+                android:propertyName="scaleY"
                 android:valueTo="1.0"
                 android:valueType="floatType" />
         </set>

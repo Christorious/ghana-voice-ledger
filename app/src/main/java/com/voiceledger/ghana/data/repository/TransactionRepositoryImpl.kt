@@ -4,10 +4,10 @@ import com.voiceledger.ghana.data.local.dao.TransactionDao
 import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.domain.model.TransactionAnalytics
 import com.voiceledger.ghana.domain.repository.TransactionRepository
+import com.voiceledger.ghana.security.SecurityManager
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,10 +17,9 @@ import javax.inject.Singleton
  */
 @Singleton
 class TransactionRepositoryImpl @Inject constructor(
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val securityManager: SecurityManager
 ) : TransactionRepository {
-    
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     
     override fun getAllTransactions(): Flow<List<Transaction>> {
         return transactionDao.getAllTransactions()
@@ -31,7 +30,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override fun getTodaysTransactions(): Flow<List<Transaction>> {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return transactionDao.getTransactionsByDate(today)
     }
     
@@ -122,7 +121,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysTotalSales(): Double {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getTotalSalesForDate(today)
     }
     
@@ -131,7 +130,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysTransactionCount(): Int {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getTransactionCountForDate(today)
     }
     
@@ -140,7 +139,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysTopProduct(): String? {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getTopProductForDate(today)
     }
     
@@ -149,7 +148,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysUniqueCustomerCount(): Int {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getUniqueCustomerCountForDate(today)
     }
     
@@ -158,7 +157,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysAverageTransactionValue(): Double {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getAverageTransactionValueForDate(today)
     }
     
@@ -167,7 +166,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysMostProfitableHour(): Int? {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getMostProfitableHourForDate(today)
     }
     
@@ -176,7 +175,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysPeakHour(): String? {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getPeakHourForDate(today)
     }
     
@@ -186,7 +185,7 @@ class TransactionRepositoryImpl @Inject constructor(
     
     override suspend fun insertTransaction(transaction: Transaction) {
         val transactionWithDate = transaction.copy(
-            date = dateFormat.format(Date(transaction.timestamp))
+            date = DateUtils.formatDate(transaction.timestamp)
         )
         transactionDao.insertTransaction(transactionWithDate)
     }
@@ -194,7 +193,7 @@ class TransactionRepositoryImpl @Inject constructor(
     override suspend fun insertTransactions(transactions: List<Transaction>) {
         val transactionsWithDate = transactions.map { transaction ->
             transaction.copy(
-                date = dateFormat.format(Date(transaction.timestamp))
+                date = DateUtils.formatDate(transaction.timestamp)
             )
         }
         transactionDao.insertTransactions(transactionsWithDate)
@@ -225,11 +224,8 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun deleteOldTransactions(daysToKeep: Int) {
-        val cutoffDate = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, -daysToKeep)
-        }.time
-        val cutoffDateString = dateFormat.format(cutoffDate)
-        transactionDao.deleteOldTransactions(cutoffDateString)
+        val cutoffDate = DateUtils.getDateDaysAgo(daysToKeep)
+        transactionDao.deleteOldTransactions(cutoffDate)
     }
     
     override suspend fun getAllProducts(): List<String> {
@@ -241,12 +237,16 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override fun searchTransactions(query: String): Flow<List<Transaction>> {
+        val sanitizedQuery = securityManager.sanitizeForQuery(query)
+        if (sanitizedQuery.isBlank()) {
+            return getAllTransactions()
+        }
         return getAllTransactions().map { transactions ->
             transactions.filter { transaction ->
-                transaction.product.contains(query, ignoreCase = true) ||
-                transaction.transcriptSnippet.contains(query, ignoreCase = true) ||
-                transaction.amount.toString().contains(query) ||
-                transaction.customerId?.contains(query, ignoreCase = true) == true
+                transaction.product.contains(sanitizedQuery, ignoreCase = true) ||
+                transaction.transcriptSnippet.contains(sanitizedQuery, ignoreCase = true) ||
+                transaction.amount.toString().contains(sanitizedQuery) ||
+                transaction.customerId?.contains(sanitizedQuery, ignoreCase = true) == true
             }
         }
     }
@@ -265,6 +265,7 @@ class TransactionRepositoryImpl @Inject constructor(
             reviewedTransactions = transactions.count { it.needsReview }
         )
     }
+    
 }
 
 /**

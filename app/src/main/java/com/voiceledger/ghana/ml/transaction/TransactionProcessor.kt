@@ -5,14 +5,98 @@ import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.domain.repository.ProductVocabularyRepository
 import com.voiceledger.ghana.domain.repository.AudioMetadataRepository
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * High-level transaction processor that coordinates all transaction detection components
- * Integrates state machine, pattern matching, and data persistence
+ * # TransactionProcessor
+ *
+ * High-level coordinator that orchestrates the complete lifecycle of transaction detection
+ * from raw utterances to persisted transaction records. This component serves as the primary
+ * integration point between the state machine, pattern matching, vocabulary enhancement, and
+ * data persistence layers.
+ *
+ * ## Architecture
+ *
+ * ```
+ * TransactionProcessor
+ *        │
+ *        ├─► TransactionStateMachine ──► State tracking + transitions
+ *        │
+ *        ├─► ProductVocabularyRepository ──► Name canonicalization + validation
+ *        │
+ *        ├─► TransactionRepository ──► Database persistence
+ *        │
+ *        └─► AudioMetadataRepository ──► Audio chunk metadata logging
+ * ```
+ *
+ * ## Processing Flow
+ *
+ * ```
+ * processUtterance(transcript, speakerId, isSeller)
+ *        │
+ *        ▼
+ * [Validate Input] ─────────► Reject blank transcript
+ *        │
+ *        ▼
+ * [Enhance with Vocabulary] ─► Normalize product names
+ *        │
+ *        ▼
+ * [State Machine Transition] ─► Process state change
+ *        │
+ *        ▼
+ * [Log Audio Metadata] ──────► Link audio chunk to transaction
+ *        │
+ *        ▼
+ * [Return Result] ───────────► Success/failure with confidence
+ *
+ * (In parallel, monitor transactionCompleted flow)
+ *        │
+ *        ▼
+ * [Validate Transaction] ────► Check amount, product, price range
+ *        │
+ *        ▼
+ * [Auto-save Decision] ──────► Save if confidence >= 0.8
+ *        │
+ *        ▼
+ * [Update Product Frequency] ─► Improve vocabulary ranking
+ *        │
+ *        ▼
+ * [Emit DetectedTransaction] ─► Notify UI/observers
+ * ```
+ *
+ * ## Key Features
+ *
+ * ### 1. Vocabulary Enhancement
+ * Before processing, the transcribed text is enhanced by matching spoken words against
+ * canonical product names in the vocabulary repository. This improves accuracy when speakers
+ * use informal or dialectal product names.
+ *
+ * ### 2. Auto-Save Logic
+ * Transactions with confidence >= 0.8 are automatically saved to the database. Lower-confidence
+ * transactions (< 0.7) are flagged for manual review.
+ *
+ * ### 3. Validation Pipeline
+ * Completed transactions are validated against:
+ * - Product vocabulary (is the product known?)
+ * - Price range (is the price reasonable for this product?)
+ * - Basic sanity checks (amount > 0, product not blank)
+ *
+ * ### 4. Reactive Architecture
+ * Emits a shared flow of [DetectedTransaction] events that UI components can observe in
+ * real-time to display newly detected transactions.
+ *
+ * ## Thread Safety
+ * This class is marked as @Singleton and uses coroutine scopes for asynchronous operations.
+ * All public methods are suspend functions or use synchronized flow operators.
+ *
+ * @property stateMachine The state machine that tracks transaction conversation flow
+ * @property transactionRepository Repository for persisting transaction records
+ * @property productVocabularyRepository Repository for product name normalization and validation
+ * @property audioMetadataRepository Repository for audio chunk metadata
  */
 @Singleton
 class TransactionProcessor @Inject constructor(
@@ -147,8 +231,7 @@ class TransactionProcessor @Inject constructor(
      * Get transaction statistics
      */
     suspend fun getTransactionStats(): TransactionStats {
-        val today = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-            .format(java.util.Date())
+        val today = DateUtils.getTodayDateString()
         
         return TransactionStats(
             todayTotal = transactionRepository.getTotalSalesForDate(today),

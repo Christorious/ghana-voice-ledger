@@ -350,6 +350,58 @@ class SecurityManager @Inject constructor(
     }
     
     /**
+     * Sanitize input for display in UI components
+     * Removes HTML tags and escapes special characters for safe display
+     */
+    fun sanitizeForDisplay(input: String): String {
+        return input
+            .replace(Regex("<[^>]*>"), "") // Remove HTML tags
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#x27;")
+            .replace("&", "&amp;")
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+            .trim()
+            .replace(Regex("\\s+"), " ") // Normalize whitespace
+    }
+    
+    /**
+     * Sanitize input for use in file names
+     * Removes dangerous characters and replaces spaces with underscores
+     */
+    fun sanitizeForFileName(input: String): String {
+        return input
+            .replace(Regex("[<>:\"/\\\\|?*]"), "") // Remove invalid filename characters
+            .replace(" ", "_")
+            .replace("&", "_")
+            .replace(";", "_")
+            .replace("'", "_")
+            .replace("\"", "_")
+            .replace(Regex("_+"), "_") // Replace multiple underscores with single
+            .replace(Regex("^_|_$"), "") // Remove leading/trailing underscores
+            .trim()
+            .take(255) // Limit filename length
+    }
+    
+    /**
+     * Sanitize input for use in database queries
+     * Removes SQL injection risk characters and limits length
+     */
+    fun sanitizeForQuery(input: String): String {
+        return input
+            .replace("'", "''") // Escape single quotes for SQL
+            .replace("\"", "\"\"") // Escape double quotes
+            .replace("\\", "\\\\") // Escape backslashes
+            .replace("%", "\\%") // Escape wildcard characters
+            .replace("_", "\\_")
+            .trim()
+            .take(1000) // Reasonable limit for query parameters
+    }
+    
+    /**
      * Check if device has secure lock screen
      */
     fun hasSecureLockScreen(): Boolean {

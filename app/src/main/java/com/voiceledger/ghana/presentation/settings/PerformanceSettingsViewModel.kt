@@ -289,7 +289,7 @@ class PerformanceSettingsViewModel @Inject constructor(
             }
             
             appendLine()
-            appendLine("Generated: ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())}")
+            appendLine("Generated: ${java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))}")
         }
     }
     

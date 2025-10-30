@@ -31,6 +31,8 @@ object DatabaseModule {
      */
     @Provides
     @Singleton
+    fun provideVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
+        return VoiceLedgerDatabase.getDatabase(context)
     fun provideVoiceLedgerDatabase(
         @ApplicationContext context: Context,
         securityManager: SecurityManager

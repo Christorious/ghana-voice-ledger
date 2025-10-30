@@ -9,6 +9,7 @@ plugins {
     id("kotlin-kapt")
     id("dagger.hilt.android.plugin")
     id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("jacoco")
 import java.io.FileInputStream
 
@@ -401,6 +402,8 @@ dependencies {
     implementation(libs.okhttp.logging.interceptor)
 
     // JSON
+    implementation("com.google.code.gson:gson:2.10.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
     implementation(libs.gson)
 
     // Coroutines

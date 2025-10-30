@@ -102,6 +102,8 @@ app/
    ./gradlew connectedAndroidTest
    ```
 
+> 📘 For a complete onboarding checklist, secrets configuration, recommended build commands, and feature toggle reference, see the top-level [Developer Guide](DEVELOPER_GUIDE.md).
+
 ### Configuration
 
 #### Required API Keys
@@ -115,6 +117,10 @@ app/
 - **Beta Features**: Access to experimental features
 
 ## Development
+
+### Dependency Management
+- Dependencies and plugin versions are centralized in `gradle/libs.versions.toml` via the Gradle Version Catalog.
+- Use the provided `libs` aliases in build scripts instead of hardcoding version numbers.
 
 ### Code Style
 - Follow Kotlin coding conventions

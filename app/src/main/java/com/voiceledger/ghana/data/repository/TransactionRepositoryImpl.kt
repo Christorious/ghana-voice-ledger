@@ -3,10 +3,9 @@ package com.voiceledger.ghana.data.repository
 import com.voiceledger.ghana.data.local.dao.TransactionDao
 import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.domain.repository.TransactionRepository
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -19,8 +18,6 @@ class TransactionRepositoryImpl @Inject constructor(
     private val transactionDao: TransactionDao
 ) : TransactionRepository {
     
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    
     override fun getAllTransactions(): Flow<List<Transaction>> {
         return transactionDao.getAllTransactions()
     }
@@ -30,7 +27,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override fun getTodaysTransactions(): Flow<List<Transaction>> {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return transactionDao.getTransactionsByDate(today)
     }
     
@@ -59,7 +56,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysTotalSales(): Double {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getTotalSalesForDate(today)
     }
     
@@ -68,7 +65,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysTransactionCount(): Int {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getTransactionCountForDate(today)
     }
     
@@ -77,7 +74,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysTopProduct(): String? {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getTopProductForDate(today)
     }
     
@@ -86,7 +83,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysUniqueCustomerCount(): Int {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getUniqueCustomerCountForDate(today)
     }
     
@@ -95,7 +92,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysAverageTransactionValue(): Double {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getAverageTransactionValueForDate(today)
     }
     
@@ -104,7 +101,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysMostProfitableHour(): Int? {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getMostProfitableHourForDate(today)
     }
     
@@ -113,7 +110,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTodaysPeakHour(): String? {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return getPeakHourForDate(today)
     }
     
@@ -123,7 +120,7 @@ class TransactionRepositoryImpl @Inject constructor(
     
     override suspend fun insertTransaction(transaction: Transaction) {
         val transactionWithDate = transaction.copy(
-            date = dateFormat.format(Date(transaction.timestamp))
+            date = DateUtils.formatDate(transaction.timestamp)
         )
         transactionDao.insertTransaction(transactionWithDate)
     }
@@ -131,7 +128,7 @@ class TransactionRepositoryImpl @Inject constructor(
     override suspend fun insertTransactions(transactions: List<Transaction>) {
         val transactionsWithDate = transactions.map { transaction ->
             transaction.copy(
-                date = dateFormat.format(Date(transaction.timestamp))
+                date = DateUtils.formatDate(transaction.timestamp)
             )
         }
         transactionDao.insertTransactions(transactionsWithDate)
@@ -162,11 +159,8 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun deleteOldTransactions(daysToKeep: Int) {
-        val cutoffDate = Calendar.getInstance().apply {
-            add(Calendar.DAY_OF_YEAR, -daysToKeep)
-        }.time
-        val cutoffDateString = dateFormat.format(cutoffDate)
-        transactionDao.deleteOldTransactions(cutoffDateString)
+        val cutoffDate = DateUtils.getDateDaysAgo(daysToKeep)
+        transactionDao.deleteOldTransactions(cutoffDate)
     }
     
     override suspend fun getAllProducts(): List<String> {
@@ -203,69 +197,6 @@ class TransactionRepositoryImpl @Inject constructor(
         )
     }
     
-    // Analytics methods implementation
-    override suspend fun getTotalSalesForDate(date: String): Double {
-        return transactionDao.getTotalSalesForDate(date)
-    }
-    
-    override suspend fun getTodaysTotalSales(): Double {
-        val today = dateFormat.format(Date())
-        return getTotalSalesForDate(today)
-    }
-    
-    override suspend fun getTransactionCountForDate(date: String): Int {
-        return transactionDao.getTransactionCountForDate(date)
-    }
-    
-    override suspend fun getTodaysTransactionCount(): Int {
-        val today = dateFormat.format(Date())
-        return getTransactionCountForDate(today)
-    }
-    
-    override suspend fun getTopProductForDate(date: String): String? {
-        return transactionDao.getTopProductForDate(date)
-    }
-    
-    override suspend fun getTodaysTopProduct(): String? {
-        val today = dateFormat.format(Date())
-        return getTopProductForDate(today)
-    }
-    
-    override suspend fun getUniqueCustomerCountForDate(date: String): Int {
-        return transactionDao.getUniqueCustomerCountForDate(date)
-    }
-    
-    override suspend fun getTodaysUniqueCustomerCount(): Int {
-        val today = dateFormat.format(Date())
-        return getUniqueCustomerCountForDate(today)
-    }
-    
-    override suspend fun getAverageTransactionValueForDate(date: String): Double {
-        return transactionDao.getAverageTransactionValueForDate(date)
-    }
-    
-    override suspend fun getTodaysAverageTransactionValue(): Double {
-        val today = dateFormat.format(Date())
-        return getAverageTransactionValueForDate(today)
-    }
-    
-    override suspend fun getMostProfitableHourForDate(date: String): Int? {
-        return transactionDao.getMostProfitableHourForDate(date)
-    }
-    
-    override suspend fun getTodaysMostProfitableHour(): Int? {
-        val today = dateFormat.format(Date())
-        return getMostProfitableHourForDate(today)
-    }
-    
-    override suspend fun getPeakHourForDate(date: String): String? {
-        return transactionDao.getPeakHourForDate(date)
-    }
-    
-    override suspend fun getTodaysPeakHour(): String? {
-        val today = dateFormat.format(Date())
-        return getPeakHourForDate(today)
-    }
 }
 
 /**

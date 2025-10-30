@@ -13,7 +13,12 @@ import androidx.room.Index
     indices = [
         Index(value = ["isSeller"]),
         Index(value = ["lastVisit"]),
-        Index(value = ["visitCount"])
+        Index(value = ["visitCount"]),
+        Index(value = ["isActive"]),
+        Index(value = ["synced"]),
+        Index(value = ["createdAt"]),
+        Index(value = ["isSeller", "isActive"]),
+        Index(value = ["lastVisit", "isActive"])
     ]
 )
 data class SpeakerProfile(

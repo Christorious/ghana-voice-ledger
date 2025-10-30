@@ -11,26 +11,40 @@ object DatabaseMigrations {
     
     /**
      * Migration from version 1 to 2
-     * Example: Adding new columns or tables
+     * Adds performance indices for high-frequency query columns
      */
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
-            // Example migrations (to be implemented when needed):
+            // Add indices to transactions table
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_needsReview ON transactions(needsReview)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_synced ON transactions(synced)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_date_customerId ON transactions(date, customerId)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_date_needsReview ON transactions(date, needsReview)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_synced_timestamp ON transactions(synced, timestamp)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_customerId_timestamp ON transactions(customerId, timestamp)")
             
-            // Add new column to transactions table
-            // database.execSQL("ALTER TABLE transactions ADD COLUMN payment_method TEXT")
+            // Add indices to daily_summaries table
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_summaries_synced ON daily_summaries(synced)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_summaries_timestamp ON daily_summaries(timestamp)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_summaries_date_synced ON daily_summaries(date, synced)")
             
-            // Create new table for payment methods
-            // database.execSQL("""
-            //     CREATE TABLE payment_methods (
-            //         id TEXT PRIMARY KEY NOT NULL,
-            //         name TEXT NOT NULL,
-            //         is_active INTEGER NOT NULL DEFAULT 1
-            //     )
-            // """)
+            // Add indices to audio_metadata table
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_speechDetected ON audio_metadata(speechDetected)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_contributedToTransaction ON audio_metadata(contributedToTransaction)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_transactionId ON audio_metadata(transactionId)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_powerSavingMode ON audio_metadata(powerSavingMode)")
             
-            // Add indexes for better performance
-            // database.execSQL("CREATE INDEX index_transactions_payment_method ON transactions(payment_method)")
+            // Add indices to speaker_profiles table
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_isActive ON speaker_profiles(isActive)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_synced ON speaker_profiles(synced)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_createdAt ON speaker_profiles(createdAt)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_isSeller_isActive ON speaker_profiles(isSeller, isActive)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_lastVisit_isActive ON speaker_profiles(lastVisit, isActive)")
+            
+            // Add indices to product_vocabulary table
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_product_vocabulary_frequency ON product_vocabulary(frequency)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_product_vocabulary_isLearned ON product_vocabulary(isLearned)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_product_vocabulary_updatedAt ON product_vocabulary(updatedAt)")
         }
     }
     

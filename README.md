@@ -98,28 +98,69 @@ app/
 
 5. **Run tests**
    ```bash
+   # Run unit tests
    ./gradlew test
-   ./gradlew connectedAndroidTest
+   
+   # Run integration tests (requires connected device/emulator)
+   ./gradlew connectedDebugAndroidTest
    ```
+   
+   For detailed integration test documentation, see [INTEGRATION_TESTS.md](INTEGRATION_TESTS.md)
+
+6. **Generate coverage reports**
+   ```bash
+   ./gradlew jacocoTestReport
+   ```
+
+   The HTML report is available at `app/build/reports/jacoco/jacocoTestReport/html/index.html`. To enforce the 70% minimum coverage threshold locally, run:
+
+   ```bash
+   ./gradlew jacocoTestCoverageVerification
+   ```
+
+   See [docs/COVERAGE.md](docs/COVERAGE.md) for detailed coverage guidance.
+> 📘 For a complete onboarding checklist, secrets configuration, recommended build commands, and feature toggle reference, see the top-level [Developer Guide](DEVELOPER_GUIDE.md).
 
 ### Configuration
 
 #### Required API Keys
-- **Google Cloud Speech API**: For cloud-based speech recognition
-- **Firebase**: For analytics and crash reporting
-- **TensorFlow Lite**: For offline ML models
+- **TensorFlow Lite**: For offline ML models (always required)
+
+#### Optional API Keys (Feature-Dependent)
+- **Google Cloud Speech API**: Required when `feature.googleCloudSpeech.enabled=true`
+- **Firebase**: Required when `feature.firebase.enabled=true`
 
 #### Optional Configuration
 - **Performance Monitoring**: Enable detailed performance tracking
 - **Advanced Analytics**: Enhanced user behavior analytics
 - **Beta Features**: Access to experimental features
 
+#### Feature Toggles
+Optional service integrations are controlled via Gradle properties. Update `gradle.properties` or provide `-P` flags when invoking Gradle.
+
+| Property | Description | BuildConfig flag | Default |
+| --- | --- | --- | --- |
+| `feature.firebase.enabled` | Enables Firebase plugins (Google Services, Crashlytics, Performance Monitoring, App Distribution) and related dependencies. | `BuildConfig.FEATURE_FIREBASE_ENABLED` | `false` |
+| `feature.googleCloudSpeech.enabled` | Includes the Google Cloud Speech SDK and Google Auth dependency. | `BuildConfig.FEATURE_GOOGLE_CLOUD_SPEECH_ENABLED` | `false` |
+| `feature.webrtc.enabled` | Adds the WebRTC voice activity detection dependency. | `BuildConfig.FEATURE_WEBRTC_ENABLED` | `false` |
+
+To enable a feature locally, set the property to `true` in `gradle.properties` or pass it on the command line:
+```bash
+./gradlew assembleDebug -Pfeature.firebase.enabled=true
+```
+Remember to supply the corresponding API keys in `local.properties` when enabling Firebase or Google Cloud Speech.
+
+
 ## Development
+
+### Dependency Management
+- Dependencies and plugin versions are centralized in `gradle/libs.versions.toml` via the Gradle Version Catalog.
+- Use the provided `libs` aliases in build scripts instead of hardcoding version numbers.
 
 ### Code Style
 - Follow Kotlin coding conventions
 - Use ktlint for code formatting
-- Maintain 80% test coverage minimum
+- Maintain 70% test coverage minimum (enforced by JaCoCo)
 
 ### Architecture Guidelines
 - Follow Clean Architecture principles
@@ -221,6 +262,7 @@ app/
 - [API Documentation](docs/API.md)
 - [User Guide](docs/USER_GUIDE.md)
 - [Developer Guide](docs/DEVELOPER_GUIDE.md)
+- [Code Coverage Guide](docs/COVERAGE.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 
 ### Community

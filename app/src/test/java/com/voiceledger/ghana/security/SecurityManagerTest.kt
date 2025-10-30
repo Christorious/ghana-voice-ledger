@@ -6,13 +6,15 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.*
+import org.junit.Assume.assumeNoException
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
-import org.mockito.kotlin.whenever
+import java.security.GeneralSecurityException
 import java.security.KeyStore
+import java.security.ProviderException
 
 /**
  * Unit tests for SecurityManager
@@ -54,6 +56,40 @@ class SecurityManagerTest {
         } catch (e: Exception) {
             // Ignore cleanup errors
         }
+        
+        try {
+            context.deleteSharedPreferences("voice_ledger_secure_prefs")
+        } catch (e: Exception) {
+            // Ignore cleanup errors
+        }
+    }
+    
+    @Test
+    fun getDatabasePassphrase_withoutEnsuring_throwsSecurityException() {
+        runCatching { context.deleteSharedPreferences("voice_ledger_secure_prefs") }
+        assertThrows(SecurityException::class.java) {
+            securityManager.getDatabasePassphrase()
+        }
+    }
+    
+    @Test
+    fun ensureDatabaseKey_generatesAndPersistsPassphrase() = runTest {
+        runCatching { context.deleteSharedPreferences("voice_ledger_secure_prefs") }
+        try {
+            securityManager.ensureDatabaseKey()
+        } catch (e: GeneralSecurityException) {
+            assumeNoException("Android Keystore not available", e)
+        } catch (e: ProviderException) {
+            assumeNoException("Android Keystore provider not available", e)
+        }
+        val firstPassphrase = securityManager.getDatabasePassphrase()
+        assertTrue("Passphrase should not be empty after generation", firstPassphrase.isNotEmpty())
+        
+        securityManager.ensureDatabaseKey()
+        val secondPassphrase = securityManager.getDatabasePassphrase()
+        assertEquals("Passphrase should persist between ensure calls", firstPassphrase, secondPassphrase)
+        
+        assertNotNull("Keystore key should exist after ensureDatabaseKey", securityManager.getDatabaseKey())
     }
     
     @Test
@@ -67,8 +103,7 @@ class SecurityManagerTest {
         // Then
         assertEquals("Valid amount should pass validation", ValidationResult.Valid, result)
     }
-}  
-  
+    
     @Test
     fun testValidateInput_transactionAmount_withInvalidAmount_shouldReturnInvalid() {
         // Given

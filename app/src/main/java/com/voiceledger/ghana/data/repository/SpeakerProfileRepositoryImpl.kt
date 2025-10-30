@@ -5,9 +5,8 @@ import com.voiceledger.ghana.data.local.dao.CustomerTypeCount
 import com.voiceledger.ghana.data.local.dao.LanguageCount
 import com.voiceledger.ghana.data.local.entity.SpeakerProfile
 import com.voiceledger.ghana.domain.repository.SpeakerProfileRepository
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.Flow
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.sqrt
@@ -20,8 +19,6 @@ import kotlin.math.sqrt
 class SpeakerProfileRepositoryImpl @Inject constructor(
     private val speakerProfileDao: SpeakerProfileDao
 ) : SpeakerProfileRepository {
-    
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     
     override fun getAllActiveProfiles(): Flow<List<SpeakerProfile>> {
         return speakerProfileDao.getAllActiveProfiles()

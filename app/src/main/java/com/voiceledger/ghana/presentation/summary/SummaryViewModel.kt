@@ -11,7 +11,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.*
 import javax.inject.Inject
 
@@ -33,8 +36,9 @@ class SummaryViewModel @Inject constructor(
         currency = Currency.getInstance("GHS")
     }
     
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    private val displayDateFormat = SimpleDateFormat("EEEE, MMMM dd, yyyy", Locale.getDefault())
+    private val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    private val displayDateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)
+    private val zoneId = ZoneId.systemDefault()
     
     init {
         loadTodaysSummary()
@@ -45,7 +49,7 @@ class SummaryViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 
-                val today = dateFormat.format(Date())
+                val today = LocalDate.now().format(dateFormat)
                 var summary = dailySummaryRepository.getSummaryByDate(today)
                 
                 // If no summary exists, generate one
@@ -128,12 +132,8 @@ class SummaryViewModel @Inject constructor(
             try {
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 
-                val calendar = Calendar.getInstance()
-                calendar.set(year, month - 1, 1)
-                val startDate = dateFormat.format(calendar.time)
-                
-                calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
-                val endDate = dateFormat.format(calendar.time)
+                val startDate = LocalDate.of(year, month, 1).format(dateFormat)
+                val endDate = LocalDate.of(year, month, LocalDate.of(year, month, 1).lengthOfMonth()).format(dateFormat)
                 
                 val periodSummary = dailySummaryGenerator.generatePeriodSummary(startDate, endDate)
                 
@@ -224,16 +224,13 @@ class SummaryViewModel @Inject constructor(
             }
             SummaryType.WEEKLY -> {
                 val startDate = _uiState.value.selectedDate
-                val calendar = Calendar.getInstance()
-                calendar.time = dateFormat.parse(startDate) ?: Date()
-                calendar.add(Calendar.DAY_OF_YEAR, 6)
-                val endDate = dateFormat.format(calendar.time)
+                val localDate = LocalDate.parse(startDate, dateFormat)
+                val endDate = localDate.plusDays(6).format(dateFormat)
                 loadWeeklySummary(startDate, endDate)
             }
             SummaryType.MONTHLY -> {
-                val calendar = Calendar.getInstance()
-                calendar.time = dateFormat.parse(_uiState.value.selectedDate) ?: Date()
-                loadMonthlySummary(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1)
+                val localDate = LocalDate.parse(_uiState.value.selectedDate, dateFormat)
+                loadMonthlySummary(localDate.year, localDate.monthValue)
             }
         }
     }
@@ -253,8 +250,8 @@ class SummaryViewModel @Inject constructor(
     
     fun formatDate(date: String): String {
         return try {
-            val parsedDate = dateFormat.parse(date)
-            displayDateFormat.format(parsedDate ?: Date())
+            val localDate = LocalDate.parse(date, dateFormat)
+            localDate.format(displayDateFormat)
         } catch (e: Exception) {
             date
         }

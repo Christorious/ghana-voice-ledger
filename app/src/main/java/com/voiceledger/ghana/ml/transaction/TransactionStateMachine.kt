@@ -11,8 +11,160 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Transaction state machine for Ghana Voice Ledger
- * Tracks conversation flow and detects completed transactions
+ * # TransactionStateMachine
+ *
+ * A sophisticated finite state machine that models the lifecycle of market transactions
+ * in the Ghana Voice Ledger application. This component tracks conversational flows between
+ * sellers and customers, detecting transaction patterns through natural speech interactions.
+ *
+ * ## State Diagram
+ *
+ * ```
+ *                    ┌─────────────────────────────────────┐
+ *                    │                                     │
+ *                    ▼                                     │
+ *              ┌──────────┐                          ┌──────────┐
+ *      ┌──────▶│   IDLE   │                          │CANCELLED │
+ *      │       └──────────┘                          └──────────┘
+ *      │            │                                      ▲
+ *      │            │ Customer inquiry                     │
+ *      │            │ "How much is tilapia?"              │ Cancellation
+ *      │            ▼                                      │ detected
+ *      │       ┌──────────┐                               │
+ *      │       │ INQUIRY  │───────────────────────────────┤
+ *      │       └──────────┘                               │
+ *      │            │                                      │
+ *      │            │ Seller quotes price                 │
+ *      │            │ "GH₵25 per kilo"                   │
+ *      │            ▼                                      │
+ *      │       ┌──────────┐                               │
+ *      │       │  PRICE   │───────────────────────────────┤
+ *      │       │  QUOTE   │                               │
+ *      │       └──────────┘                               │
+ *      │            │                                      │
+ *      │            │ ┌──────────────────┐               │
+ *      │            │ │   Negotiation    │               │
+ *      │            ▼ ▼  "Too much!"     │               │
+ *      │       ┌──────────────┐          │               │
+ *      │       │ NEGOTIATION  │──────────┘               │
+ *      │       └──────────────┘                           │
+ *      │            │                                      │
+ *      │            │ Agreement reached                   │
+ *      │            │ "Ok, I'll take it"                 │
+ *      │            ▼                                      │
+ *      │       ┌──────────┐                               │
+ *      │       │AGREEMENT │───────────────────────────────┤
+ *      │       └──────────┘                               │
+ *      │            │                                      │
+ *      │            │ Payment confirmed                   │
+ *      │            │ "Paid 20 cedis"                    │
+ *      │            ▼                                      │
+ *      │       ┌──────────┐                               │
+ *      │       │ PAYMENT  │                               │
+ *      │       └──────────┘                               │
+ *      │            │                                      │
+ *      │            │ Transaction complete                │
+ *      │            ▼                                      │
+ *      │       ┌──────────┐                               │
+ *      └───────│ COMPLETE │                               │
+ *              └──────────┘                               │
+ *                                                          │
+ *         Any state ──────────────────────────────────────┘
+ * ```
+ *
+ * ## Key Features
+ *
+ * ### 1. Context-Aware State Transitions
+ * The state machine maintains conversational context across multiple utterances, tracking:
+ * - Speaker identities (seller vs. customer)
+ * - Extracted transaction data (amount, product, quantity)
+ * - Confidence scores for each transition
+ * - Full state history for debugging and review
+ *
+ * ### 2. Automatic Timeout Management
+ * Transactions that remain incomplete beyond the timeout threshold (default: 2 minutes)
+ * are automatically reset to IDLE to prevent stale context from affecting new transactions.
+ *
+ * ### 3. Multi-Speaker Coordination
+ * The state machine expects alternating input from sellers and customers, using speaker
+ * identification to validate state transitions. For example:
+ * - INQUIRY transitions require customer input
+ * - PRICE_QUOTE transitions require seller input
+ *
+ * ### 4. Confidence-Based Processing
+ * Each transition is assigned a confidence score based on:
+ * - Pattern matching results from TransactionPatternMatcher
+ * - Contextual appropriateness of the transition
+ * - Completion of expected conversation flow
+ *
+ * ## Processing Pipeline
+ *
+ * ```
+ * Utterance Input
+ *       │
+ *       ▼
+ * [Timeout Check] ──────────► Reset if timed out
+ *       │
+ *       ▼
+ * [Pattern Matching] ────────► Extract data (amount, product, etc.)
+ *       │
+ *       ▼
+ * [State Determination] ─────► Calculate next state
+ *       │
+ *       ▼
+ * [Confidence Calculation] ──► Validate transition
+ *       │
+ *       ▼
+ * [Context Update] ──────────► Store extracted data
+ *       │
+ *       ▼
+ * [Completion Check] ────────► Emit transaction if complete
+ * ```
+ *
+ * ## Usage Example
+ *
+ * ```kotlin
+ * // Inject the state machine
+ * @Inject lateinit var stateMachine: TransactionStateMachine
+ *
+ * // Process customer inquiry
+ * val transition1 = stateMachine.processUtterance(
+ *     text = "How much for one kilo of tilapia?",
+ *     speakerId = "customer_123",
+ *     isSeller = false
+ * )
+ * // State: IDLE → INQUIRY
+ *
+ * // Process seller response
+ * val transition2 = stateMachine.processUtterance(
+ *     text = "Twenty-five cedis per kilo",
+ *     speakerId = "seller_456",
+ *     isSeller = true
+ * )
+ * // State: INQUIRY → PRICE_QUOTE
+ * // Extracted: amount=25.0, product="tilapia", quantity=1, unit="kilo"
+ *
+ * // Listen for completed transactions
+ * stateMachine.transactionCompleted.collect { transaction ->
+ *     if (transaction != null) {
+ *         // Save or process the completed transaction
+ *     }
+ * }
+ * ```
+ *
+ * ## Thread Safety
+ * This class is marked as @Singleton and uses coroutine flows for state management,
+ * making it safe for concurrent access from multiple coroutines.
+ *
+ * ## Related Components
+ * - [TransactionPatternMatcher]: Performs pattern matching and data extraction
+ * - [TransactionProcessor]: High-level coordinator that uses this state machine
+ * - [VoiceAgentService]: Provides utterances to process
+ *
+ * @property patternMatcher The pattern matcher for detecting transaction patterns in utterances
+ * @see TransactionState
+ * @see TransactionContext
+ * @see StateTransition
  */
 @Singleton
 class TransactionStateMachine @Inject constructor(

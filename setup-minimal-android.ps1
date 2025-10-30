@@ -38,8 +38,7 @@ sdk.dir=$($androidHome -replace '\\', '\\')
 GOOGLE_CLOUD_API_KEY=your_google_cloud_api_key_here
 FIREBASE_PROJECT_ID=your_firebase_project_id
 FIREBASE_API_KEY=your_firebase_api_key
-ENCRYPTION_KEY=your_32_character_encryption_key_here
-DB_ENCRYPTION_KEY=your_database_encryption_key_here
+# Database encryption keys are generated automatically via the Android Keystore
 
 # Development settings
 DEBUG_MODE=true

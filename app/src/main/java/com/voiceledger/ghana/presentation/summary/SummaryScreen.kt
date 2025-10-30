@@ -27,7 +27,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.voiceledger.ghana.data.local.entity.DailySummary
 import com.voiceledger.ghana.domain.service.*
 import com.voiceledger.ghana.presentation.theme.VoiceLedgerTheme
-import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**
@@ -141,10 +142,8 @@ fun SummaryScreen(
                             when (type) {
                                 SummaryType.DAILY -> viewModel.loadTodaysSummary()
                                 SummaryType.WEEKLY -> {
-                                    val today = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                                    val calendar = Calendar.getInstance()
-                                    calendar.add(Calendar.DAY_OF_YEAR, -6)
-                                    val weekStart = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(calendar.time)
+                                    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                                    val weekStart = LocalDate.now().minusDays(6).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
                                     viewModel.loadWeeklySummary(weekStart, today)
                                 }
                                 SummaryType.MONTHLY -> {

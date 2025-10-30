@@ -5,9 +5,8 @@ import com.voiceledger.ghana.data.local.entity.Transaction
 import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.domain.repository.SpeakerProfileRepository
 import com.voiceledger.ghana.domain.repository.DailySummaryRepository
+import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.first
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,13 +21,11 @@ class DailySummaryGenerator @Inject constructor(
     private val dailySummaryRepository: DailySummaryRepository
 ) {
     
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    
     /**
      * Generate daily summary for today
      */
     suspend fun generateTodaysSummary(): DailySummary {
-        val today = dateFormat.format(Date())
+        val today = DateUtils.getTodayDateString()
         return generateDailySummary(today)
     }
     

@@ -40,6 +40,10 @@ object NetworkUtils {
         return manager
     }
     
+    // Test mode flag to override network availability for testing
+    private var testMode = false
+    private var testNetworkAvailable = false
+    
     /**
      * Initialize network monitoring
      */
@@ -57,8 +61,31 @@ object NetworkUtils {
     }
     
     /**
+     * Set network availability for testing purposes
+     * Only works when test mode is enabled
+     */
+    fun setNetworkAvailable(available: Boolean) {
+        testMode = true
+        testNetworkAvailable = available
+    }
+    
+    /**
+     * Reset test mode
+     */
+    fun resetTestMode() {
+        testMode = false
+        testNetworkAvailable = false
+    }
+    
+    /**
      * Check if network is available
      */
+    fun isNetworkAvailable(context: Context): Boolean {
+        if (testMode) {
+            return testNetworkAvailable
+        }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
     fun isNetworkAvailable(context: Context? = null): Boolean {
         val ctx = context ?: appContext ?: return false
         val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
@@ -75,10 +102,15 @@ object NetworkUtils {
             networkInfo?.isConnected == true
         }
     }
-    
+
     /**
      * Check if network is metered (mobile data)
      */
+    fun isNetworkMetered(context: Context): Boolean {
+        if (testMode) {
+            return false
+        }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     fun isNetworkMetered(context: Context? = null): Boolean {
         val ctx = context ?: appContext ?: return false
         val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
@@ -86,10 +118,20 @@ object NetworkUtils {
         val connectivityManager = obtainConnectivityManager(context) ?: return false
         return connectivityManager.isActiveNetworkMetered
     }
-    
+
     /**
      * Get network type
      */
+    fun getNetworkType(context: Context): NetworkType {
+        if (testMode) {
+            return if (testNetworkAvailable) NetworkType.WIFI else NetworkType.NONE
+        }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return NetworkType.NONE
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkType.NONE
+
     fun getNetworkType(context: Context? = null): NetworkType {
         val ctx = context ?: appContext ?: return NetworkType.NONE
         val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return NetworkType.NONE
@@ -107,6 +149,8 @@ object NetworkUtils {
             }
         } else {
             @Suppress("DEPRECATION")
+            val networkInfo = connectivityManager.activeNetworkInfo ?: return NetworkType.NONE
+
             val networkInfo = cm.activeNetworkInfo ?: return NetworkType.NONE
             
             return when (networkInfo.type) {
@@ -117,12 +161,22 @@ object NetworkUtils {
             }
         }
     }
-    
+
     /**
      * Estimate network quality based on connection type and capabilities
      */
     fun estimateNetworkQuality(context: Context? = null): NetworkQuality {
         if (!isNetworkAvailable(context)) return NetworkQuality.NONE
+
+        if (testMode) {
+            return if (testNetworkAvailable) NetworkQuality.GOOD else NetworkQuality.NONE
+        }
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = connectivityManager.activeNetwork ?: return NetworkQuality.NONE
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkQuality.NONE
+
         
         val ctx = context ?: appContext ?: return NetworkQuality.NONE
         val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return NetworkQuality.NONE

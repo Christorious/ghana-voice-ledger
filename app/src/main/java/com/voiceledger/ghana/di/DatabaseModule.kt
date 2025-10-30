@@ -100,6 +100,11 @@ object DatabaseModule {
         return database.audioMetadataDao()
     }
     
+    @Provides
+    fun provideOfflineOperationDao(database: VoiceLedgerDatabase): OfflineOperationDao {
+        return database.offlineOperationDao()
+    }
+    
     // Repository Providers
     
     @Provides

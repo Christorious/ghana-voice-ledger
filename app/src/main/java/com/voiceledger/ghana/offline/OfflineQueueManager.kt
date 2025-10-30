@@ -3,6 +3,17 @@ package com.voiceledger.ghana.offline
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
+import com.voiceledger.ghana.data.local.entity.OfflineOperationEntity
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import java.util.concurrent.ConcurrentHashMap
 import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
 import com.voiceledger.ghana.data.local.entity.OfflineOperation
 import com.voiceledger.ghana.data.repository.TransactionRepository
@@ -19,6 +30,8 @@ import java.util.concurrent.TimeUnit
  * Handles durable storage and retry logic for offline operations
  */
 class OfflineQueueManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val offlineOperationDao: com.voiceledger.ghana.data.local.dao.OfflineOperationDao
     private val offlineOperationDao: OfflineOperationDao,
     private val transactionRepository: TransactionRepository,
     private val dailySummaryRepository: DailySummaryRepository,
@@ -201,6 +214,16 @@ class OfflineQueueManager @Inject constructor(
     }
     
     /**
+     * Get all pending items as Flow
+     */
+    fun getPendingItems(): Flow<List<OfflineOperation>> {
+        return kotlinx.coroutines.flow.flow {
+            emit(pendingOperations.values.toList())
+        }
+    }
+    
+    /**
+     * Update queue state
      * Process a summary operation
      */
     private suspend fun processSummaryOperation(operation: OfflineOperation): Boolean {
@@ -220,6 +243,14 @@ class OfflineQueueManager @Inject constructor(
     /**
      * Sync transaction to remote server
      */
+    private fun loadPersistedOperations() {
+        scope.launch {
+            val persisted = offlineOperationDao.getAllOperationsSync()
+            persisted.forEach { entity ->
+                pendingOperations[entity.id] = entity.toDomain()
+            }
+            updateQueueState()
+        }
     private suspend fun syncTransactionToServer(transactionData: String): Boolean {
         // Implementation would depend on your API client
         // For now, return true to simulate success
@@ -229,6 +260,8 @@ class OfflineQueueManager @Inject constructor(
     /**
      * Update transaction on remote server
      */
+    private suspend fun persistOperation(operation: OfflineOperation) {
+        offlineOperationDao.upsertOperation(operation.toEntity())
     private suspend fun updateTransactionOnServer(transactionId: String, transactionData: String): Boolean {
         // Implementation would depend on your API client
         // For now, return true to simulate success
@@ -238,6 +271,8 @@ class OfflineQueueManager @Inject constructor(
     /**
      * Sync summary to remote server
      */
+    private suspend fun removePersistedOperation(operationId: String) {
+        offlineOperationDao.deleteOperation(operationId)
     private suspend fun syncSummaryToServer(summaryData: String): Boolean {
         // Implementation would depend on your API client
         // For now, return true to simulate success
@@ -287,6 +322,77 @@ class OfflineQueueManager @Inject constructor(
             generateOperationId()
         }
     }
+}
+
+/**
+ * Offline operation data class
+ */
+@Serializable
+data class OfflineOperation(
+    val id: String,
+    val type: OperationType,
+    val data: String, // JSON serialized data
+    val timestamp: Long,
+    val priority: OperationPriority = OperationPriority.NORMAL,
+    val status: OperationStatus = OperationStatus.PENDING,
+    val errorMessage: String? = null,
+    val lastAttempt: Long? = null,
+    val retryCount: Int = 0
+)
+
+/**
+ * Operation types
+ */
+@Serializable
+enum class OperationType {
+    TRANSACTION_SYNC,
+    SUMMARY_SYNC,
+    SPEAKER_PROFILE_SYNC,
+    BACKUP_DATA,
+    DELETE_DATA
+}
+
+/**
+ * Operation priority levels
+ */
+@Serializable
+enum class OperationPriority {
+    LOW,
+    NORMAL,
+    HIGH,
+    CRITICAL
+}
+
+/**
+ * Operation status
+ */
+@Serializable
+enum class OperationStatus {
+    PENDING,
+    PROCESSING,
+    COMPLETED,
+    FAILED
+}
+
+/**
+ * Offline queue state
+ */
+data class OfflineQueueState(
+    val totalOperations: Int = 0,
+    val pendingOperations: Int = 0,
+    val failedOperations: Int = 0,
+    val processingOperations: Int = 0,
+    val lastSyncAttempt: Long = 0L,
+    val isNetworkAvailable: Boolean = false
+)
+
+/**
+ * Worker for periodic offline sync
+ */
+class OfflineSyncWorker(
+    context: Context,
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
     
     /**
      * Extract summary ID from JSON data
@@ -337,6 +443,39 @@ class OfflineSyncWorker @AssistedInject constructor(
 }
 
 /**
+ * Extension functions for converting between domain and entity models
+ */
+fun OfflineOperation.toEntity(): OfflineOperationEntity {
+    return OfflineOperationEntity(
+        id = id,
+        type = type.name,
+        data = data,
+        timestamp = timestamp,
+        priority = priority.name,
+        status = status.name,
+        errorMessage = errorMessage,
+        lastAttempt = lastAttempt,
+        retryCount = retryCount
+    )
+}
+
+fun OfflineOperationEntity.toDomain(): OfflineOperation {
+    val typeEnum = runCatching { OperationType.valueOf(type) }.getOrElse { OperationType.TRANSACTION_SYNC }
+    val priorityEnum = runCatching { OperationPriority.valueOf(priority) }.getOrElse { OperationPriority.NORMAL }
+    val statusEnum = runCatching { OperationStatus.valueOf(status) }.getOrElse { OperationStatus.PENDING }
+
+    return OfflineOperation(
+        id = id,
+        type = typeEnum,
+        data = data,
+        timestamp = timestamp,
+        priority = priorityEnum,
+        status = statusEnum,
+        errorMessage = errorMessage,
+        lastAttempt = lastAttempt,
+        retryCount = retryCount
+    )
+}
  * Result of sync operation
  */
 data class SyncResult(

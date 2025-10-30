@@ -19,6 +19,7 @@ import com.voiceledger.ghana.data.local.entity.*
         SpeakerProfile::class,
         ProductVocabulary::class,
         AudioMetadata::class,
+        OfflineOperationEntity::class
         OfflineOperation::class
     ],
     version = 2,

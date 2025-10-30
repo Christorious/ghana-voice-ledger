@@ -11,6 +11,30 @@ object DatabaseMigrations {
     
     /**
      * Migration from version 1 to 2
+     * Adds offline_operations table for offline-first architecture
+     */
+    val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(database: SupportSQLiteDatabase) {
+            // Create offline_operations table for queuing operations when offline
+            database.execSQL("""
+                CREATE TABLE IF NOT EXISTS offline_operations (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    type TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    timestamp INTEGER NOT NULL,
+                    priority TEXT NOT NULL DEFAULT 'NORMAL',
+                    status TEXT NOT NULL DEFAULT 'PENDING',
+                    errorMessage TEXT,
+                    lastAttempt INTEGER,
+                    retryCount INTEGER NOT NULL DEFAULT 0
+                )
+            """)
+            
+            // Create indexes for efficient querying
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_timestamp ON offline_operations(timestamp)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_type ON offline_operations(type)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_status ON offline_operations(status)")
+            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_priority ON offline_operations(priority)")
      * Adds performance indices for high-frequency query columns
      */
     val MIGRATION_1_2 = object : Migration(1, 2) {

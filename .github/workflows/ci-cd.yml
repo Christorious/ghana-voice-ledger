@@ -41,8 +41,8 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
-    - name: Run unit tests
-      run: ./gradlew testDebugUnitTest --stacktrace
+    - name: Run unit tests with coverage
+      run: ./gradlew testDebugUnitTest jacocoTestReport jacocoTestCoverageVerification --stacktrace
       
     - name: Run lint checks
       run: ./gradlew lintDebug --stacktrace
@@ -63,6 +63,15 @@ jobs:
         path: |
           app/build/reports/tests/
           app/build/reports/lint-results-*
+          
+    - name: Upload coverage reports
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: |
+          app/build/reports/jacoco/
+          app/build/jacoco/
           
   instrumented-test:
     name: Run Instrumented Tests

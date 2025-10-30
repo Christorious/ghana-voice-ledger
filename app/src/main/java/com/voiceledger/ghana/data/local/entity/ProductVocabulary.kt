@@ -13,7 +13,10 @@ import androidx.room.Index
     indices = [
         Index(value = ["canonicalName"]),
         Index(value = ["category"]),
-        Index(value = ["isActive"])
+        Index(value = ["isActive"]),
+        Index(value = ["frequency"]),
+        Index(value = ["isLearned"]),
+        Index(value = ["updatedAt"])
     ]
 )
 data class ProductVocabulary(

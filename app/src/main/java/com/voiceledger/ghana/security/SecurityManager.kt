@@ -52,6 +52,8 @@ class SecurityManager @Inject constructor(
     companion object {
         private const val DATABASE_KEY_ALIAS = "voice_ledger_db_key"
         private const val API_KEY_ALIAS = "voice_ledger_api_key"
+        private const val DATABASE_PASSPHRASE_PREF_KEY = "database_passphrase"
+        private const val DATABASE_PASSPHRASE_LENGTH_BYTES = 32
         private const val ENCRYPTION_TRANSFORMATION = "AES/GCM/NoPadding"
         private const val GCM_IV_LENGTH = 12
         private const val GCM_TAG_LENGTH = 16
@@ -61,13 +63,8 @@ class SecurityManager @Inject constructor(
      * Initialize security components
      */
     suspend fun initialize() {
+        ensureDatabaseKey()
         withContext(Dispatchers.IO) {
-            // Generate database encryption key if it doesn't exist
-            if (!keyStore.containsAlias(DATABASE_KEY_ALIAS)) {
-                generateDatabaseKey()
-            }
-            
-            // Initialize API key storage
             initializeApiKeyStorage()
         }
     }
@@ -92,6 +89,45 @@ class SecurityManager @Inject constructor(
         keyGenerator.generateKey()
     }
     
+    private fun generateDatabasePassphrase(): String {
+        val randomBytes = ByteArray(DATABASE_PASSPHRASE_LENGTH_BYTES)
+        SecureRandom().nextBytes(randomBytes)
+        val passphrase = randomBytes.joinToString("") { "%02x".format(it) }
+        randomBytes.fill(0)
+        return passphrase
+    }
+    
+    suspend fun ensureDatabaseKey() {
+        withContext(Dispatchers.IO) {
+            val hasAlias = try {
+                keyStore.containsAlias(DATABASE_KEY_ALIAS)
+            } catch (e: Exception) {
+                false
+            }
+            if (!hasAlias) {
+                generateDatabaseKey()
+            } else if (getDatabaseKey() == null) {
+                try {
+                    keyStore.deleteEntry(DATABASE_KEY_ALIAS)
+                } catch (_: Exception) {
+                    // Ignore deletion failures; we'll attempt to regenerate the key regardless
+                }
+                generateDatabaseKey()
+            }
+            
+            val existingPassphrase = encryptedPreferences.getString(DATABASE_PASSPHRASE_PREF_KEY, null)
+            if (existingPassphrase.isNullOrEmpty()) {
+                val passphrase = generateDatabasePassphrase()
+                val success = encryptedPreferences.edit()
+                    .putString(DATABASE_PASSPHRASE_PREF_KEY, passphrase)
+                    .commit()
+                if (!success) {
+                    throw SecurityException("Failed to persist database passphrase")
+                }
+            }
+        }
+    }
+    
     /**
      * Get database encryption key
      */
@@ -107,14 +143,11 @@ class SecurityManager @Inject constructor(
      * Get database passphrase for SQLCipher
      */
     fun getDatabasePassphrase(): String {
-        val key = getDatabaseKey()
-        return if (key != null) {
-            // Convert key to hex string for SQLCipher
-            key.encoded.joinToString("") { "%02x".format(it) }
-        } else {
-            // Fallback passphrase (should not happen in production)
-            "default_fallback_key_${System.currentTimeMillis()}"
+        val passphrase = encryptedPreferences.getString(DATABASE_PASSPHRASE_PREF_KEY, null)
+        if (passphrase.isNullOrEmpty()) {
+            throw SecurityException("Database passphrase not available. Call ensureDatabaseKey() before accessing the database.")
         }
+        return passphrase
     }
     
     /**
@@ -314,6 +347,58 @@ class SecurityManager @Inject constructor(
             .replace("&", "&amp;")
             .replace(";", "&#x3B;")
             .trim()
+    }
+    
+    /**
+     * Sanitize input for display in UI components
+     * Removes HTML tags and escapes special characters for safe display
+     */
+    fun sanitizeForDisplay(input: String): String {
+        return input
+            .replace(Regex("<[^>]*>"), "") // Remove HTML tags
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+            .replace("'", "&#x27;")
+            .replace("&", "&amp;")
+            .replace("\n", " ")
+            .replace("\r", " ")
+            .replace("\t", " ")
+            .trim()
+            .replace(Regex("\\s+"), " ") // Normalize whitespace
+    }
+    
+    /**
+     * Sanitize input for use in file names
+     * Removes dangerous characters and replaces spaces with underscores
+     */
+    fun sanitizeForFileName(input: String): String {
+        return input
+            .replace(Regex("[<>:\"/\\\\|?*]"), "") // Remove invalid filename characters
+            .replace(" ", "_")
+            .replace("&", "_")
+            .replace(";", "_")
+            .replace("'", "_")
+            .replace("\"", "_")
+            .replace(Regex("_+"), "_") // Replace multiple underscores with single
+            .replace(Regex("^_|_$"), "") // Remove leading/trailing underscores
+            .trim()
+            .take(255) // Limit filename length
+    }
+    
+    /**
+     * Sanitize input for use in database queries
+     * Removes SQL injection risk characters and limits length
+     */
+    fun sanitizeForQuery(input: String): String {
+        return input
+            .replace("'", "''") // Escape single quotes for SQL
+            .replace("\"", "\"\"") // Escape double quotes
+            .replace("\\", "\\\\") // Escape backslashes
+            .replace("%", "\\%") // Escape wildcard characters
+            .replace("_", "\\_")
+            .trim()
+            .take(1000) // Reasonable limit for query parameters
     }
     
     /**

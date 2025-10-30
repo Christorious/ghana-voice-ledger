@@ -6,6 +6,7 @@ import com.voiceledger.ghana.ml.transaction.TransactionProcessor
 import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.domain.repository.ProductVocabularyRepository
 import com.voiceledger.ghana.domain.repository.AudioMetadataRepository
+import com.voiceledger.ghana.security.SecurityManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,9 +36,10 @@ object TransactionModule {
     @Provides
     @Singleton
     fun provideTransactionStateMachine(
-        patternMatcher: TransactionPatternMatcher
+        patternMatcher: TransactionPatternMatcher,
+        securityManager: SecurityManager
     ): TransactionStateMachine {
-        return TransactionStateMachine(patternMatcher)
+        return TransactionStateMachine(patternMatcher, securityManager)
     }
     
     /**

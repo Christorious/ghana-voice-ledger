@@ -2,6 +2,7 @@ package com.voiceledger.ghana.ml.transaction
 
 import android.util.Log
 import com.voiceledger.ghana.data.local.entity.Transaction
+import com.voiceledger.ghana.security.SecurityManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -167,7 +168,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class TransactionStateMachine @Inject constructor(
-    private val patternMatcher: TransactionPatternMatcher
+    private val patternMatcher: TransactionPatternMatcher,
+    private val securityManager: SecurityManager
 ) {
     
     companion object {
@@ -498,18 +500,30 @@ class TransactionStateMachine @Inject constructor(
         val transactionId = UUID.randomUUID().toString()
         val currentTime = System.currentTimeMillis()
         
+        val rawTranscriptSnippet = context.conversationSnippets.takeLast(3).joinToString(" | ")
+        val sanitizedTranscript = securityManager.sanitizeForDisplay(rawTranscriptSnippet, maxLength = 500)
+        
+        val sanitizedProduct = securityManager.sanitizeForQuery(
+            context.extractedProduct ?: "Unknown",
+            maxLength = 100
+        )
+        
+        val sanitizedCustomerId = context.customerId?.let { 
+            securityManager.sanitizeForQuery(it, maxLength = 50)
+        }
+        
         return Transaction(
             id = transactionId,
             timestamp = context.startTime,
             date = "", // Will be set by repository
             amount = context.extractedAmount ?: 0.0,
             currency = "GHS",
-            product = context.extractedProduct ?: "Unknown",
+            product = sanitizedProduct,
             quantity = context.extractedQuantity,
             unit = context.extractedUnit,
-            customerId = context.customerId,
+            customerId = sanitizedCustomerId,
             confidence = context.confidence,
-            transcriptSnippet = context.conversationSnippets.takeLast(3).joinToString(" | "),
+            transcriptSnippet = sanitizedTranscript,
             sellerConfidence = 0.85f, // Would come from speaker identification
             customerConfidence = 0.75f, // Would come from speaker identification
             needsReview = context.confidence < MIN_CONFIDENCE_THRESHOLD,

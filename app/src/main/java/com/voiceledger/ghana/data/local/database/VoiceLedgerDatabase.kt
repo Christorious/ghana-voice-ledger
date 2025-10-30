@@ -29,9 +29,11 @@ import timber.log.Timber
         DailySummary::class,
         SpeakerProfile::class,
         ProductVocabulary::class,
-        AudioMetadata::class
+        AudioMetadata::class,
+        OfflineOperationEntity::class
+        OfflineOperation::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class VoiceLedgerDatabase : RoomDatabase() {
@@ -41,6 +43,7 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
     abstract fun speakerProfileDao(): SpeakerProfileDao
     abstract fun productVocabularyDao(): ProductVocabularyDao
     abstract fun audioMetadataDao(): AudioMetadataDao
+    abstract fun offlineOperationDao(): OfflineOperationDao
     
     companion object {
         const val DATABASE_NAME = "voice_ledger_database"
@@ -57,6 +60,8 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
                 )
                     .addMigrations(MIGRATION_1_2) // Future migrations
                     .addCallback(createSeedDataCallback(context.applicationContext))
+                    .addMigrations(*DatabaseMigrations.getAllMigrations())
+                    .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance
                 instance
@@ -76,18 +81,40 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
                 .openHelperFactory(net.sqlcipher.room.SupportFactory(passphrase.toByteArray()))
                 .addMigrations(MIGRATION_1_2)
                 .addCallback(createSeedDataCallback(context.applicationContext))
+                .addMigrations(*DatabaseMigrations.getAllMigrations())
+                .addCallback(DatabaseCallback())
                 .build()
         }
         
         /**
-         * Future migration from version 1 to 2
-         * Placeholder for when we need to update the schema
+         * Migration from version 1 to 2
+         * Adds offline operations table for durable queue
          */
         private val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(database: SupportSQLiteDatabase) {
-                // Future schema changes will go here
-                // Example:
-                // database.execSQL("ALTER TABLE transactions ADD COLUMN new_column TEXT")
+                // Create offline operations table
+                database.execSQL("""
+                    CREATE TABLE IF NOT EXISTS offline_operations (
+                        id TEXT NOT NULL PRIMARY KEY,
+                        operationType TEXT NOT NULL,
+                        entityType TEXT NOT NULL,
+                        entityId TEXT NOT NULL,
+                        data TEXT NOT NULL,
+                        INTEGER NOT NULL,
+                        synced INTEGER NOT NULL DEFAULT 0,
+                        retryCount INTEGER NOT NULL DEFAULT 0,
+                        maxRetries INTEGER NOT NULL DEFAULT 3,
+                        lastError TEXT,
+                        priority INTEGER NOT NULL DEFAULT 3,
+                        processing INTEGER NOT NULL DEFAULT 0
+                    )
+                """)
+                
+                // Create indices for offline operations
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_operationType ON offline_operations(operationType)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_timestamp ON offline_operations(timestamp)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_synced ON offline_operations(synced)")
+                database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_retryCount ON offline_operations(retryCount)")
             }
         }
         

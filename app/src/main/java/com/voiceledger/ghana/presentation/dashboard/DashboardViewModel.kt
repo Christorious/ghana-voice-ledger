@@ -7,6 +7,7 @@ import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.domain.repository.DailySummaryRepository
 import com.voiceledger.ghana.domain.repository.SpeakerProfileRepository
 import com.voiceledger.ghana.service.VoiceAgentServiceManager
+import com.voiceledger.ghana.util.DateUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -204,8 +205,7 @@ class DashboardViewModel @Inject constructor(
     }
     
     fun getCurrentDate(): String {
-        val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        return dateFormat.format(Date())
+        return DateUtils.getTodayDateString()
     }
     
     fun getBatteryStatusColor(): androidx.compose.ui.graphics.Color {

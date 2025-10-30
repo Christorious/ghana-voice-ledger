@@ -2,6 +2,7 @@ package com.voiceledger.ghana.data.repository
 
 import com.voiceledger.ghana.data.local.dao.TransactionDao
 import com.voiceledger.ghana.data.local.entity.Transaction
+import com.voiceledger.ghana.domain.model.TransactionAnalytics
 import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.security.SecurityManager
 import com.voiceledger.ghana.util.DateUtils
@@ -31,6 +32,68 @@ class TransactionRepositoryImpl @Inject constructor(
     override fun getTodaysTransactions(): Flow<List<Transaction>> {
         val today = DateUtils.getTodayDateString()
         return transactionDao.getTransactionsByDate(today)
+    }
+    
+    override fun getTodaysAnalytics(): Flow<TransactionAnalytics> {
+        return getTodaysTransactions().map { transactions ->
+            computeAnalytics(transactions)
+        }
+    }
+    
+    private fun computeAnalytics(transactions: List<Transaction>): TransactionAnalytics {
+        if (transactions.isEmpty()) {
+            return TransactionAnalytics(
+                totalSales = 0.0,
+                transactionCount = 0,
+                topProduct = null,
+                peakHour = null,
+                uniqueCustomers = 0,
+                averageTransactionValue = 0.0
+            )
+        }
+        
+        val totalSales = transactions.sumOf { it.amount }
+        val transactionCount = transactions.size
+        
+        val topProduct = transactions
+            .groupingBy { it.product }
+            .eachCount()
+            .maxByOrNull { it.value }
+            ?.key
+        
+        val peakHour = transactions
+            .groupingBy { extractHourOfDay(it.timestamp) }
+            .eachCount()
+            .maxByOrNull { it.value }
+            ?.key
+            ?.let { hour -> formatHourRange(hour) }
+        
+        val uniqueCustomers = transactions
+            .mapNotNull { it.customerId }
+            .toSet()
+            .size
+        
+        val averageTransactionValue = totalSales / transactionCount
+        
+        return TransactionAnalytics(
+            totalSales = totalSales,
+            transactionCount = transactionCount,
+            topProduct = topProduct,
+            peakHour = peakHour,
+            uniqueCustomers = uniqueCustomers,
+            averageTransactionValue = averageTransactionValue
+        )
+    }
+    
+    private fun extractHourOfDay(timestamp: Long): Int {
+        val calendar = Calendar.getInstance()
+        calendar.timeInMillis = timestamp
+        return calendar.get(Calendar.HOUR_OF_DAY)
+    }
+    
+    private fun formatHourRange(hour: Int): String {
+        val nextHour = (hour + 1) % 24
+        return String.format(Locale.getDefault(), "%02d:00-%02d:00", hour, nextHour)
     }
     
     override fun getTransactionsByCustomer(customerId: String): Flow<List<Transaction>> {
@@ -189,7 +252,7 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getTransactionStats(startDate: String, endDate: String): TransactionStats {
-        val transactions = transactionDao.getTransactionsByDateSync(startDate) // Simplified for demo
+        val transactions = transactionDao.getTransactionsByDateSync(startDate)
         
         return TransactionStats(
             totalTransactions = transactions.size,

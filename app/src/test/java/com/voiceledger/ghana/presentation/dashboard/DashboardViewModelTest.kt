@@ -16,6 +16,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.voiceledger.ghana.domain.model.TransactionAnalytics
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.setMain
@@ -84,11 +85,17 @@ class DashboardViewModelTest {
             createMockTransaction("2", "Mackerel", 12.0)
         )
         
+        val mockAnalytics = TransactionAnalytics(
+            totalSales = 27.0,
+            transactionCount = 2,
+            topProduct = "Tilapia",
+            peakHour = "10:00-11:00",
+            uniqueCustomers = 2,
+            averageTransactionValue = 13.5
+        )
+        
         `when`(transactionRepository.getTodaysTransactions()).thenReturn(flowOf(mockTransactions))
-        `when`(transactionRepository.getTodaysTotalSales()).thenReturn(27.0)
-        `when`(transactionRepository.getTodaysTopProduct()).thenReturn("Tilapia")
-        `when`(transactionRepository.getTodaysPeakHour()).thenReturn("10:00-11:00")
-        `when`(transactionRepository.getTodaysUniqueCustomerCount()).thenReturn(2)
+        `when`(transactionRepository.getTodaysAnalytics()).thenReturn(flowOf(mockAnalytics))
         
         // When - ViewModel loads data
         viewModel.refreshData()
@@ -255,18 +262,90 @@ class DashboardViewModelTest {
         assertNull("Error should be cleared", viewModel.uiState.value.error)
     }
     
+    @Test
+    fun `dashboard should use analytics flow without suspend calls`() = runTest {
+        // Given
+        val mockTransactions = listOf(
+            createMockTransaction("1", "Tilapia", 15.0),
+            createMockTransaction("2", "Mackerel", 12.0),
+            createMockTransaction("3", "Tilapia", 18.0)
+        )
+        
+        val mockAnalytics = TransactionAnalytics(
+            totalSales = 45.0,
+            transactionCount = 3,
+            topProduct = "Tilapia",
+            peakHour = "14:00-15:00",
+            uniqueCustomers = 1,
+            averageTransactionValue = 15.0
+        )
+        
+        `when`(transactionRepository.getTodaysTransactions()).thenReturn(flowOf(mockTransactions))
+        `when`(transactionRepository.getTodaysAnalytics()).thenReturn(flowOf(mockAnalytics))
+        
+        // When
+        viewModel.refreshData()
+        
+        // Then - Verify analytics data is used
+        val data = viewModel.uiState.value.data!!
+        assertEquals(45.0, data.totalSales, 0.01)
+        assertEquals(3, data.transactionCount)
+        assertEquals("Tilapia", data.topProduct)
+        assertEquals("14:00-15:00", data.peakHour)
+        assertEquals(1, data.uniqueCustomers)
+        
+        // Verify no direct suspend method calls were made for analytics
+        verify(transactionRepository, never()).getTodaysTotalSales()
+        verify(transactionRepository, never()).getTodaysTopProduct()
+        verify(transactionRepository, never()).getTodaysPeakHour()
+        verify(transactionRepository, never()).getTodaysUniqueCustomerCount()
+    }
+    
+    @Test
+    fun `analytics flow should handle empty transactions`() = runTest {
+        // Given
+        val emptyAnalytics = TransactionAnalytics(
+            totalSales = 0.0,
+            transactionCount = 0,
+            topProduct = null,
+            peakHour = null,
+            uniqueCustomers = 0,
+            averageTransactionValue = 0.0
+        )
+        
+        `when`(transactionRepository.getTodaysTransactions()).thenReturn(flowOf(emptyList()))
+        `when`(transactionRepository.getTodaysAnalytics()).thenReturn(flowOf(emptyAnalytics))
+        
+        // When
+        viewModel.refreshData()
+        
+        // Then
+        val data = viewModel.uiState.value.data!!
+        assertEquals(0.0, data.totalSales, 0.01)
+        assertEquals(0, data.transactionCount)
+        assertEquals("No sales yet", data.topProduct)
+        assertEquals("N/A", data.peakHour)
+        assertEquals(0, data.uniqueCustomers)
+    }
+    
     private fun setupDefaultMocks() {
         // Default empty flows
         `when`(transactionRepository.getTodaysTransactions()).thenReturn(flowOf(emptyList()))
+        `when`(transactionRepository.getTodaysAnalytics()).thenReturn(
+            flowOf(
+                TransactionAnalytics(
+                    totalSales = 0.0,
+                    transactionCount = 0,
+                    topProduct = null,
+                    peakHour = null,
+                    uniqueCustomers = 0,
+                    averageTransactionValue = 0.0
+                )
+            )
+        )
         `when`(dailySummaryRepository.getTodaysSummaryFlow()).thenReturn(flowOf(null))
         `when`(speakerProfileRepository.getRegularCustomers()).thenReturn(flowOf(emptyList()))
         `when`(voiceAgentServiceManager.serviceState).thenReturn(flowOf(ServiceState()))
-        
-        // Default values
-        `when`(transactionRepository.getTodaysTotalSales()).thenReturn(0.0)
-        `when`(transactionRepository.getTodaysTopProduct()).thenReturn(null)
-        `when`(transactionRepository.getTodaysPeakHour()).thenReturn(null)
-        `when`(transactionRepository.getTodaysUniqueCustomerCount()).thenReturn(0)
     }
     
     private fun createMockTransaction(id: String, product: String, amount: Double): Transaction {

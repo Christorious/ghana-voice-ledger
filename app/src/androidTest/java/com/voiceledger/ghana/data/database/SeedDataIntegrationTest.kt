@@ -39,7 +39,7 @@ class SeedDataIntegrationTest {
         val productDao = database!!.productVocabularyDao()
         val products = productDao.getActiveProductCount()
 
-        assertEquals("Should have 11 seed products", 11, products)
+        assertEquals("Should have 13 seed products", 13, products)
     }
 
     @Test

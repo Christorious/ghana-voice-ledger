@@ -20,6 +20,7 @@ interface TransactionRepository {
     fun getTransactionsNeedingReview(): Flow<List<Transaction>>
     fun getTransactionsByTimeRange(startTime: Long, endTime: Long): Flow<List<Transaction>>
     fun getTransactionsByAmountRange(minAmount: Double, maxAmount: Double): Flow<List<Transaction>>
+    fun getTransactionsByDateRange(startTime: Long, endTime: Long): Flow<List<Transaction>>
     fun searchTransactions(query: String): Flow<List<Transaction>>
     
     // Analytics flow

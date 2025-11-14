@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import com.voiceledger.ghana.data.local.entity.Transaction
+import com.voiceledger.ghana.security.SecurityManager
 import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -13,6 +14,8 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mock
+import org.mockito.MockitoAnnotations
 import java.util.*
 
 /**
@@ -24,15 +27,20 @@ class TransactionRepositoryImplTest {
     private lateinit var database: VoiceLedgerDatabase
     private lateinit var repository: TransactionRepositoryImpl
     
+    @Mock
+    private lateinit var securityManager: SecurityManager
+    
     @Before
     fun setUp() {
+        MockitoAnnotations.openMocks(this)
+        
         // Create in-memory database for testing
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
             VoiceLedgerDatabase::class.java
         ).allowMainThreadQueries().build()
         
-        repository = TransactionRepositoryImpl(database.transactionDao())
+        repository = TransactionRepositoryImpl(database.transactionDao(), securityManager)
     }
     
     @After

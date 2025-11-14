@@ -8,6 +8,10 @@ import com.voiceledger.ghana.security.SecurityManager
 import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
+import timber.log.Timber
+import java.util.Calendar
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -37,11 +41,14 @@ class TransactionRepositoryImpl @Inject constructor(
     override fun getTodaysAnalytics(): Flow<TransactionAnalytics> {
         return getTodaysTransactions().map { transactions ->
             computeAnalytics(transactions)
-        }
+        }.distinctUntilChanged()
     }
     
     private fun computeAnalytics(transactions: List<Transaction>): TransactionAnalytics {
+        val startTime = System.currentTimeMillis()
+        
         if (transactions.isEmpty()) {
+            Timber.d("Computing analytics for empty transaction list")
             return TransactionAnalytics(
                 totalSales = 0.0,
                 transactionCount = 0,
@@ -74,6 +81,16 @@ class TransactionRepositoryImpl @Inject constructor(
             .size
         
         val averageTransactionValue = totalSales / transactionCount
+        
+        val endTime = System.currentTimeMillis()
+        val computationTime = endTime - startTime
+        
+        Timber.d(
+            "Analytics computed in ${computationTime}ms: " +
+            "totalSales=$totalSales, count=$transactionCount, " +
+            "topProduct=$topProduct, peakHour=$peakHour, " +
+            "uniqueCustomers=$uniqueCustomers"
+        )
         
         return TransactionAnalytics(
             totalSales = totalSales,
@@ -114,6 +131,10 @@ class TransactionRepositoryImpl @Inject constructor(
     
     override fun getTransactionsByAmountRange(minAmount: Double, maxAmount: Double): Flow<List<Transaction>> {
         return transactionDao.getTransactionsByAmountRange(minAmount, maxAmount)
+    }
+    
+    override fun getTransactionsByDateRange(startTime: Long, endTime: Long): Flow<List<Transaction>> {
+        return getTransactionsByTimeRange(startTime, endTime)
     }
     
     override suspend fun getTotalSalesForDate(date: String): Double {

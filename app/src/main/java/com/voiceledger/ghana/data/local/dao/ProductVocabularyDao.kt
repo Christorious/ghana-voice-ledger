@@ -5,15 +5,90 @@ import com.voiceledger.ghana.data.local.entity.ProductVocabulary
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Data Access Object for ProductVocabulary entity
- * Provides queries for product recognition and vocabulary management
+ * # ProductVocabularyDao
+ * 
+ * **Clean Architecture - Data Layer (DAO Interface)**
+ * 
+ * Data Access Object for the ProductVocabulary entity. This interface defines all database
+ * operations for managing product vocabulary - the app's knowledge base of recognized fish
+ * products, measurement units, and their language variants.
+ * 
+ * ## What is a DAO?
+ * 
+ * DAO (Data Access Object) is a design pattern that abstracts database operations behind
+ * a clean interface. Room automatically implements this interface at compile time, generating
+ * all the SQL execution code for you.
+ * 
+ * ## The @Dao Annotation:
+ * 
+ * Tells Room to generate the implementation. Room validates SQL queries at compile time,
+ * catching errors before runtime.
+ * 
+ * ## Return Types Explained:
+ * 
+ * - **Flow<T>**: Reactive stream that emits values whenever the database changes. The UI
+ *   automatically updates when data changes, following reactive programming principles.
+ * 
+ * - **suspend fun**: Asynchronous one-shot operations that return a single value. Must be
+ *   called from coroutines. Doesn't block threads while waiting for database I/O.
+ * 
+ * - **Regular fun**: For operations that return Flow (Room handles coroutines internally)
+ * 
+ * ## Query Patterns:
+ * 
+ * This DAO demonstrates several common SQL query patterns:
+ * - Basic SELECT with WHERE filtering
+ * - LIKE for text searching
+ * - Aggregate functions (COUNT, SUM, AVG)
+ * - GROUP BY for statistics
+ * - Parameterized queries (using :paramName)
+ * 
+ * ## Why So Many Queries?
+ * 
+ * Each query serves a specific use case in the app:
+ * - Voice recognition needs fast product lookups
+ * - Analytics dashboard needs statistics
+ * - ML models need frequency data
+ * - Multi-language support needs Twi/Ga name searches
+ * 
+ * Having specific queries (vs. fetching everything and filtering in code) is more efficient
+ * because filtering happens in SQLite, which is optimized for such operations.
  */
 @Dao
 interface ProductVocabularyDao {
     
+    /**
+     * Retrieves all active products ordered by usage frequency.
+     * 
+     * ## Flow Return Type:
+     * 
+     * Flow is a Kotlin coroutine feature for reactive programming. When this Flow is collected,
+     * it emits the current list of products and then emits again whenever the data changes.
+     * This means UI screens automatically refresh when products are added/updated/deleted.
+     * 
+     * ## Why ORDER BY frequency DESC:
+     * 
+     * Products used more often appear first. This improves voice recognition performance by
+     * checking common products first, and provides better UX by showing relevant products.
+     * 
+     * @return Flow that emits the current list of active products whenever it changes
+     */
     @Query("SELECT * FROM product_vocabulary WHERE isActive = 1 ORDER BY frequency DESC")
     fun getAllActiveProducts(): Flow<List<ProductVocabulary>>
     
+    /**
+     * Retrieves active products in a specific category.
+     * 
+     * ## Parameterized Queries:
+     * 
+     * The `:category` syntax is Room's way of binding method parameters to SQL queries.
+     * Room automatically escapes the value to prevent SQL injection attacks.
+     * 
+     * Example usage: `getProductsByCategory("FISH")` returns all fish products
+     * 
+     * @param category Product category to filter by (e.g., "FISH", "MEASUREMENT_UNIT")
+     * @return Flow emitting products in the specified category, ordered by frequency
+     */
     @Query("SELECT * FROM product_vocabulary WHERE category = :category AND isActive = 1 ORDER BY frequency DESC")
     fun getProductsByCategory(category: String): Flow<List<ProductVocabulary>>
     

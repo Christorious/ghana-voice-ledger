@@ -2,15 +2,6 @@ import java.math.BigDecimal
 import java.util.Properties
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
-
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
-    id("dagger.hilt.android.plugin")
-    id("kotlin-parcelize")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("jacoco")
 import java.io.FileInputStream
 
 plugins {
@@ -19,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.parcelize)
+    id("jacoco")
     // Temporarily disabled for testing build without Firebase
     // id("com.google.gms.google-services")
     // id("com.google.firebase.crashlytics")
@@ -63,6 +55,7 @@ android {
                 enableV3Signing = true
                 enableV4Signing = true
             }
+        }
         }
     }
 
@@ -253,10 +246,11 @@ android {
             isIncludeAndroidResources = true
         }
     }
-    
-    // Create alias tasks to avoid ambiguity in automated checks
-    task("checkDebugAarMetadata") {
-        dependsOn("checkDevDebugAarMetadata", "checkStagingDebugAarMetadata", "checkProdDebugAarMetadata")
+}
+
+// Create alias tasks to avoid ambiguity in automated checks
+tasks.register("checkDebugAarMetadata") {
+    dependsOn("checkDevDebugAarMetadata", "checkStagingDebugAarMetadata", "checkProdDebugAarMetadata")
         description = "Alias for checking debug AAR metadata for all variants"
     }
     
@@ -264,7 +258,6 @@ android {
         dependsOn("checkDevReleaseAarMetadata", "checkStagingReleaseAarMetadata", "checkProdReleaseAarMetadata")
         description = "Alias for checking release AAR metadata for all variants"
     }
-}
 
 jacoco {
     toolVersion = "0.8.11"

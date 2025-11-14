@@ -1,17 +1,8 @@
 import java.math.BigDecimal
 import java.util.Properties
+import java.io.FileInputStream
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
-
-plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
-    id("dagger.hilt.android.plugin")
-    id("kotlin-parcelize")
-    id("org.jetbrains.kotlin.plugin.serialization")
-    id("jacoco")
-import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -19,6 +10,8 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.parcelize)
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
+    id("jacoco")
     // Temporarily disabled for testing build without Firebase
     // id("com.google.gms.google-services")
     // id("com.google.firebase.crashlytics")
@@ -407,15 +400,11 @@ dependencies {
     implementation(libs.gson)
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
-
-    if (firebaseEnabled) {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
     // Firebase - Feature toggled via build flags
-    if (project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
+    if (firebaseEnabled && project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
         implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
         implementation("com.google.firebase:firebase-analytics-ktx")
         implementation("com.google.firebase:firebase-crashlytics-ktx")
@@ -428,9 +417,8 @@ dependencies {
     implementation(libs.appcenter.analytics)
     implementation(libs.appcenter.crashes)
 
-    if (googleCloudSpeechEnabled) {
     // Google Cloud Speech - Feature toggled via build flags
-    if (project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
+    if (googleCloudSpeechEnabled && project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
         implementation("com.google.cloud:google-cloud-speech:4.21.0")
         implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
     }
@@ -442,22 +430,17 @@ dependencies {
     implementation(libs.tensorflow.lite.gpu)
 
     // Audio Processing
-    implementation("com.github.wendykierp:JTransforms:3.1")
-
-    if (webRtcEnabled) {
     implementation(libs.jtransforms)
     
     // WebRTC VAD (Voice Activity Detection) - Feature toggled via build flags
-    if (project.hasProperty("WEBRTC_ENABLED") && project.property("WEBRTC_ENABLED") == "true") {
+    if (webRtcEnabled && project.hasProperty("WEBRTC_ENABLED") && project.property("WEBRTC_ENABLED") == "true") {
         implementation("org.webrtc:google-webrtc:1.0.32006")
     }
 
     // Security & Encryption
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("androidx.biometric:biometric:1.1.0")
-    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
 
     // Permissions
     implementation(libs.accompanist.permissions)

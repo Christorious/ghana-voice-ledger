@@ -1,8 +1,10 @@
 package com.voiceledger.ghana.di
 
 import android.content.Context
+import androidx.room.Room
 import com.voiceledger.ghana.data.local.dao.*
 import com.voiceledger.ghana.data.local.database.DatabaseFactory
+import com.voiceledger.ghana.data.local.database.DatabaseMigrations
 import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import com.voiceledger.ghana.data.repository.*
 import com.voiceledger.ghana.domain.repository.*
@@ -36,17 +38,18 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
-        return DatabaseFactory.createDatabase(
-            context = context,
-            encrypted = USE_ENCRYPTION,
-            passphrase = if (USE_ENCRYPTION) DATABASE_PASSPHRASE else null
-        )
-        return VoiceLedgerDatabase.getDatabase(context)
-    fun provideVoiceLedgerDatabase(
-        @ApplicationContext context: Context,
-        securityManager: SecurityManager
-    ): VoiceLedgerDatabase {
-        return buildEncryptedDatabase(context, securityManager)
+        return if (USE_ENCRYPTION) {
+            provideEncryptedVoiceLedgerDatabase(context, buildSecurityManager())
+        } else {
+            DatabaseFactory.createDatabase(
+                context = context,
+                encrypted = false
+            )
+        }
+    }
+    
+    private fun buildSecurityManager(): SecurityManager {
+        return SecurityManager.getInstance()
     }
     
     /**
@@ -76,8 +79,8 @@ object DatabaseModule {
                 VoiceLedgerDatabase.DATABASE_NAME
             )
                 .openHelperFactory(SupportFactory(passphraseBytes))
-                .addMigrations(*com.voiceledger.ghana.data.local.database.DatabaseMigrations.getAllMigrations())
-                .addCallback(VoiceLedgerDatabase.DatabaseCallback())
+                .addMigrations(*DatabaseMigrations.getAllMigrations())
+                .addCallback(VoiceLedgerDatabase.createSeedDataCallback(context))
                 .build()
         } finally {
             passphraseChars.fill('\u0000')

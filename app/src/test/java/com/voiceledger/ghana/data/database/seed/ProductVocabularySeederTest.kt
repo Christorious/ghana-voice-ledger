@@ -43,8 +43,8 @@ class ProductVocabularySeederTest {
         val result = seeder.seed(database)
 
         assertTrue(result.isSuccess)
-        assertEquals(11, result.getOrThrow())
-        assertEquals(11, database.productVocabularyDao().getActiveProductCount())
+        assertEquals(13, result.getOrThrow())
+        assertEquals(13, database.productVocabularyDao().getActiveProductCount())
     }
 
     @Test

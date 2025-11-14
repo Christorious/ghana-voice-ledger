@@ -7,7 +7,7 @@ This directory contains structured JSON files used to pre-populate the applicati
 ### products.json
 Contains initial product vocabulary entries for:
 - **Fish products**: Common fish varieties sold in Ghana markets (Tilapia, Mackerel, Sardines, Tuna, Red Fish, Salmon, Catfish, Croaker)
-- **Measurement units**: Standard units used for transactions (Bowl, Bucket, Piece)
+- **Measurement units**: Standard units used for transactions (Bowl, Bucket, Piece, Tin, Size)
 
 ## Structure
 

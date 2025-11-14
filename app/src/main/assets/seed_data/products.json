@@ -177,6 +177,38 @@
       "gaNames": null,
       "isLearned": false,
       "learningConfidence": 1.0
+    },
+    {
+      "id": "tin-001",
+      "canonicalName": "Tin",
+      "category": "measurement",
+      "variants": ["tin", "can", "tinned"],
+      "minPrice": 0.0,
+      "maxPrice": 0.0,
+      "measurementUnits": ["tin"],
+      "frequency": 0,
+      "isActive": true,
+      "seasonality": null,
+      "twiNames": null,
+      "gaNames": null,
+      "isLearned": false,
+      "learningConfidence": 1.0
+    },
+    {
+      "id": "size-001",
+      "canonicalName": "Size",
+      "category": "measurement",
+      "variants": ["size", "large", "small", "medium"],
+      "minPrice": 0.0,
+      "maxPrice": 0.0,
+      "measurementUnits": ["size"],
+      "frequency": 0,
+      "isActive": true,
+      "seasonality": null,
+      "twiNames": null,
+      "gaNames": null,
+      "isLearned": false,
+      "learningConfidence": 1.0
     }
   ]
 }

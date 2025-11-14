@@ -12,13 +12,16 @@
 #   public *;
 #}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep line number information for debugging stack traces in crash reports
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep important attributes for reflection and serialization
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepattributes RuntimeInvisibleAnnotations, RuntimeInvisibleParameterAnnotations
+-keepattributes AnnotationDefault
+-keepattributes *Annotation*
 
 # Keep all classes in the main package but allow obfuscation
 -keep class com.voiceledger.ghana.** { *; }
@@ -60,10 +63,24 @@
     @dagger.hilt.android.AndroidEntryPoint <methods>;
 }
 
+# Keep Hilt Worker Factory and Workers
+-keep class androidx.hilt.work.HiltWorkerFactory
+-keep @androidx.hilt.work.HiltWorker class *
+-keep class * extends androidx.work.ListenableWorker {
+    public <init>(android.content.Context, androidx.work.WorkerParameters);
+}
+
+# Keep Assisted Injection for Hilt Workers
+-keep class dagger.assisted.** { *; }
+-keep @dagger.assisted.AssistedFactory class *
+-keep @dagger.assisted.AssistedInject class *
+-keepclasseswithmembers class * {
+    @dagger.assisted.Assisted <fields>;
+    @dagger.assisted.Assisted <methods>;
+    @dagger.assisted.AssistedInject <init>(...);
+}
+
 # Keep Retrofit and OkHttp
--keepattributes Signature, InnerClasses, EnclosingMethod
--keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
--keepattributes AnnotationDefault
 -keepclassmembers,allowshrinking,allowobfuscation interface * {
     @retrofit2.http.* <methods>;
 }
@@ -81,8 +98,6 @@
 -keep,allowobfuscation interface <1>
 
 # Keep Gson classes
--keepattributes Signature
--keepattributes *Annotation*
 -dontwarn sun.misc.**
 -keep class com.google.gson.** { *; }
 -keep class * implements com.google.gson.TypeAdapter
@@ -91,6 +106,55 @@
 -keep class * implements com.google.gson.JsonDeserializer
 -keepclassmembers,allowobfuscation class * {
   @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Keep kotlinx.serialization
+-keepattributes *Annotation*, InnerClasses
+-dontnote kotlinx.serialization.AnnotationsKt
+-keepclassmembers class kotlinx.serialization.json.** {
+    *** Companion;
+}
+-keepclasseswithmembers class kotlinx.serialization.json.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep,includedescriptorclasses class com.voiceledger.ghana.**$serializer { *; }
+-keepclassmembers class com.voiceledger.ghana.** {
+    *** Companion;
+}
+-keepclasseswithmembers class com.voiceledger.ghana.** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep @kotlinx.serialization.Serializable class * { *; }
+
+# Keep Parcelable classes
+-keep class * implements android.os.Parcelable {
+    public static final android.os.Parcelable$Creator *;
+}
+-keepclassmembers class * implements android.os.Parcelable {
+    public <fields>;
+    private <fields>;
+}
+-keep @kotlinx.parcelize.Parcelize class * { *; }
+
+# Keep Enum classes and their values
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+    **[] $VALUES;
+    public *;
+}
+
+# Keep App Center SDK (Analytics & Crashes)
+-keep class com.microsoft.appcenter.** { *; }
+-keep class com.microsoft.appcenter.analytics.** { *; }
+-keep class com.microsoft.appcenter.crashes.** { *; }
+-keep interface com.microsoft.appcenter.** { *; }
+-dontwarn com.microsoft.appcenter.**
+-keepattributes Exceptions, InnerClasses
+
+# Keep App Center crash reporting data
+-keepclassmembers class * extends java.lang.Throwable {
+    <init>(...);
 }
 
 # Keep TensorFlow Lite and related classes
@@ -228,6 +292,41 @@
 # Keep CameraX (if used)
 -keep class androidx.camera.** { *; }
 -dontwarn androidx.camera.**
+
+# Keep SQLCipher for encrypted database
+-keep class net.sqlcipher.** { *; }
+-keep class net.sqlcipher.database.** { *; }
+-dontwarn net.sqlcipher.**
+
+# Keep Coil image loading library
+-keep class coil.** { *; }
+-keep interface coil.** { *; }
+-dontwarn coil.**
+
+# Keep Accompanist Permissions library
+-keep class com.google.accompanist.permissions.** { *; }
+-dontwarn com.google.accompanist.**
+
+# Keep MPAndroidChart library
+-keep class com.github.mikephil.charting.** { *; }
+-dontwarn com.github.mikephil.charting.**
+
+# Keep LeakCanary out of release builds
+-dontwarn com.squareup.leakcanary.**
+
+# Keep SecurityCrypto (EncryptedSharedPreferences)
+-keep class androidx.security.crypto.** { *; }
+-keep class com.google.crypto.tink.** { *; }
+-dontwarn androidx.security.crypto.**
+-dontwarn com.google.crypto.tink.**
+
+# Keep Splash Screen API
+-keep class androidx.core.splashscreen.** { *; }
+-dontwarn androidx.core.splashscreen.**
+
+# Keep kotlinx.datetime
+-keep class kotlinx.datetime.** { *; }
+-dontwarn kotlinx.datetime.**
 
 # Remove logging in release builds
 -assumenosideeffects class android.util.Log {

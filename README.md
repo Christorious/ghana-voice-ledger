@@ -246,15 +246,25 @@ Remember to supply the corresponding API keys in `local.properties` when enablin
 
 ### Build Variants
 - **Debug**: Development builds with logging
-- **Release**: Production builds with optimization
+- **Release**: Production builds with optimization and ProGuard/R8
 - **Beta**: Testing builds with additional logging
 
 ### Release Process
 1. Update version numbers
 2. Run full test suite
-3. Generate signed APK
-4. Deploy to Play Store
-5. Monitor crash reports
+3. **Verify ProGuard configuration**: `./scripts/verify-proguard.sh`
+4. Generate signed APK: `./gradlew assembleProdRelease`
+5. Test release build on device
+6. Deploy to Play Store
+7. Monitor crash reports
+
+### ProGuard/R8 Configuration
+The app uses comprehensive ProGuard/R8 rules for code shrinking and obfuscation:
+- **Configuration**: `app/proguard-rules.pro` (353 lines, 127 keep rules)
+- **Verification**: Run `./scripts/verify-proguard.sh` to validate configuration
+- **Documentation**: See [ProGuard Configuration Guide](PROGUARD_CONFIGURATION.md)
+- **Testing**: See [ProGuard Testing Guide](PROGUARD_TESTING_GUIDE.md)
+- **Quick Reference**: See [ProGuard Quick Reference](PROGUARD_QUICK_REFERENCE.md)
 
 ## Support
 

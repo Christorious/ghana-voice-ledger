@@ -244,6 +244,16 @@ Remember to supply the corresponding API keys in `local.properties` when enablin
 
 ## Deployment
 
+### Current Release
+
+**Version 1.0.0** is now available for production deployment.
+
+For comprehensive release information, including testing coverage, artifact metadata, Play Store distribution procedures, and post-release monitoring, see:
+
+- **[Release Notes v1.0.0](docs/releases/1.0.0.md)** - Complete release documentation
+- **[Deployment Guide](DEPLOYMENT.md)** - Infrastructure and deployment procedures
+- **[Release Build Guide](RELEASE_BUILD_GUIDE.md)** - Detailed build process
+
 ### Build Variants
 - **Debug**: Development builds with logging
 - **Release**: Production builds with optimization and ProGuard/R8
@@ -255,8 +265,8 @@ Remember to supply the corresponding API keys in `local.properties` when enablin
 3. **Verify ProGuard configuration**: `./scripts/verify-proguard.sh`
 4. Generate signed APK: `./gradlew assembleProdRelease`
 5. Test release build on device
-6. Deploy to Play Store
-7. Monitor crash reports
+6. See [Release Notes](docs/releases/1.0.0.md#play-store-distribution-guide) for Play Store deployment
+7. Monitor crash reports via Firebase and App Center
 
 ### ProGuard/R8 Configuration
 The app uses comprehensive ProGuard/R8 rules for code shrinking and obfuscation:

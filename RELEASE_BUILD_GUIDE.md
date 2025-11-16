@@ -314,6 +314,32 @@ export RELEASE_KEY_ALIAS=$KEY_ALIAS
 export RELEASE_KEY_PASSWORD=$KEY_PASSWORD
 ```
 
+## Release Notes and Distribution
+
+After building a release, refer to the comprehensive release documentation:
+
+- **Release Notes v1.0.0**: [docs/releases/1.0.0.md](docs/releases/1.0.0.md)
+  - Feature highlights and improvements
+  - Testing coverage and known issues
+  - Play Store distribution procedures
+  - Post-release monitoring and rollback plans
+
+- **Artifact Information**: See Release Notes for:
+  - APK and AAB size estimates
+  - Signing certificate details
+  - Build metadata and timestamps
+  - SHA-256 hashes (generate with build verification script)
+
+- **Testing Guidance**: See [docs/COVERAGE.md](docs/COVERAGE.md)
+  - Code coverage requirements (70% minimum)
+  - Test execution procedures
+  - Coverage report generation
+
+- **Deployment Guidance**: See [DEPLOYMENT.md](DEPLOYMENT.md)
+  - Release process checklist
+  - Post-release monitoring procedures
+  - Rollback procedures if issues arise
+
 ## Support
 
 For additional help:
@@ -321,9 +347,12 @@ For additional help:
 2. Check Android Developer guides
 3. Consult the project's issue tracker
 4. Review build logs and error messages
+5. Check Release Notes for known issues and solutions
+6. Review Troubleshooting guide for common build problems
 
 ---
 
-**Last Updated**: October 2024
+**Last Updated**: November 16, 2024
 **Version**: 1.0.0
 **Maintainer**: Ghana Voice Ledger Development Team
+**Release Notes**: See [docs/releases/1.0.0.md](docs/releases/1.0.0.md)

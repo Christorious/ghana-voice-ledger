@@ -327,28 +327,27 @@ class VoiceAgentService : Service() {
     }
     
     fun setAudioProcessingEnabled(enabled: Boolean) {
+        sessionCoordinator.setAudioProcessingEnabled(enabled)
     }
     
     fun setBackgroundSyncEnabled(enabled: Boolean) {
+        sessionCoordinator.setBackgroundSyncEnabled(enabled)
     }
     
     fun setProcessingInterval(intervalMs: Long) {
+        sessionCoordinator.setProcessingInterval(intervalMs)
     }
     
     fun setVADSensitivity(sensitivity: Float) {
+        sessionCoordinator.setVADSensitivity(sensitivity)
     }
     
     fun setAudioBufferSize(bufferSize: Int) {
+        sessionCoordinator.setAudioBufferSize(bufferSize)
     }
     
     fun getPowerOptimizationSettings(): PowerOptimizationSettings {
-        return PowerOptimizationSettings(
-            audioProcessingEnabled = true,
-            backgroundSyncEnabled = true,
-            processingIntervalMs = 1000,
-            vadSensitivity = 0.5f,
-            audioBufferSize = 2048
-        )
+        return sessionCoordinator.getPowerOptimizationSettings()
     }
     
     inner class VoiceAgentBinder : Binder() {

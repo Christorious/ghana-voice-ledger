@@ -333,6 +333,88 @@ class VoiceSessionCoordinator @Inject constructor(
     fun getForegroundNotification(): android.app.Notification {
         return notificationHelper.createListeningNotification()
     }
+    
+    /**
+     * Enable or disable audio processing
+     */
+    fun setAudioProcessingEnabled(enabled: Boolean) {
+        if (enabled) {
+            speechProcessingPipeline.startProcessing()
+        } else {
+            speechProcessingPipeline.stopProcessing()
+        }
+    }
+    
+    /**
+     * Enable or disable background sync
+     */
+    fun setBackgroundSyncEnabled(enabled: Boolean) {
+        // This would control offline queue manager sync behavior
+        // For now, just log the change
+        sessionScope.launch {
+            if (enabled && NetworkUtils.isNetworkAvailable(context)) {
+                offlineQueueManager.processAllPendingOperations()
+            }
+        }
+    }
+    
+    /**
+     * Set audio processing interval
+     */
+    fun setProcessingInterval(intervalMs: Long) {
+        // This could be used to throttle processing in power save mode
+        // Implementation would depend on the specific requirements
+    }
+    
+    /**
+     * Set VAD sensitivity
+     */
+    fun setVADSensitivity(sensitivity: Float) {
+        vadManager.setConfiguration(
+            adaptiveMode = true,
+            batteryOptimization = sensitivity > 0.5f // Higher sensitivity means more battery optimization
+        )
+    }
+    
+    /**
+     * Set audio buffer size
+     */
+    fun setAudioBufferSize(bufferSize: Int) {
+        // This would require reinitializing the audio capture controller
+        // For now, just note the change
+        audioCaptureController.release()
+        // Implementation would need to recreate with new buffer size
+    }
+    
+    /**
+     * Get current power optimization settings
+     */
+    fun getPowerOptimizationSettings(): PowerOptimizationSettings {
+        val powerState = powerManager.powerState.value
+        
+        return PowerOptimizationSettings(
+            audioProcessingEnabled = powerState.audioProcessingEnabled,
+            backgroundSyncEnabled = powerState.backgroundSyncEnabled,
+            processingIntervalMs = when (powerState.powerMode) {
+                com.voiceledger.ghana.service.PowerMode.NORMAL -> 1000L
+                com.voiceledger.ghana.service.PowerMode.POWER_SAVE -> 2000L
+                com.voiceledger.ghana.service.PowerMode.CRITICAL_SAVE -> 5000L
+                com.voiceledger.ghana.service.PowerMode.SLEEP -> 10000L
+            },
+            vadSensitivity = when (powerState.powerMode) {
+                com.voiceledger.ghana.service.PowerMode.NORMAL -> 0.3f
+                com.voiceledger.ghana.service.PowerMode.POWER_SAVE -> 0.4f
+                com.voiceledger.ghana.service.PowerMode.CRITICAL_SAVE -> 0.5f
+                com.voiceledger.ghana.service.PowerMode.SLEEP -> 0.6f
+            },
+            audioBufferSize = when (powerState.powerMode) {
+                com.voiceledger.ghana.service.PowerMode.NORMAL -> 2048
+                com.voiceledger.ghana.service.PowerMode.POWER_SAVE -> 1024
+                com.voiceledger.ghana.service.PowerMode.CRITICAL_SAVE -> 512
+                com.voiceledger.ghana.service.PowerMode.SLEEP -> 256
+            }
+        )
+    }
 }
 
 sealed class ListeningState {

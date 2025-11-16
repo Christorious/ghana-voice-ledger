@@ -1,12 +1,15 @@
 package com.voiceledger.ghana.offline
 
 import android.content.Context
-import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
-import com.voiceledger.ghana.data.local.entity.toEntity
-import com.voiceledger.ghana.data.local.entity.toOfflineOperation
 import com.voiceledger.ghana.data.local.entity.OfflineOperationEntity
+import com.voiceledger.ghana.data.local.entity.toDomain
+import com.voiceledger.ghana.data.local.entity.toEntity
+import com.voiceledger.ghana.data.repository.TransactionRepository
+import com.voiceledger.ghana.data.repository.DailySummaryRepository
+import com.voiceledger.ghana.domain.service.NetworkMonitorService
+import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
@@ -15,16 +18,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.Serializable
 import java.util.concurrent.ConcurrentHashMap
-import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
-import com.voiceledger.ghana.data.local.entity.OfflineOperation
-import com.voiceledger.ghana.data.repository.TransactionRepository
-import com.voiceledger.ghana.data.repository.DailySummaryRepository
-import com.voiceledger.ghana.domain.service.NetworkMonitorService
-import com.google.gson.Gson
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedInject
-import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
@@ -32,39 +27,34 @@ import javax.inject.Singleton
  * Handles durable storage and retry logic for offline operations
  */
 @Singleton
-class OfflineQueueManager(
-    @ApplicationContext private val context: Context,
-    private val operationDao: OfflineOperationDao,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
-) {
-    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
-    
-    private val _queueState = MutableStateFlow(OfflineQueueState())
-    val queueState: StateFlow<OfflineQueueState> = _queueState.asStateFlow()
-    
-    // In-memory queue for fast access
-    private val pendingOperations = ConcurrentHashMap<String, OfflineOperation>()
-    private val retryAttempts = ConcurrentHashMap<String, Int>()
-    
-    // Configuration
-    private var maxRetryAttempts = 3
-    private var retryDelayMs = 30_000L // 30 seconds
-    private var maxQueueSize = 1000
 class OfflineQueueManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val offlineOperationDao: com.voiceledger.ghana.data.local.dao.OfflineOperationDao
     private val offlineOperationDao: OfflineOperationDao,
     private val transactionRepository: TransactionRepository,
     private val dailySummaryRepository: DailySummaryRepository,
     private val networkMonitorService: NetworkMonitorService,
     private val gson: Gson,
-    @ApplicationContext private val context: Context
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     
     companion object {
         private const val SYNC_WORK_NAME = "OfflineQueueSyncWork"
         private const val RETRY_DELAY_MINUTES = 15L
         private const val MAX_AGE_DAYS = 30L
+        private const val MAX_RETRY_ATTEMPTS = 3
+    }
+    
+    private val scope = CoroutineScope(SupervisorJob() + ioDispatcher)
+    
+    private val _queueState = MutableStateFlow(OfflineQueueState())
+    val queueState: StateFlow<OfflineQueueState> = _queueState.asStateFlow()
+    
+    // In-memory cache for fast access
+    private val pendingOperations = ConcurrentHashMap<String, OfflineOperation>()
+    
+    init {
+        loadPersistedOperations()
+        schedulePeriodicSync()
     }
     
     /**
@@ -73,20 +63,75 @@ class OfflineQueueManager @Inject constructor(
     suspend fun queueTransactionCreate(transactionData: String) {
         val operation = OfflineOperation(
             id = generateOperationId(),
-            operationType = "CREATE",
-            entityType = "TRANSACTION",
-            entityId = extractTransactionId(transactionData),
+            type = OperationType.TRANSACTION_SYNC,
             data = transactionData,
             timestamp = System.currentTimeMillis(),
-            priority = 1 // High priority for transactions
+            priority = OperationPriority.HIGH
         )
+        
+        addOperation(operation)
+    }
+    
+    /**
+     * Queue a transaction update operation
+     */
+    suspend fun queueTransactionUpdate(transactionId: String, transactionData: String) {
+        val operation = OfflineOperation(
+            id = generateOperationId(),
+            type = OperationType.TRANSACTION_SYNC,
+            data = transactionData,
+            timestamp = System.currentTimeMillis(),
+            priority = OperationPriority.NORMAL
+        )
+        
+        addOperation(operation)
+    }
+    
+    /**
+     * Queue a daily summary operation
+     */
+    suspend fun queueDailySummaryCreate(summaryData: String) {
+        val operation = OfflineOperation(
+            id = generateOperationId(),
+            type = OperationType.SUMMARY_SYNC,
+            data = summaryData,
+            timestamp = System.currentTimeMillis(),
+            priority = OperationPriority.LOW
+        )
+        
+        addOperation(operation)
+    }
+    
+    /**
+     * Add operation to queue and persist
+     */
+    private suspend fun addOperation(operation: OfflineOperation) {
+        pendingOperations[operation.id] = operation
+        persistOperation(operation)
+        updateQueueState()
         
         // Try immediate sync if network is available
         if (NetworkUtils.isNetworkAvailable(context)) {
             processOperation(operation)
         }
-    }  
-  
+    }
+    
+    /**
+     * Process all pending operations
+     */
+    suspend fun processAllPendingOperations() {
+        if (!NetworkUtils.isNetworkAvailable(context)) return
+        
+        val operations = pendingOperations.values.filter { 
+            it.status == OperationStatus.PENDING || 
+            (it.status == OperationStatus.FAILED && it.retryCount < MAX_RETRY_ATTEMPTS)
+        }
+        
+        for (operation in operations) {
+            processOperation(operation)
+        }
+    }
+    
     /**
      * Process a single operation
      */
@@ -107,8 +152,11 @@ class OfflineQueueManager @Inject constructor(
                 OperationType.BACKUP_DATA -> processBackupData(processingOperation)
                 OperationType.DELETE_DATA -> processDeleteData(processingOperation)
             }
+            
             if (result) {
                 markOperationCompleted(processingOperation)
+            } else {
+                handleOperationError(processingOperation, Exception("Operation failed"))
             }
             result
         } catch (e: Exception) {
@@ -121,153 +169,182 @@ class OfflineQueueManager @Inject constructor(
      * Process transaction sync operation
      */
     private suspend fun processTransactionSync(operation: OfflineOperation): Boolean {
-        // Implementation would sync transaction data to cloud
-        // For now, simulate success
-        delay(1000) // Simulate network call
-        return true
+        return withContext(ioDispatcher) {
+            try {
+                // Simulate network call - replace with actual implementation
+                delay(1000)
+                true // Success
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
     
     /**
      * Process summary sync operation
      */
     private suspend fun processSummarySync(operation: OfflineOperation): Boolean {
-        // Implementation would sync summary data to cloud
-        delay(800)
-        return true
+        return withContext(ioDispatcher) {
+            try {
+                // Simulate network call - replace with actual implementation
+                delay(800)
+                true // Success
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
     
     /**
      * Process speaker profile sync operation
      */
     private suspend fun processSpeakerProfileSync(operation: OfflineOperation): Boolean {
-        // Implementation would sync speaker profile data
-        delay(1200)
-        return true
+        return withContext(ioDispatcher) {
+            try {
+                // Simulate network call - replace with actual implementation
+                delay(1200)
+                true // Success
+            } catch (e: Exception) {
+                false
+            }
+        }
     }
     
     /**
      * Process backup data operation
      */
     private suspend fun processBackupData(operation: OfflineOperation): Boolean {
-        // Implementation would backup data to cloud storage
-        delay(2000)
-        return true
-        offlineOperationDao.insertOperation(operation)
-        scheduleSyncWork()
-    }
-    
-    /**
-     * Queue a transaction update operation
-     */
-    suspend fun queueTransactionUpdate(transactionId: String, transactionData: String) {
-        val operation = OfflineOperation(
-            id = generateOperationId(),
-            operationType = "UPDATE",
-            entityType = "TRANSACTION",
-            entityId = transactionId,
-            data = transactionData,
-            timestamp = System.currentTimeMillis(),
-            priority = 2
-        )
-        
-        offlineOperationDao.insertOperation(operation)
-        scheduleSyncWork()
-    }
-    
-    /**
-     * Queue a daily summary operation
-     */
-    suspend fun queueDailySummaryCreate(summaryData: String) {
-        val operation = OfflineOperation(
-            id = generateOperationId(),
-            operationType = "CREATE",
-            entityType = "DAILY_SUMMARY",
-            entityId = extractSummaryId(summaryData),
-            data = summaryData,
-            timestamp = System.currentTimeMillis(),
-            priority = 3 // Lower priority for summaries
-        )
-        
-        if (currentAttempts < maxRetryAttempts) {
-            val newRetryCount = currentAttempts + 1
-            retryAttempts[operation.id] = newRetryCount
-            
-            val updatedOperation = operation.copy(
-                status = OperationStatus.PENDING,
-                lastAttempt = System.currentTimeMillis()
-            )
-            pendingOperations[operation.id] = updatedOperation
-            persistOperation(updatedOperation)
-            
-            scheduleRetry(operation, newRetryCount)
-            updateQueueState()
-        } else {
-            markOperationFailed(operation, error)
-        }
-        offlineOperationDao.insertOperation(operation)
-        scheduleSyncWork()
-    }
-    
-    /**
-     * Process all unsynced operations
-     */
-    suspend fun processUnsyncedOperations(): SyncResult {
-        val operations = offlineOperationDao.getUnsyncedOperations()
-        val results = mutableListOf<OperationResult>()
-        var successCount = 0
-        var failureCount = 0
-        
-        for (operation in operations) {
+        return withContext(ioDispatcher) {
             try {
-                offlineOperationDao.markAsProcessing(operation.id)
-                
-                val success = when (operation.entityType) {
-                    "TRANSACTION" -> processTransactionOperation(operation)
-                    "DAILY_SUMMARY" -> processSummaryOperation(operation)
-                    else -> false
-                }
-                
-                if (success) {
-                    offlineOperationDao.markAsSynced(operation.id)
-                    results.add(OperationResult(operation.id, true, null))
-                    successCount++
-                } else {
-                    offlineOperationDao.incrementRetryCount(operation.id, "Sync failed")
-                    results.add(OperationResult(operation.id, false, "Sync failed"))
-                    failureCount++
-                }
-                
+                // Simulate backup - replace with actual implementation
+                delay(2000)
+                true // Success
             } catch (e: Exception) {
-                offlineOperationDao.incrementRetryCount(operation.id, e.message)
-                results.add(OperationResult(operation.id, false, e.message))
-                failureCount++
+                false
             }
         }
-        
-        return SyncResult(
-            totalOperations = operations.size,
-            successCount = successCount,
-            failureCount = failureCount,
-            results = results
+    }
+    
+    /**
+     * Process delete data operation
+     */
+    private suspend fun processDeleteData(operation: OfflineOperation): Boolean {
+        return withContext(ioDispatcher) {
+            try {
+                // Simulate delete - replace with actual implementation
+                delay(500)
+                true // Success
+            } catch (e: Exception) {
+                false
+            }
+        }
+    }
+    
+    /**
+     * Mark operation as completed
+     */
+    private suspend fun markOperationCompleted(operation: OfflineOperation) {
+        val completedOperation = operation.copy(
+            status = OperationStatus.COMPLETED
         )
+        pendingOperations[operation.id] = completedOperation
+        persistOperation(completedOperation)
         
-        pendingOperations[operation.id] = failedOperation
-        retryAttempts.remove(operation.id)
-        persistOperation(failedOperation)
+        // Remove from pending queue after a delay
+        scope.launch {
+            delay(5000) // Keep for 5 seconds for UI updates
+            pendingOperations.remove(operation.id)
+            removePersistedOperation(operation.id)
+            updateQueueState()
+        }
+    }
+    
+    /**
+     * Handle operation error
+     */
+    private suspend fun handleOperationError(operation: OfflineOperation, error: Exception) {
+        val retryCount = operation.retryCount + 1
+        
+        if (retryCount < MAX_RETRY_ATTEMPTS) {
+            val failedOperation = operation.copy(
+                status = OperationStatus.FAILED,
+                errorMessage = error.message,
+                lastAttempt = System.currentTimeMillis(),
+                retryCount = retryCount
+            )
+            pendingOperations[operation.id] = failedOperation
+            persistOperation(failedOperation)
+            
+            // Schedule retry with exponential backoff
+            scheduleRetry(failedOperation, retryCount)
+        } else {
+            // Max retries reached, mark as permanently failed
+            val permanentlyFailedOperation = operation.copy(
+                status = OperationStatus.FAILED,
+                errorMessage = "Max retries reached: ${error.message}",
+                retryCount = retryCount
+            )
+            pendingOperations[operation.id] = permanentlyFailedOperation
+            persistOperation(permanentlyFailedOperation)
+        }
+        
         updateQueueState()
     }
     
     /**
-     * Get offline queue statistics
+     * Schedule retry for failed operation
+     */
+    private fun scheduleRetry(operation: OfflineOperation, retryCount: Int) {
+        val delayMs = RETRY_DELAY_MINUTES * 60_000L * retryCount // Exponential backoff
+        
+        scope.launch {
+            delay(delayMs)
+            if (pendingOperations.containsKey(operation.id)) {
+                processOperation(operation)
+            }
+        }
+    }
+    
+    /**
+     * Get queue statistics
      */
     suspend fun getQueueStatistics(): QueueStatistics {
+        val operations = pendingOperations.values.toList()
+        
         return QueueStatistics(
-            unsyncedCount = offlineOperationDao.getUnsyncedCount(),
-            transactionCount = offlineOperationDao.getUnsyncedCountByType("TRANSACTION"),
-            summaryCount = offlineOperationDao.getUnsyncedCountByType("DAILY_SUMMARY"),
-            failedCount = offlineOperationDao.getFailedCount(),
-            oldestOperation = getOldestOperationTimestamp()
+            pendingCount = operations.count { it.status == OperationStatus.PENDING },
+            processingCount = operations.count { it.status == OperationStatus.PROCESSING },
+            failedCount = operations.count { it.status == OperationStatus.FAILED },
+            completedCount = operations.count { it.status == OperationStatus.COMPLETED },
+            totalOperations = operations.size,
+            oldestOperation = operations.minOfOrNull { it.timestamp }
         )
+    }
+    
+    /**
+     * Retry failed operations
+     */
+    suspend fun retryFailedOperations() {
+        val failedOperations = pendingOperations.values.filter { 
+            it.status == OperationStatus.FAILED && it.retryCount < MAX_RETRY_ATTEMPTS 
+        }
+        
+        for (operation in failedOperations) {
+            val resetOperation = operation.copy(
+                status = OperationStatus.PENDING,
+                errorMessage = null,
+                retryCount = 0
+            )
+            pendingOperations[operation.id] = resetOperation
+            persistOperation(resetOperation)
+        }
+        
+        updateQueueState()
+        
+        // Process if network is available
+        if (NetworkUtils.isNetworkAvailable(context)) {
+            processAllPendingOperations()
+        }
     }
     
     /**
@@ -276,149 +353,92 @@ class OfflineQueueManager @Inject constructor(
     suspend fun cleanupOldOperations() {
         val cutoffTime = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(MAX_AGE_DAYS)
         
-        // Delete old synced operations
-        offlineOperationDao.deleteOldSyncedOperations(cutoffTime)
+        // Remove old completed operations
+        val oldOperations = pendingOperations.values.filter { 
+            it.timestamp < cutoffTime && it.status == OperationStatus.COMPLETED 
+        }
         
-        // Delete very old unsynced operations (they're likely stale)
-        val veryOldCutoff = System.currentTimeMillis() - TimeUnit.DAYS.toMillis(MAX_AGE_DAYS * 2)
-        offlineOperationDao.deleteOldOperations(veryOldCutoff)
+        for (operation in oldOperations) {
+            pendingOperations.remove(operation.id)
+            removePersistedOperation(operation.id)
+        }
+        
+        // Also clean up database
+        withContext(ioDispatcher) {
+            offlineOperationDao.deleteOldOperations(cutoffTime)
+        }
+        
+        updateQueueState()
     }
     
     /**
-     * Retry failed operations
+     * Load persisted operations on startup
      */
-    suspend fun retryFailedOperations() {
-        val retryableOperations = offlineOperationDao.getRetryableOperations()
-        
-        for (operation in retryableOperations) {
-            // Reset retry count for manual retry
-            val updatedOperation = operation.copy(
-                retryCount = 0,
-                lastError = null,
-                processing = false
-            )
-            offlineOperationDao.updateOperation(updatedOperation)
-        }
-        
-        if (retryableOperations.isNotEmpty()) {
-            scheduleSyncWork()
-        }
-    }
-    
-    /**
-     * Process a transaction operation
-     */
-    private suspend fun processTransactionOperation(operation: OfflineOperation): Boolean {
-        return try {
-            when (operation.operationType) {
-                "CREATE" -> {
-                    // Sync transaction to server
-                    syncTransactionToServer(operation.data)
+    private fun loadPersistedOperations() {
+        scope.launch {
+            try {
+                val persisted = withContext(ioDispatcher) {
+                    offlineOperationDao.getAllOperationsSync()
                 }
-                "UPDATE" -> {
-                    // Update transaction on server
-                    updateTransactionOnServer(operation.entityId, operation.data)
+                
+                persisted.forEach { entity ->
+                    val operation = entity.toDomain()
+                    pendingOperations[operation.id] = operation
                 }
-                else -> false
+                
+                updateQueueState()
+            } catch (e: Exception) {
+                // Handle error loading operations
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            false
         }
     }
     
     /**
-     * Get all pending items as Flow
+     * Persist operation to database
      */
-    fun getPendingItems(): Flow<List<OfflineOperation>> {
-        return kotlinx.coroutines.flow.flow {
-            emit(pendingOperations.values.toList())
+    private suspend fun persistOperation(operation: OfflineOperation) {
+        withContext(ioDispatcher) {
+            offlineOperationDao.upsertOperation(operation.toEntity())
+        }
+    }
+    
+    /**
+     * Remove operation from database
+     */
+    private suspend fun removePersistedOperation(operationId: String) {
+        withContext(ioDispatcher) {
+            offlineOperationDao.deleteOperation(operationId)
         }
     }
     
     /**
      * Update queue state
-     * Process a summary operation
      */
-    private suspend fun processSummaryOperation(operation: OfflineOperation): Boolean {
-        return try {
-            when (operation.operationType) {
-                "CREATE" -> {
-                    // Sync summary to server
-                    syncSummaryToServer(operation.data)
-                }
-                else -> false
-            }
-        } catch (e: Exception) {
-            false
-        }
-    }
-    
-    /**
-     * Sync transaction to remote server
-     */
-    private fun loadPersistedOperations() {
-        scope.launch {
-            try {
-                val persistedOperations = operationDao.getAllOperations()
-                persistedOperations.forEach { entity ->
-                    val operation = entity.toOfflineOperation()
-                    pendingOperations[operation.id] = operation
-                    retryAttempts[operation.id] = entity.retryCount
-                }
-                updateQueueState()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            val persisted = offlineOperationDao.getAllOperationsSync()
-            persisted.forEach { entity ->
-                pendingOperations[entity.id] = entity.toDomain()
-            }
-            updateQueueState()
-        }
-    private suspend fun syncTransactionToServer(transactionData: String): Boolean {
-        // Implementation would depend on your API client
-        // For now, return true to simulate success
-        return true
-    }
-    
-    /**
-     * Update transaction on remote server
-     */
-    private suspend fun persistOperation(operation: OfflineOperation) {
-        withContext(ioDispatcher) {
-            val retryCount = retryAttempts[operation.id] ?: 0
-            operationDao.insertOrReplace(operation.toEntity(retryCount))
-        }
-        offlineOperationDao.upsertOperation(operation.toEntity())
-    private suspend fun updateTransactionOnServer(transactionId: String, transactionData: String): Boolean {
-        // Implementation would depend on your API client
-        // For now, return true to simulate success
-        return true
-    }
-    
-    /**
-     * Sync summary to remote server
-     */
-    private suspend fun removePersistedOperation(operationId: String) {
-        withContext(ioDispatcher) {
-            operationDao.deleteOperationById(operationId)
-        }
-        offlineOperationDao.deleteOperation(operationId)
-    private suspend fun syncSummaryToServer(summaryData: String): Boolean {
-        // Implementation would depend on your API client
-        // For now, return true to simulate success
-        return true
+    private fun updateQueueState() {
+        val operations = pendingOperations.values.toList()
+        
+        _queueState.value = OfflineQueueState(
+            pendingOperations = operations.count { it.status == OperationStatus.PENDING },
+            processingOperations = operations.count { it.status == OperationStatus.PROCESSING },
+            failedOperations = operations.count { it.status == OperationStatus.FAILED },
+            completedOperations = operations.count { it.status == OperationStatus.COMPLETED },
+            lastSyncTime = System.currentTimeMillis()
+        )
     }
     
     /**
      * Schedule periodic sync work
      */
-    private fun scheduleSyncWork() {
+    private fun schedulePeriodicSync() {
         val constraints = Constraints.Builder()
             .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
             .build()
         
-        val syncRequest = PeriodicWorkRequestBuilder<OfflineSyncWorker>(15, TimeUnit.MINUTES)
+        val syncRequest = PeriodicWorkRequestBuilder<OfflineSyncWorker>(
+            15, TimeUnit.MINUTES
+        )
             .setConstraints(constraints)
             .setBackoffCriteria(
                 BackoffPolicy.LINEAR,
@@ -443,15 +463,20 @@ class OfflineQueueManager @Inject constructor(
     }
     
     /**
-     * Extract transaction ID from JSON data
+     * Get all pending items as Flow
      */
-    private fun extractTransactionId(transactionData: String): String {
-        return try {
-            val json = gson.fromJson(transactionData, Map::class.java)
-            json["id"]?.toString() ?: generateOperationId()
-        } catch (e: Exception) {
-            generateOperationId()
+    fun getPendingItems(): Flow<List<OfflineOperation>> {
+        return kotlinx.coroutines.flow.flow {
+            emit(pendingOperations.values.toList())
         }
+    }
+    
+    /**
+     * Cleanup resources
+     */
+    fun cleanup() {
+        scope.cancel()
+        WorkManager.getInstance(context).cancelAllWorkByTag(SYNC_WORK_NAME)
     }
 }
 
@@ -506,132 +531,24 @@ enum class OperationStatus {
 }
 
 /**
- * Offline queue state
+ * Queue state
  */
 data class OfflineQueueState(
-    val totalOperations: Int = 0,
     val pendingOperations: Int = 0,
-    val failedOperations: Int = 0,
     val processingOperations: Int = 0,
-    val lastSyncAttempt: Long = 0L,
-    val isNetworkAvailable: Boolean = false
-)
-
-/**
- * Worker for periodic offline sync
- */
-class OfflineSyncWorker(
-    context: Context,
-    params: WorkerParameters
-) : CoroutineWorker(context, params) {
-    
-    /**
-     * Extract summary ID from JSON data
-     */
-    private fun extractSummaryId(summaryData: String): String {
-        return try {
-            val json = gson.fromJson(summaryData, Map::class.java)
-            json["date"]?.toString() ?: generateOperationId()
-        } catch (e: Exception) {
-            generateOperationId()
-        }
-    }
-    
-    /**
-     * Get oldest operation timestamp
-     */
-    private suspend fun getOldestOperationTimestamp(): Long? {
-        val operations = offlineOperationDao.getUnsyncedOperations()
-        return operations.minOfOrNull { it.timestamp }
-    }
-}
-
-/**
- * Worker for processing offline operations
- */
-@HiltWorker
-class OfflineSyncWorker @AssistedInject constructor(
-    @Assisted context: Context,
-    @Assisted workerParams: WorkerParameters,
-    private val offlineQueueManager: OfflineQueueManager
-) : CoroutineWorker(context, workerParams) {
-    
-    override suspend fun doWork(): Result {
-        return try {
-            val syncResult = offlineQueueManager.processUnsyncedOperations()
-            
-            if (syncResult.failureCount == 0) {
-                Result.success()
-            } else if (syncResult.successCount > 0) {
-                Result.success() // Partial success
-            } else {
-                Result.retry()
-            }
-        } catch (e: Exception) {
-            Result.failure()
-        }
-    }
-}
-
-/**
- * Extension functions for converting between domain and entity models
- */
-fun OfflineOperation.toEntity(): OfflineOperationEntity {
-    return OfflineOperationEntity(
-        id = id,
-        type = type.name,
-        data = data,
-        timestamp = timestamp,
-        priority = priority.name,
-        status = status.name,
-        errorMessage = errorMessage,
-        lastAttempt = lastAttempt,
-        retryCount = retryCount
-    )
-}
-
-fun OfflineOperationEntity.toDomain(): OfflineOperation {
-    val typeEnum = runCatching { OperationType.valueOf(type) }.getOrElse { OperationType.TRANSACTION_SYNC }
-    val priorityEnum = runCatching { OperationPriority.valueOf(priority) }.getOrElse { OperationPriority.NORMAL }
-    val statusEnum = runCatching { OperationStatus.valueOf(status) }.getOrElse { OperationStatus.PENDING }
-
-    return OfflineOperation(
-        id = id,
-        type = typeEnum,
-        data = data,
-        timestamp = timestamp,
-        priority = priorityEnum,
-        status = statusEnum,
-        errorMessage = errorMessage,
-        lastAttempt = lastAttempt,
-        retryCount = retryCount
-    )
-}
- * Result of sync operation
- */
-data class SyncResult(
-    val totalOperations: Int,
-    val successCount: Int,
-    val failureCount: Int,
-    val results: List<OperationResult>
-)
-
-/**
- * Result of individual operation
- */
-data class OperationResult(
-    val operationId: String,
-    val success: Boolean,
-    val error: String?
+    val failedOperations: Int = 0,
+    val completedOperations: Int = 0,
+    val lastSyncTime: Long = 0L
 )
 
 /**
  * Queue statistics
  */
 data class QueueStatistics(
-    val unsyncedCount: Int,
-    val transactionCount: Int,
-    val summaryCount: Int,
+    val pendingCount: Int,
+    val processingCount: Int,
     val failedCount: Int,
+    val completedCount: Int,
+    val totalOperations: Int,
     val oldestOperation: Long?
 )

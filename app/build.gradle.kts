@@ -56,7 +56,6 @@ android {
                 enableV4Signing = true
             }
         }
-        }
     }
 
     defaultConfig {
@@ -232,12 +231,14 @@ android {
 
     packaging {
         resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-            excludes += "/META-INF/DEPENDENCIES"
-            excludes += "/META-INF/LICENSE"
-            excludes += "/META-INF/LICENSE.txt"
-            excludes += "/META-INF/NOTICE"
-            excludes += "/META-INF/NOTICE.txt"
+            excludes.addAll(listOf(
+                "/META-INF/{AL2.0,LGPL2.1}",
+                "/META-INF/DEPENDENCIES",
+                "/META-INF/LICENSE",
+                "/META-INF/LICENSE.txt",
+                "/META-INF/NOTICE",
+                "/META-INF/NOTICE.txt"
+            ))
         }
     }
 
@@ -254,7 +255,7 @@ tasks.register("checkDebugAarMetadata") {
         description = "Alias for checking debug AAR metadata for all variants"
     }
     
-    task("checkReleaseAarMetadata") {
+    tasks.register("checkReleaseAarMetadata") {
         dependsOn("checkDevReleaseAarMetadata", "checkStagingReleaseAarMetadata", "checkProdReleaseAarMetadata")
         description = "Alias for checking release AAR metadata for all variants"
     }
@@ -404,71 +405,74 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     if (firebaseEnabled) {
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.play.services)
+        implementation(libs.kotlinx.coroutines.android)
+        implementation(libs.kotlinx.coroutines.play.services)
 
-    // Firebase - Feature toggled via build flags
-    if (project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
-        implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-        implementation("com.google.firebase:firebase-analytics-ktx")
-        implementation("com.google.firebase:firebase-crashlytics-ktx")
-        implementation("com.google.firebase:firebase-perf-ktx")
-        implementation("com.google.firebase:firebase-messaging-ktx")
-        implementation("com.google.firebase:firebase-config-ktx")
+        // Firebase - Feature toggled via build flags
+        if (project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
+            implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+            implementation("com.google.firebase:firebase-analytics-ktx")
+            implementation("com.google.firebase:firebase-crashlytics-ktx")
+            implementation("com.google.firebase:firebase-perf-ktx")
+            implementation("com.google.firebase:firebase-messaging-ktx")
+            implementation("com.google.firebase:firebase-config-ktx")
+        }
+
+        // App Center SDK
+        implementation(libs.appcenter.analytics)
+        implementation(libs.appcenter.crashes)
     }
-
-    // App Center SDK
-    implementation(libs.appcenter.analytics)
-    implementation(libs.appcenter.crashes)
 
     if (googleCloudSpeechEnabled) {
-    // Google Cloud Speech - Feature toggled via build flags
-    if (project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
-        implementation("com.google.cloud:google-cloud-speech:4.21.0")
-        implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+        // Google Cloud Speech - Feature toggled via build flags
+        if (project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
+            implementation("com.google.cloud:google-cloud-speech:4.21.0")
+            implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+        }
+
+        // TensorFlow Lite
+        implementation(libs.tensorflow.lite)
+        implementation(libs.tensorflow.lite.support)
+        implementation(libs.tensorflow.lite.metadata)
+        implementation(libs.tensorflow.lite.gpu)
+
+        // Audio Processing
+        implementation("com.github.wendykierp:JTransforms:3.1")
     }
-
-    // TensorFlow Lite
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.support)
-    implementation(libs.tensorflow.lite.metadata)
-    implementation(libs.tensorflow.lite.gpu)
-
-    // Audio Processing
-    implementation("com.github.wendykierp:JTransforms:3.1")
 
     if (webRtcEnabled) {
-    implementation(libs.jtransforms)
-    
-    // WebRTC VAD (Voice Activity Detection) - Feature toggled via build flags
-    if (project.hasProperty("WEBRTC_ENABLED") && project.property("WEBRTC_ENABLED") == "true") {
-        implementation("org.webrtc:google-webrtc:1.0.32006")
+        implementation(libs.jtransforms)
+        
+        // WebRTC VAD (Voice Activity Detection) - Feature toggled via build flags
+        if (project.hasProperty("WEBRTC_ENABLED") && project.property("WEBRTC_ENABLED") == "true") {
+            implementation("org.webrtc:google-webrtc:1.0.32006")
+        }
+
+        // Security & Encryption
+        implementation("androidx.security:security-crypto:1.1.0-alpha06")
+        implementation("androidx.biometric:biometric:1.1.0")
+        implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+        implementation(libs.androidx.security.crypto)
+        implementation(libs.androidx.biometric)
+
+        // Permissions
+        implementation(libs.accompanist.permissions)
+
+        // Image Loading
+        implementation(libs.coil.compose)
+
+        // Logging
+        implementation(libs.timber)
+
+        // Date/Time
+        implementation(libs.kotlinx.datetime)
+
+        // Charts (for analytics)
+        implementation(libs.mpandroidchart)
+
+        // Splash Screen
+        implementation(libs.androidx.core.splashscreen)
     }
-
-    // Security & Encryption
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
-    implementation("androidx.biometric:biometric:1.1.0")
-    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
-    implementation(libs.androidx.security.crypto)
-    implementation(libs.androidx.biometric)
-
-    // Permissions
-    implementation(libs.accompanist.permissions)
-
-    // Image Loading
-    implementation(libs.coil.compose)
-
-    // Logging
-    implementation(libs.timber)
-
-    // Date/Time
-    implementation(libs.kotlinx.datetime)
-
-    // Charts (for analytics)
-    implementation(libs.mpandroidchart)
-
-    // Splash Screen
-    implementation(libs.androidx.core.splashscreen)
 
     // Testing
     testImplementation(libs.junit)

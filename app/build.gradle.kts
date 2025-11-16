@@ -1,5 +1,6 @@
 import java.math.BigDecimal
 import java.util.Properties
+import java.io.FileInputStream
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.FileInputStream

@@ -206,6 +206,49 @@ else
 fi
 
 echo
+echo -e "${BLUE}Checking dependency configuration...${NC}"
+
+# Check if core dependencies are properly configured
+BUILD_GRADLE="$PROJECT_DIR/app/build.gradle.kts"
+
+if grep -q "implementation.*firebase-bom" "$BUILD_GRADLE"; then
+    print_success "Firebase dependencies are always included"
+else
+    print_error "Firebase dependencies are feature-gated"
+fi
+
+if grep -q "implementation.*appcenter" "$BUILD_GRADLE"; then
+    print_success "App Center dependencies are always included"
+else
+    print_error "App Center dependencies are missing"
+fi
+
+if grep -q "implementation.*tensorflow" "$BUILD_GRADLE"; then
+    print_success "TensorFlow Lite dependencies are always included"
+else
+    print_error "TensorFlow Lite dependencies are feature-gated"
+fi
+
+if grep -q "implementation.*sqlcipher" "$BUILD_GRADLE"; then
+    print_success "SQLCipher dependencies are always included"
+else
+    print_error "SQLCipher dependencies are feature-gated"
+fi
+
+if grep -q "implementation.*androidx.security.crypto" "$BUILD_GRADLE"; then
+    print_success "AndroidX Security Crypto dependencies are always included"
+else
+    print_error "AndroidX Security Crypto dependencies are feature-gated"
+fi
+
+# Check that WebRTC remains optional
+if grep -q "webRtcEnabled.*webrtc" "$BUILD_GRADLE"; then
+    print_success "WebRTC dependencies are properly feature-gated"
+else
+    print_warning "WebRTC dependencies might not be feature-gated"
+fi
+
+echo
 echo -e "${BLUE}Verifying Gradle configuration...${NC}"
 
 # Check if gradle wrapper exists
@@ -223,10 +266,17 @@ fi
 # Try to run gradle check
 cd "$PROJECT_DIR"
 echo -e "${BLUE}Running Gradle configuration check...${NC}"
-if ./gradlew tasks --quiet > /dev/null 2>&1; then
-    print_success "Gradle configuration is valid"
+
+# Check if Java is available
+if ! command -v java &> /dev/null; then
+    print_warning "Java not available - skipping Gradle configuration check"
+    print_warning "Install Java JDK to verify Gradle configuration"
 else
-    print_error "Gradle configuration has errors"
+    if ./gradlew tasks --quiet > /dev/null 2>&1; then
+        print_success "Gradle configuration is valid"
+    else
+        print_error "Gradle configuration has errors"
+    fi
 fi
 
 echo

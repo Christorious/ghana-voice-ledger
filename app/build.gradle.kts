@@ -403,27 +403,25 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.play.services)
 
-    // Firebase - Feature toggled via build flags
-    if (firebaseEnabled && project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
-        implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-        implementation("com.google.firebase:firebase-analytics-ktx")
-        implementation("com.google.firebase:firebase-crashlytics-ktx")
-        implementation("com.google.firebase:firebase-perf-ktx")
-        implementation("com.google.firebase:firebase-messaging-ktx")
-        implementation("com.google.firebase:firebase-config-ktx")
-    }
+    // Firebase - Always required for analytics services used throughout the app
+    // Firebase plugins and services can be disabled via build flags, but dependencies remain
+    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
+    implementation("com.google.firebase:firebase-perf-ktx")
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-config-ktx")
 
-    // App Center SDK
+    // App Center SDK - Always required for analytics and crash reporting
     implementation(libs.appcenter.analytics)
     implementation(libs.appcenter.crashes)
 
-    // Google Cloud Speech - Feature toggled via build flags
-    if (googleCloudSpeechEnabled && project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
-        implementation("com.google.cloud:google-cloud-speech:4.21.0")
-        implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
-    }
+    // Google Cloud Speech - Always required for speech recognition services
+    // Service can be disabled via runtime flags, but dependencies remain for compilation
+    implementation("com.google.cloud:google-cloud-speech:4.21.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 
-    // TensorFlow Lite
+    // TensorFlow Lite - Always required for speaker identification and ML models
     implementation(libs.tensorflow.lite)
     implementation(libs.tensorflow.lite.support)
     implementation(libs.tensorflow.lite.metadata)
@@ -437,7 +435,7 @@ dependencies {
         implementation("org.webrtc:google-webrtc:1.0.32006")
     }
 
-    // Security & Encryption
+    // Security & Encryption - Always required for database encryption and secure storage
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.biometric)
     implementation("net.zetetic:android-database-sqlcipher:4.5.4")

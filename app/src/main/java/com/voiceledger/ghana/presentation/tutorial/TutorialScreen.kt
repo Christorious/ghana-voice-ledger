@@ -545,7 +545,7 @@ private fun getFirstTimeUserTutorials(): List<Tutorial> {
             id = "welcome",
             titleRes = R.string.tutorial_welcome_title,
             descriptionRes = R.string.tutorial_welcome_description,
-            icon = Icons.Default.Waving_Hand,
+            icon = Icons.Default.SentimentVerySatisfied,
             type = TutorialStepType.INFORMATION
         ),
         Tutorial(

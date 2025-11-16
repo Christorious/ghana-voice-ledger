@@ -465,7 +465,7 @@ enum class OnboardingPage(
     WELCOME(
         titleRes = R.string.onboarding_welcome_title,
         descriptionRes = R.string.onboarding_welcome_description,
-        icon = Icons.Default.Waving_Hand
+        icon = Icons.Default.SentimentVerySatisfied
     ),
     PERMISSIONS(
         titleRes = R.string.onboarding_permissions_title,

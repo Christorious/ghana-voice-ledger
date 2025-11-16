@@ -10,7 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.parcelize)
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
+    alias(libs.plugins.kotlin.serialization)
     id("jacoco")
     // Temporarily disabled for testing build without Firebase
     // id("com.google.gms.google-services")

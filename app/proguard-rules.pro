@@ -15,6 +15,45 @@
 # ----------------------------------------------------------------------------
 -keep class com.voiceledger.ghana.VoiceLedgerApplication { *; }
 -keep class com.voiceledger.ghana.presentation.MainActivity { *; }
+-keep class com.voiceledger.ghana.service.VoiceAgentService { *; }
+-keep class com.voiceledger.ghana.service.VoiceAgentServiceManager { *; }
+-keep class com.voiceledger.ghana.service.PowerOptimizationService { *; }
+-keep class com.voiceledger.ghana.service.TextToSpeechService { *; }
+
+# ----------------------------------------------------------------------------
+# Jetpack Compose runtime and tooling.
+# ----------------------------------------------------------------------------
+# Compose builds heavy use of generated lambdas, snapshot observers, and platform
+# hosting components that are looked up reflectively by the runtime and tooling.
+# These rules keep the critical runtime surface while still allowing the rest of
+# the UI tree to be optimised.
+-keep class androidx.compose.runtime.ComposerImpl { *; }
+-keep class androidx.compose.runtime.Recomposer { *; }
+-keep class androidx.compose.runtime.PausableMonotonicFrameClock { *; }
+-keep class androidx.compose.runtime.DefaultMonotonicFrameClock { *; }
+-keep class androidx.compose.runtime.internal.ComposableLambda { *; }
+-keep class androidx.compose.runtime.internal.ComposableLambdaImpl { *; }
+-keep class androidx.compose.runtime.internal.ComposableLambdaN { *; }
+-keep class androidx.compose.runtime.snapshots.SnapshotStateObserver { *; }
+-keep class androidx.compose.runtime.saveable.SaveableStateRegistryImpl { *; }
+-keep class androidx.compose.runtime.saveable.SaveableStateHolderImpl { *; }
+-keep class androidx.compose.ui.platform.AbstractComposeView { *; }
+-keep class androidx.compose.ui.platform.AndroidComposeView { *; }
+-keep class androidx.compose.ui.platform.ComposeView { *; }
+-keep class androidx.compose.ui.platform.ViewLayer { *; }
+-keep class androidx.compose.ui.platform.WindowRecomposerPolicy { *; }
+-keep class androidx.compose.foundation.lazy.layout.LazyLayoutSemanticsKt { *; }
+-keep class androidx.compose.foundation.lazy.LazyListSemanticsKt { *; }
+-keep class androidx.compose.foundation.lazy.grid.LazyGridSemanticsKt { *; }
+-keep class androidx.compose.foundation.text.InlineTextContent { *; }
+-keep class androidx.compose.foundation.text.InlineTextContent$* { *; }
+-keep class androidx.compose.ui.tooling.** { *; }
+-keep class androidx.compose.ui.tooling.preview.PreviewParameterProvider { *; }
+-keep class androidx.compose.ui.tooling.preview.PreviewParameterProvider$* { *; }
+-dontwarn androidx.compose.**
+-dontwarn androidx.activity.compose.**
+-dontwarn androidx.lifecycle.compose.**
+-dontwarn androidx.compose.ui.tooling.**
 
 # ----------------------------------------------------------------------------
 # Dagger / Hilt generated components, entry points, and managers.

@@ -1,8 +1,8 @@
 import java.math.BigDecimal
 import java.util.Properties
+import java.io.FileInputStream
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 import org.gradle.testing.jacoco.tasks.JacocoReport
-import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.android.application)
@@ -10,6 +10,7 @@ plugins {
     alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.kotlin.parcelize)
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.20"
     id("jacoco")
     // Temporarily disabled for testing build without Firebase
     // id("com.google.gms.google-services")
@@ -231,14 +232,12 @@ android {
 
     packaging {
         resources {
-            excludes.addAll(listOf(
-                "/META-INF/{AL2.0,LGPL2.1}",
-                "/META-INF/DEPENDENCIES",
-                "/META-INF/LICENSE",
-                "/META-INF/LICENSE.txt",
-                "/META-INF/NOTICE",
-                "/META-INF/NOTICE.txt"
-            ))
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/DEPENDENCIES"
+            excludes += "/META-INF/LICENSE"
+            excludes += "/META-INF/LICENSE.txt"
+            excludes += "/META-INF/NOTICE"
+            excludes += "/META-INF/NOTICE.txt"
         }
     }
 
@@ -247,18 +246,18 @@ android {
             isIncludeAndroidResources = true
         }
     }
-}
-
-// Create alias tasks to avoid ambiguity in automated checks
-tasks.register("checkDebugAarMetadata") {
-    dependsOn("checkDevDebugAarMetadata", "checkStagingDebugAarMetadata", "checkProdDebugAarMetadata")
+    
+    // Create alias tasks to avoid ambiguity in automated checks
+    task("checkDebugAarMetadata") {
+        dependsOn("checkDevDebugAarMetadata", "checkStagingDebugAarMetadata", "checkProdDebugAarMetadata")
         description = "Alias for checking debug AAR metadata for all variants"
     }
     
-    tasks.register("checkReleaseAarMetadata") {
+    task("checkReleaseAarMetadata") {
         dependsOn("checkDevReleaseAarMetadata", "checkStagingReleaseAarMetadata", "checkProdReleaseAarMetadata")
         description = "Alias for checking release AAR metadata for all variants"
     }
+}
 
 jacoco {
     toolVersion = "0.8.11"
@@ -401,78 +400,66 @@ dependencies {
     implementation(libs.gson)
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.play.services)
 
-    if (firebaseEnabled) {
-        implementation(libs.kotlinx.coroutines.android)
-        implementation(libs.kotlinx.coroutines.play.services)
-
-        // Firebase - Feature toggled via build flags
-        if (project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
-            implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
-            implementation("com.google.firebase:firebase-analytics-ktx")
-            implementation("com.google.firebase:firebase-crashlytics-ktx")
-            implementation("com.google.firebase:firebase-perf-ktx")
-            implementation("com.google.firebase:firebase-messaging-ktx")
-            implementation("com.google.firebase:firebase-config-ktx")
-        }
-
-        // App Center SDK
-        implementation(libs.appcenter.analytics)
-        implementation(libs.appcenter.crashes)
+    // Firebase - Feature toggled via build flags
+    if (firebaseEnabled && project.hasProperty("FIREBASE_ENABLED") && project.property("FIREBASE_ENABLED") == "true") {
+        implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+        implementation("com.google.firebase:firebase-analytics-ktx")
+        implementation("com.google.firebase:firebase-crashlytics-ktx")
+        implementation("com.google.firebase:firebase-perf-ktx")
+        implementation("com.google.firebase:firebase-messaging-ktx")
+        implementation("com.google.firebase:firebase-config-ktx")
     }
 
-    if (googleCloudSpeechEnabled) {
-        // Google Cloud Speech - Feature toggled via build flags
-        if (project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
-            implementation("com.google.cloud:google-cloud-speech:4.21.0")
-            implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
-        }
+    // App Center SDK
+    implementation(libs.appcenter.analytics)
+    implementation(libs.appcenter.crashes)
 
-        // TensorFlow Lite
-        implementation(libs.tensorflow.lite)
-        implementation(libs.tensorflow.lite.support)
-        implementation(libs.tensorflow.lite.metadata)
-        implementation(libs.tensorflow.lite.gpu)
-
-        // Audio Processing
-        implementation("com.github.wendykierp:JTransforms:3.1")
+    // Google Cloud Speech - Feature toggled via build flags
+    if (googleCloudSpeechEnabled && project.hasProperty("GOOGLE_CLOUD_SPEECH_ENABLED") && project.property("GOOGLE_CLOUD_SPEECH_ENABLED") == "true") {
+        implementation("com.google.cloud:google-cloud-speech:4.21.0")
+        implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
     }
 
-    if (webRtcEnabled) {
-        implementation(libs.jtransforms)
-        
-        // WebRTC VAD (Voice Activity Detection) - Feature toggled via build flags
-        if (project.hasProperty("WEBRTC_ENABLED") && project.property("WEBRTC_ENABLED") == "true") {
-            implementation("org.webrtc:google-webrtc:1.0.32006")
-        }
+    // TensorFlow Lite
+    implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.support)
+    implementation(libs.tensorflow.lite.metadata)
+    implementation(libs.tensorflow.lite.gpu)
 
-        // Security & Encryption
-        implementation("androidx.security:security-crypto:1.1.0-alpha06")
-        implementation("androidx.biometric:biometric:1.1.0")
-        implementation("net.zetetic:android-database-sqlcipher:4.5.4")
-        implementation(libs.androidx.security.crypto)
-        implementation(libs.androidx.biometric)
-
-        // Permissions
-        implementation(libs.accompanist.permissions)
-
-        // Image Loading
-        implementation(libs.coil.compose)
-
-        // Logging
-        implementation(libs.timber)
-
-        // Date/Time
-        implementation(libs.kotlinx.datetime)
-
-        // Charts (for analytics)
-        implementation(libs.mpandroidchart)
-
-        // Splash Screen
-        implementation(libs.androidx.core.splashscreen)
+    // Audio Processing
+    implementation(libs.jtransforms)
+    
+    // WebRTC VAD (Voice Activity Detection) - Feature toggled via build flags
+    if (webRtcEnabled && project.hasProperty("WEBRTC_ENABLED") && project.property("WEBRTC_ENABLED") == "true") {
+        implementation("org.webrtc:google-webrtc:1.0.32006")
     }
+
+    // Security & Encryption
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.biometric)
+    implementation("net.zetetic:android-database-sqlcipher:4.5.4")
+
+    // Permissions
+    implementation(libs.accompanist.permissions)
+
+    // Image Loading
+    implementation(libs.coil.compose)
+
+    // Logging
+    implementation(libs.timber)
+
+    // Date/Time
+    implementation(libs.kotlinx.datetime)
+
+    // Charts (for analytics)
+    implementation(libs.mpandroidchart)
+
+    // Splash Screen
+    implementation(libs.androidx.core.splashscreen)
+
 
     // Testing
     testImplementation(libs.junit)

@@ -16,8 +16,60 @@ import java.util.*
 import javax.inject.Inject
 
 /**
- * ViewModel for the dashboard screen
- * Manages dashboard state and business logic
+ * # DashboardViewModel
+ * 
+ * **Clean Architecture - Presentation Layer**
+ * 
+ * ViewModel for the dashboard screen, managing UI state and business logic. This class acts
+ * as the middleman between the UI (Compose) and the data/domain layers, following the MVVM
+ * (Model-View-ViewModel) architecture pattern.
+ * 
+ * ## What is a ViewModel?
+ * 
+ * ViewModel is an Android Architecture Component that:
+ * 1. Survives configuration changes (e.g., screen rotation)
+ * 2. Has a lifecycle tied to the screen, not individual Composables
+ * 3. Holds UI state and exposes it to the UI layer
+ * 4. Provides a scope for coroutines (viewModelScope)
+ * 
+ * ## The @HiltViewModel Annotation:
+ * 
+ * Tells Hilt to automatically inject this ViewModel's dependencies. Combined with @Inject on
+ * the constructor, Hilt knows how to create this ViewModel and all its dependencies.
+ * 
+ * In a Composable, you can get this ViewModel with:
+ * ```kotlin
+ * val viewModel: DashboardViewModel = hiltViewModel()
+ * ```
+ * 
+ * ## Constructor Injection with @Inject:
+ * 
+ * All dependencies (repositories, service manager) are injected via the constructor. This
+ * makes testing easy - we can inject mock implementations without changing any code.
+ * 
+ * ## Clean Architecture Layers:
+ * 
+ * This ViewModel demonstrates proper layering:
+ * - **Presentation Layer (this class)**: Handles UI logic, state management
+ * - **Domain Layer (repositories)**: Business logic, use cases
+ * - **Data Layer**: Database, network, local storage
+ * 
+ * The ViewModel never directly touches the database or makes network calls - it goes through
+ * repositories, maintaining separation of concerns.
+ * 
+ * ## State Management Pattern:
+ * 
+ * Uses the _uiState / uiState pair:
+ * - **_uiState (private MutableStateFlow)**: Internal, mutable state that only this ViewModel modifies
+ * - **uiState (public StateFlow)**: External, read-only state that the UI observes
+ * 
+ * This prevents the UI from accidentally modifying state and ensures all state changes
+ * go through the ViewModel's methods.
+ * 
+ * @property transactionRepository Provides access to transaction data
+ * @property dailySummaryRepository Provides access to daily summaries
+ * @property speakerProfileRepository Provides access to speaker/customer profiles
+ * @property voiceAgentServiceManager Manages the voice processing service
  */
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
@@ -27,24 +79,95 @@ class DashboardViewModel @Inject constructor(
     private val voiceAgentServiceManager: VoiceAgentServiceManager
 ) : ViewModel() {
     
+    // Private mutable state - only this ViewModel can modify it
     private val _uiState = MutableStateFlow(DashboardUiState())
+    
+    /**
+     * Public immutable state exposed to the UI.
+     * 
+     * ## StateFlow vs LiveData:
+     * 
+     * StateFlow is Kotlin's modern alternative to LiveData:
+     * - **StateFlow**: Kotlin-first, works anywhere (not Android-specific)
+     * - **LiveData**: Android-specific, lifecycle-aware by default
+     * 
+     * ## asStateFlow():
+     * 
+     * Converts MutableStateFlow to read-only StateFlow. The UI can collect/observe this
+     * flow but cannot modify it. All modifications must go through ViewModel methods.
+     * 
+     * ## How the UI Uses This:
+     * 
+     * ```kotlin
+     * val uiState by viewModel.uiState.collectAsState()
+     * // UI automatically recomposes when uiState changes
+     * ```
+     */
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
     
     private val currencyFormatter = NumberFormat.getCurrencyInstance(Locale("en", "GH")).apply {
         currency = Currency.getInstance("GHS")
     }
     
+    /**
+     * Initialization block - runs when the ViewModel is created.
+     * 
+     * ## The init Block:
+     * 
+     * Kotlin's `init` block runs after the primary constructor but before the class is used.
+     * It's perfect for initialization logic like loading initial data.
+     * 
+     * Here we:
+     * 1. Load the dashboard data (transactions, analytics, summaries)
+     * 2. Start observing the voice service state for real-time updates
+     */
     init {
         loadDashboardData()
         observeServiceState()
     }
     
+    /**
+     * Loads all dashboard data from multiple repositories.
+     * 
+     * ## viewModelScope:
+     * 
+     * A coroutine scope provided by the ViewModel. It's automatically cancelled when the
+     * ViewModel is cleared (user navigates away), preventing memory leaks. All database
+     * operations run in this scope.
+     * 
+     * ## The combine Operator:
+     * 
+     * Combines multiple Flow sources into a single Flow. Whenever ANY of the source Flows
+     * emit a new value, combine runs with the latest value from ALL sources.
+     * 
+     * This is powerful for dashboard UIs that need data from multiple sources:
+     * - Transactions Flow
+     * - Analytics Flow
+     * - Summary Flow
+     * - Customers Flow
+     * - Service State Flow
+     * 
+     * When any changes, the dashboard automatically updates with fresh data from all sources.
+     * 
+     * ## Error Handling:
+     * 
+     * Uses both try-catch and Flow's .catch operator for comprehensive error handling:
+     * - .catch: Handles errors in the Flow pipeline
+     * - try-catch: Handles errors in setup or unexpected exceptions
+     * 
+     * ## State Updates:
+     * 
+     * Updates state using `copy()` - a data class feature that creates a new instance with
+     * only specified fields changed. This immutability is crucial for reactive UIs.
+     */
     private fun loadDashboardData() {
+        // Launch a coroutine in the ViewModel's scope
         viewModelScope.launch {
             try {
+                // Set loading state before fetching data
                 _uiState.value = _uiState.value.copy(isLoading = true)
                 
-                // Combine multiple data sources
+                // Combine multiple data sources into a single reactive stream
                 combine(
                     transactionRepository.getTodaysTransactions(),
                     transactionRepository.getTodaysAnalytics(),

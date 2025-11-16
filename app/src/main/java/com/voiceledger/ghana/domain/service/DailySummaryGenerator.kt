@@ -11,8 +11,56 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Service for generating comprehensive daily summaries
- * Aggregates transaction data and provides business insights
+ * # DailySummaryGenerator
+ * 
+ * **Clean Architecture - Domain Layer (Service)**
+ * 
+ * Business logic service that generates comprehensive daily and period summaries from transaction
+ * data. This class embodies the app's business intelligence, transforming raw transaction records
+ * into actionable insights for market vendors.
+ * 
+ * ## Role in Clean Architecture:
+ * 
+ * This is a **Domain Service** - a class that contains business logic that doesn't naturally
+ * belong to a single entity. It orchestrates multiple repositories to create summaries.
+ * 
+ * ```
+ * Presentation Layer (DashboardViewModel)
+ *         ↓ (calls)
+ * Domain Layer (DailySummaryGenerator) ← YOU ARE HERE
+ *         ↓ (uses)
+ * Data Layer (Repositories, Database)
+ * ```
+ * 
+ * ## Why Not in a Repository?
+ * 
+ * Repositories handle CRUD operations for a single entity. This service:
+ * - Works with multiple repositories (transactions, speakers, summaries)
+ * - Performs complex calculations and aggregations
+ * - Generates recommendations based on business rules
+ * - Encapsulates domain knowledge about the fish market business
+ * 
+ * ## The @Singleton Annotation:
+ * 
+ * This service is stateless (no stored fields that change over time), so it's safe and
+ * efficient to have a single instance app-wide. Hilt ensures this.
+ * 
+ * ## The @Inject Constructor:
+ * 
+ * Hilt automatically injects all dependencies. The constructor clearly shows what this
+ * service needs, making dependencies explicit and testable.
+ * 
+ * ## What This Service Provides:
+ * 
+ * 1. **Daily Summaries**: Aggregated metrics for a single day
+ * 2. **Period Summaries**: Weekly/monthly trends and comparisons
+ * 3. **Business Insights**: Peak hours, top products, customer patterns
+ * 4. **Recommendations**: AI-generated suggestions to improve sales
+ * 5. **Historical Comparisons**: Compare today vs yesterday, last week, etc.
+ * 
+ * @property transactionRepository Access to transaction data
+ * @property speakerProfileRepository Access to customer/speaker data
+ * @property dailySummaryRepository Access to previously generated summaries
  */
 @Singleton
 class DailySummaryGenerator @Inject constructor(

@@ -32,8 +32,56 @@ import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**
- * Dashboard screen composable
- * Main screen showing today's sales summary and listening status
+ * # DashboardScreen
+ * 
+ * **Clean Architecture - Presentation Layer (UI)**
+ * 
+ * The main dashboard screen built with Jetpack Compose. This is the primary screen users see,
+ * displaying real-time sales data, voice service status, and quick actions.
+ * 
+ * ## Jetpack Compose Fundamentals:
+ * 
+ * Compose is Android's modern, declarative UI toolkit. Instead of XML layouts:
+ * - **Declarative**: Describe what the UI should look like, not how to build it
+ * - **Reactive**: UI automatically updates when state changes
+ * - **Composable Functions**: UI components are Kotlin functions marked with @Composable
+ * 
+ * ## The @Composable Annotation:
+ * 
+ * Marks this function as a Composable - a UI component that can be composed with other
+ * Composables. Composables can:
+ * - Call other Composables to build complex UIs from simple pieces
+ * - Read state and automatically recompose (re-execute) when state changes
+ * - Use special Compose APIs like remember, LaunchedEffect, etc.
+ * 
+ * ## Function Parameters as Props:
+ * 
+ * Navigation callbacks (onNavigateToHistory, etc.) are passed as parameters, making this
+ * component reusable and testable. The parent decides what happens when buttons are clicked.
+ * 
+ * ## Default Parameter for viewModel:
+ * 
+ * `viewModel: DashboardViewModel = hiltViewModel()` provides a default ViewModel from Hilt.
+ * This pattern:
+ * - Makes production code convenient (no need to pass the ViewModel)
+ * - Makes tests easy (pass a test ViewModel instead of the default)
+ * 
+ * ## State Collection:
+ * 
+ * `collectAsStateWithLifecycle()` is crucial - it:
+ * 1. Collects StateFlow from the ViewModel
+ * 2. Converts it to Compose State (triggers recomposition)
+ * 3. Lifecycle-aware (stops collecting when screen is not visible, saving resources)
+ * 
+ * ## Material 3:
+ * 
+ * Uses Material Design 3 (Material You) components for modern, adaptive UI that respects
+ * user theme preferences (light/dark mode, dynamic colors).
+ * 
+ * @param onNavigateToHistory Callback to navigate to the transaction history screen
+ * @param onNavigateToSettings Callback to navigate to the settings screen
+ * @param onNavigateToSummary Callback to navigate to daily summary details (receives date)
+ * @param viewModel The ViewModel managing this screen's state (injected by Hilt by default)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,20 +91,48 @@ fun DashboardScreen(
     onNavigateToSummary: (String) -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
+    // Collect state from ViewModel as Compose State
+    // The 'by' keyword uses Kotlin's property delegation to unwrap the State<T>
+    // so we can access uiState directly instead of uiState.value
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    
+    // LocalContext provides access to the Android Context
+    // CompositionLocal is Compose's way of passing data down the tree without explicit parameters
     val context = LocalContext.current
     
-    // Handle messages and errors
+    /**
+     * LaunchedEffect for side effects.
+     * 
+     * ## What are Side Effects in Compose?
+     * 
+     * Side effects are operations that affect something outside the Composable function's scope:
+     * - Showing a Snackbar
+     * - Making a network call
+     * - Starting an animation
+     * - Updating a database
+     * 
+     * ## LaunchedEffect:
+     * 
+     * Runs a coroutine when the Composable enters composition or when its key changes.
+     * Here, the key is `uiState.message` - when the message changes, this block runs.
+     * 
+     * ## Lifecycle:
+     * 
+     * - LaunchedEffect is cancelled if the Composable leaves composition
+     * - It restarts if the key (uiState.message) changes
+     * - This prevents leaks and ensures side effects match the current state
+     */
     LaunchedEffect(uiState.message) {
         uiState.message?.let { message ->
-            // Show snackbar or toast
+            // TODO: Show snackbar with the message
             viewModel.clearMessage()
         }
     }
     
+    // Handle error messages separately
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
-            // Show error snackbar
+            // TODO: Show error snackbar
             viewModel.clearError()
         }
     }

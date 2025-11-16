@@ -5,6 +5,7 @@ import com.voiceledger.ghana.service.AudioCaptureController
 import com.voiceledger.ghana.service.SpeechProcessingPipeline
 import com.voiceledger.ghana.service.VoiceNotificationHelper
 import com.voiceledger.ghana.service.VoiceSessionCoordinator
+import com.voiceledger.ghana.service.WorkManagerScheduler
 import com.voiceledger.ghana.ml.vad.VADManager
 import com.voiceledger.ghana.ml.speaker.SpeakerIdentifier
 import com.voiceledger.ghana.ml.speech.SpeechRecognitionManager
@@ -87,5 +88,13 @@ object VoiceServiceModule {
         @ApplicationContext context: Context
     ): VoiceNotificationHelper {
         return VoiceNotificationHelper(context)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideWorkManagerScheduler(
+        @ApplicationContext context: Context
+    ): WorkManagerScheduler {
+        return WorkManagerScheduler(context)
     }
 }

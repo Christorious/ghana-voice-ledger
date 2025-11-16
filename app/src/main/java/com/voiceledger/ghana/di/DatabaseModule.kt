@@ -8,6 +8,7 @@ import com.voiceledger.ghana.data.local.database.DatabaseMigrations
 import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import com.voiceledger.ghana.data.repository.*
 import com.voiceledger.ghana.domain.repository.*
+import com.voiceledger.ghana.domain.service.AnalyticsConsentProvider
 import com.voiceledger.ghana.security.SecurityManager
 import dagger.Module
 import dagger.Provides
@@ -226,9 +227,10 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideTransactionRepository(
-        transactionDao: TransactionDao
+        transactionDao: TransactionDao,
+        securityManager: SecurityManager
     ): TransactionRepository {
-        return TransactionRepositoryImpl(transactionDao)
+        return TransactionRepositoryImpl(transactionDao, securityManager)
     }
     
     @Provides
@@ -262,5 +264,14 @@ object DatabaseModule {
         audioMetadataDao: AudioMetadataDao
     ): AudioMetadataRepository {
         return AudioMetadataRepositoryImpl(audioMetadataDao)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideTransactionAnalyticsRepository(
+        transactionDao: TransactionDao,
+        analyticsConsentProvider: AnalyticsConsentProvider
+    ): TransactionAnalyticsRepository {
+        return TransactionAnalyticsRepositoryImpl(transactionDao, analyticsConsentProvider)
     }
 }

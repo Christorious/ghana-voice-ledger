@@ -16,6 +16,9 @@ import org.junit.runners.Suite
  */
 @RunWith(Suite::class)
 @Suite.SuiteClasses(
+    // Dependency Configuration Tests
+    DependencyConfigurationTest::class,
+    
     // Security Tests
     EncryptionServiceTest::class,
     PrivacyManagerTest::class,

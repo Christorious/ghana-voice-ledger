@@ -55,7 +55,8 @@ class TransactionRepositoryImpl @Inject constructor(
                 topProduct = null,
                 peakHour = null,
                 uniqueCustomers = 0,
-                averageTransactionValue = 0.0
+                averageTransactionValue = 0.0,
+                successRate = 0.0
             )
         }
         
@@ -81,6 +82,12 @@ class TransactionRepositoryImpl @Inject constructor(
             .size
         
         val averageTransactionValue = totalSales / transactionCount
+        val successfulTransactions = transactions.count { !it.needsReview }
+        val successRate = if (transactionCount > 0) {
+            successfulTransactions.toDouble() / transactionCount
+        } else {
+            0.0
+        }
         
         val endTime = System.currentTimeMillis()
         val computationTime = endTime - startTime
@@ -98,7 +105,8 @@ class TransactionRepositoryImpl @Inject constructor(
             topProduct = topProduct,
             peakHour = peakHour,
             uniqueCustomers = uniqueCustomers,
-            averageTransactionValue = averageTransactionValue
+            averageTransactionValue = averageTransactionValue,
+            successRate = successRate
         )
     }
     

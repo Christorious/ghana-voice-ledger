@@ -1,9 +1,11 @@
 package com.voiceledger.ghana.di
 
 import android.content.Context
+import com.voiceledger.ghana.domain.service.AnalyticsConsentProvider
 import com.voiceledger.ghana.security.EncryptionService
 import com.voiceledger.ghana.security.PrivacyManager
 import com.voiceledger.ghana.security.SecureDataStorage
+import com.voiceledger.ghana.security.SecurityAnalyticsConsentProvider
 import com.voiceledger.ghana.security.SecurityManager
 import dagger.Module
 import dagger.Provides
@@ -44,6 +46,14 @@ object SecurityModule {
         privacyManager: PrivacyManager
     ): SecureDataStorage {
         return SecureDataStorage(context, encryptionService, privacyManager)
+    }
+    
+    @Provides
+    @Singleton
+    fun provideAnalyticsConsentProvider(
+        securityManager: SecurityManager
+    ): AnalyticsConsentProvider {
+        return SecurityAnalyticsConsentProvider(securityManager)
     }
     
     @Provides

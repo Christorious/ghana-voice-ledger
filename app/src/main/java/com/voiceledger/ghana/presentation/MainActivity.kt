@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.voiceledger.ghana.presentation.analytics.TransactionAnalyticsScreen
 import com.voiceledger.ghana.presentation.dashboard.DashboardScreen
 import com.voiceledger.ghana.presentation.history.HistoryScreen
 import com.voiceledger.ghana.presentation.settings.SettingsScreen
@@ -107,6 +109,7 @@ fun VoiceLedgerApp() {
                 
                 val items = listOf(
                     BottomNavItem("dashboard", "Dashboard", Icons.Default.Dashboard),
+                    BottomNavItem("analytics", "Analytics", Icons.Default.Insights),
                     BottomNavItem("history", "History", Icons.Default.History),
                     BottomNavItem("settings", "Settings", Icons.Default.Settings)
                 )
@@ -151,6 +154,14 @@ fun VoiceLedgerApp() {
                     },
                     onNavigateToSummary = { date ->
                         navController.navigate("summary_presentation/$date")
+                    }
+                )
+            }
+            
+            composable("analytics") {
+                TransactionAnalyticsScreen(
+                    onNavigateToSettings = {
+                        navController.navigate("settings")
                     }
                 )
             }

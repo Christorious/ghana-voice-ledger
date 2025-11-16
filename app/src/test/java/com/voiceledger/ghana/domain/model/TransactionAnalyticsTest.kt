@@ -31,6 +31,7 @@ class TransactionAnalyticsTest {
         assertNull(analytics.peakHour)
         assertEquals(0, analytics.uniqueCustomers)
         assertEquals(0.0, analytics.averageTransactionValue, 0.01)
+        assertEquals(0.0, analytics.successRate, 0.001)
     }
     
     @Test

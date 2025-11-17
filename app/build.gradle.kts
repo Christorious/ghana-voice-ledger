@@ -416,10 +416,16 @@ dependencies {
     implementation(libs.appcenter.analytics)
     implementation(libs.appcenter.crashes)
 
-    // Google Cloud Speech - Always required for speech recognition services
-    // Service can be disabled via runtime flags, but dependencies remain for compilation
-    implementation("com.google.cloud:google-cloud-speech:4.21.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    // Google Cloud Speech - Conditionally included based on feature flag
+    // Note: Temporarily disabled due to protobuf dependency conflicts with Firebase
+    // TODO: Re-enable with proper dependency resolution or use alternative speech recognition
+    if (googleCloudSpeechEnabled) {
+        implementation("com.google.cloud:google-cloud-speech:4.29.0") {
+            exclude(group = "com.google.api.grpc", module = "proto-google-common-protos")
+            exclude(group = "com.google.protobuf", module = "protobuf-java")
+        }
+        implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    }
 
     // TensorFlow Lite - Always required for speaker identification and ML models
     implementation(libs.tensorflow.lite)

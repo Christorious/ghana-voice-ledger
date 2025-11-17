@@ -28,6 +28,14 @@ object PowerModule {
 
     @Provides
     @Singleton
+    fun provideVoiceAgentServiceManager(
+        @ApplicationContext context: Context
+    ): VoiceAgentServiceManager {
+        return VoiceAgentServiceManager(context)
+    }
+
+    @Provides
+    @Singleton
     fun providePowerOptimizationService(
         @ApplicationContext context: Context,
         powerManager: PowerManager,

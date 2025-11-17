@@ -259,6 +259,17 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("com.google.protobuf:protobuf-java:3.23.2")
+        eachDependency {
+            if (requested.group == "com.google.protobuf" && requested.name == "protobuf-java") {
+                useVersion("3.23.2")
+            }
+        }
+    }
+}
+
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -418,8 +429,13 @@ dependencies {
 
     // Google Cloud Speech - Always required for speech recognition services
     // Service can be disabled via runtime flags, but dependencies remain for compilation
-    implementation("com.google.cloud:google-cloud-speech:4.21.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
+    implementation("com.google.cloud:google-cloud-speech:4.19.0") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+        exclude(group = "com.google.api.grpc", module = "proto-google-common-protos")
+    }
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0") {
+        exclude(group = "com.google.protobuf", module = "protobuf-java")
+    }
 
     // TensorFlow Lite - Always required for speaker identification and ML models
     implementation(libs.tensorflow.lite)

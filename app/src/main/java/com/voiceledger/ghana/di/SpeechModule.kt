@@ -127,12 +127,12 @@ object SpeechModule {
     }
     
     /**
-     * Provides offline-only speech recognizer
+     * Provides offline-only speech recognizer interface
      */
     @Provides
     @Singleton
     @OfflineSpeechRecognizer
-    fun provideOfflineSpeechRecognizer(
+    fun provideOfflineSpeechRecognizerInterface(
         offlineSpeechRecognizer: OfflineSpeechRecognizer
     ): SpeechRecognizer {
         return offlineSpeechRecognizer

@@ -37,13 +37,6 @@ jobs:
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
           ${{ runner.os }}-gradle-
-
-    - name: Download gradle-wrapper.jar
-      run: |
-         mkdir -p gradle/wrapper
-         curl -sSL -o gradle/wrapper/gradle-wrapper.jar 
-         "https://repo1.maven.org/maven2/org/gradle/gradle-wrapper/6.8.3/gradle-wrapper-6.8.3.jar"
-
           
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew

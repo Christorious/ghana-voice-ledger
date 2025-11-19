@@ -184,7 +184,7 @@ abstract class VoiceLedgerDatabase : RoomDatabase() {
                         entityType TEXT NOT NULL,
                         entityId TEXT NOT NULL,
                         data TEXT NOT NULL,
-                        INTEGER NOT NULL,
+                        timestamp INTEGER NOT NULL,
                         synced INTEGER NOT NULL DEFAULT 0,
                         retryCount INTEGER NOT NULL DEFAULT 0,
                         maxRetries INTEGER NOT NULL DEFAULT 3,

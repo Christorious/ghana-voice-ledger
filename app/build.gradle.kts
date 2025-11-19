@@ -259,6 +259,17 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("com.google.protobuf:protobuf-java:3.23.2")
+        eachDependency {
+            if (requested.group == "com.google.protobuf" && requested.name == "protobuf-java") {
+                useVersion("3.23.2")
+            }
+        }
+    }
+}
+
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -411,22 +422,6 @@ dependencies {
     implementation("com.google.firebase:firebase-perf-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
-
-    // App Center SDK - Always required for analytics and crash reporting
-    implementation(libs.appcenter.analytics)
-    implementation(libs.appcenter.crashes)
-
-    // Google Cloud Speech - Feature toggled via build flags
-    // These are provided when googleCloudSpeechEnabled is true
-    if (googleCloudSpeechEnabled) {
-        implementation("com.google.cloud:google-cloud-speech:2.42.0")
-        implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0")
-    }
-
-    // TensorFlow Lite - Always required for speaker identification and ML models
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.support)
-    implementation(libs.tensorflow.lite.metadata)
     implementation(libs.tensorflow.lite.gpu)
 
     // Audio Processing

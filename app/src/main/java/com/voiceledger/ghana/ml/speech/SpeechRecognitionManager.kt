@@ -16,7 +16,7 @@ import javax.inject.Singleton
 @Singleton
 class SpeechRecognitionManager @Inject constructor(
     private val context: Context,
-    private val googleSpeechRecognizer: GoogleCloudSpeechRecognizer,
+    private val googleSpeechRecognizer: GoogleCloudSpeechRecognizer?,
     private val offlineSpeechRecognizer: OfflineSpeechRecognizer
 ) {
     
@@ -52,7 +52,7 @@ class SpeechRecognitionManager @Inject constructor(
         _recognitionState.value = RecognitionState.PROCESSING
         
         return try {
-            val result = if (shouldUseOnlineRecognition()) {
+            val result = if (shouldUseOnlineRecognition() && googleSpeechRecognizer != null) {
                 Log.d(TAG, "Using online speech recognition")
                 googleSpeechRecognizer.transcribe(audioData, languages)
             } else {
@@ -99,7 +99,7 @@ class SpeechRecognitionManager @Inject constructor(
         val languages = languageHints ?: currentLanguages
         _recognitionState.value = RecognitionState.STREAMING
         
-        return if (shouldUseOnlineRecognition()) {
+        return if (shouldUseOnlineRecognition() && googleSpeechRecognizer != null) {
             Log.d(TAG, "Starting online streaming recognition")
             googleSpeechRecognizer.startStreaming(languages) { result ->
                 updateLanguageDetection(result)
@@ -118,7 +118,7 @@ class SpeechRecognitionManager @Inject constructor(
      * Stop streaming recognition
      */
     suspend fun stopStreamingRecognition(session: StreamingSession) {
-        if (shouldUseOnlineRecognition()) {
+        if (shouldUseOnlineRecognition() && googleSpeechRecognizer != null) {
             googleSpeechRecognizer.stopStreaming(session)
         } else {
             offlineSpeechRecognizer.stopStreaming(session)
@@ -132,8 +132,8 @@ class SpeechRecognitionManager @Inject constructor(
     fun setLanguagePreferences(languages: List<String>) {
         currentLanguages = languages.ifEmpty { DEFAULT_LANGUAGES }
         
-        // Update both recognizers
-        googleSpeechRecognizer.setLanguageModel(currentLanguages)
+        // Update recognizers
+        googleSpeechRecognizer?.setLanguageModel(currentLanguages)
         offlineSpeechRecognizer.setLanguageModel(currentLanguages)
         
         Log.d(TAG, "Language preferences updated: $currentLanguages")
@@ -144,7 +144,7 @@ class SpeechRecognitionManager @Inject constructor(
      */
     fun setCodeSwitchingEnabled(enabled: Boolean) {
         codeSwitchingEnabled = enabled
-        googleSpeechRecognizer.setCodeSwitchingEnabled(enabled)
+        googleSpeechRecognizer?.setCodeSwitchingEnabled(enabled)
         offlineSpeechRecognizer.setCodeSwitchingEnabled(enabled)
         Log.d(TAG, "Code-switching ${if (enabled) "enabled" else "disabled"}")
     }

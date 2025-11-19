@@ -19,17 +19,6 @@ import javax.inject.Singleton
 object SpeechModule {
     
     /**
-     * Provides Google Cloud Speech recognizer
-     */
-    @Provides
-    @Singleton
-    fun provideGoogleCloudSpeechRecognizer(
-        @ApplicationContext context: Context
-    ): GoogleCloudSpeechRecognizer {
-        return GoogleCloudSpeechRecognizer(context)
-    }
-    
-    /**
      * Provides offline speech recognizer
      */
     @Provides
@@ -42,17 +31,17 @@ object SpeechModule {
     
     /**
      * Provides speech recognition manager
+     * Note: Google Cloud Speech temporarily disabled due to dependency conflicts
      */
     @Provides
     @Singleton
     fun provideSpeechRecognitionManager(
         @ApplicationContext context: Context,
-        googleSpeechRecognizer: GoogleCloudSpeechRecognizer,
         offlineSpeechRecognizer: OfflineSpeechRecognizer
     ): SpeechRecognitionManager {
         return SpeechRecognitionManager(
             context = context,
-            googleSpeechRecognizer = googleSpeechRecognizer,
+            googleSpeechRecognizer = null, // Temporarily disabled
             offlineSpeechRecognizer = offlineSpeechRecognizer
         )
     }
@@ -115,24 +104,12 @@ object SpeechModule {
     }
     
     /**
-     * Provides online-only speech recognizer
+     * Provides offline-only speech recognizer
      */
     @Provides
     @Singleton
-    @OnlineSpeechRecognizer
-    fun provideOnlineSpeechRecognizer(
-        googleSpeechRecognizer: GoogleCloudSpeechRecognizer
-    ): SpeechRecognizer {
-        return googleSpeechRecognizer
-    }
-    
-    /**
-     * Provides offline-only speech recognizer interface
-     */
-    @Provides
-    @Singleton
-    @OfflineSpeechRecognizerQualifier
-    fun provideOfflineSpeechRecognizerInterface(
+    @OfflineSpeechRecognizer
+    fun provideOfflineSpeechRecognizer(
         offlineSpeechRecognizer: OfflineSpeechRecognizer
     ): SpeechRecognizer {
         return offlineSpeechRecognizer
@@ -155,8 +132,7 @@ annotation class OnlineSpeechRecognizer
 
 /**
  * Qualifier for offline speech recognizer
- * Note: Renamed from @OfflineSpeechRecognizer to avoid name collision with the OfflineSpeechRecognizer class
  */
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class OfflineSpeechRecognizerQualifier
+annotation class OfflineSpeechRecognizer

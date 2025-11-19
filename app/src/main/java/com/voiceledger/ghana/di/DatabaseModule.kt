@@ -140,19 +140,18 @@ object DatabaseModule {
      */
     @Provides
     @Singleton
-    fun provideVoiceLedgerDatabase(@ApplicationContext context: Context): VoiceLedgerDatabase {
+    fun provideVoiceLedgerDatabase(
+        @ApplicationContext context: Context,
+        securityManager: SecurityManager
+    ): VoiceLedgerDatabase {
         return if (USE_ENCRYPTION) {
-            provideEncryptedVoiceLedgerDatabase(context, buildSecurityManager())
+            buildEncryptedDatabase(context, securityManager)
         } else {
             DatabaseFactory.createDatabase(
                 context = context,
                 encrypted = false
             )
         }
-    }
-    
-    private fun buildSecurityManager(): SecurityManager {
-        return SecurityManager.getInstance()
     }
     
     /**

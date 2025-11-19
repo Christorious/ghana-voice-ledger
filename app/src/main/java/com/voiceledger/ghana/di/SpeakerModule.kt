@@ -27,9 +27,8 @@ object SpeakerModule {
     @Singleton
     fun provideSpeakerIdentifier(
         @ApplicationContext context: Context,
-        speakerRepository: SpeakerProfileRepository,
-        audioUtils: AudioUtils
+        speakerRepository: SpeakerProfileRepository
     ): SpeakerIdentifier {
-        return TensorFlowLiteSpeakerIdentifier(context, speakerRepository, audioUtils)
+        return TensorFlowLiteSpeakerIdentifier(context, speakerRepository, AudioUtils)
     }
 }

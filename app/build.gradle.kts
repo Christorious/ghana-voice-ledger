@@ -422,25 +422,6 @@ dependencies {
     implementation("com.google.firebase:firebase-perf-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
-
-    // App Center SDK - Always required for analytics and crash reporting
-    implementation(libs.appcenter.analytics)
-    implementation(libs.appcenter.crashes)
-
-    // Google Cloud Speech - Always required for speech recognition services
-    // Service can be disabled via runtime flags, but dependencies remain for compilation
-    implementation("com.google.cloud:google-cloud-speech:4.19.0") {
-        exclude(group = "com.google.protobuf", module = "protobuf-java")
-        exclude(group = "com.google.api.grpc", module = "proto-google-common-protos")
-    }
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.19.0") {
-        exclude(group = "com.google.protobuf", module = "protobuf-java")
-    }
-
-    // TensorFlow Lite - Always required for speaker identification and ML models
-    implementation(libs.tensorflow.lite)
-    implementation(libs.tensorflow.lite.support)
-    implementation(libs.tensorflow.lite.metadata)
     implementation(libs.tensorflow.lite.gpu)
 
     // Audio Processing

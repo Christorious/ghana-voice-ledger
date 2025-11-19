@@ -460,6 +460,396 @@ private fun FeatureItem(
 enum class OnboardingPage(
     val titleRes: Int,
     val descriptionRes: Int,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = onGrantClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.grant_permission))
+            }
+        }
+    }
+}
+
+@Composable
+private fun VoiceSetupContent(
+    onVoiceEnrollmentComplete: () -> Unit
+) {
+    var isRecording by remember { mutableStateOf(false) }
+    var enrollmentProgress by remember { mutableStateOf(0f) }
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Voice enrollment progress
+        CircularProgressIndicator(
+            progress = enrollmentProgress,
+            modifier = Modifier.size(80.dp),
+            strokeWidth = 6.dp
+        )
+        
+        Text(
+            text = stringResource(R.string.voice_enrollment_progress, (enrollmentProgress * 100).toInt()),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        // Recording instructions
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.voice_enrollment_instructions),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        
+        // Record button
+        FloatingActionButton(
+            onClick = {
+                isRecording = !isRecording
+                if (isRecording) {
+                    // Start voice enrollment
+                } else {
+                    // Stop voice enrollment
+                    if (enrollmentProgress >= 1f) {
+                        onVoiceEnrollmentComplete()
+                    }
+                }
+            },
+            modifier = Modifier.size(72.dp),
+            containerColor = if (isRecording) 
+                MaterialTheme.colorScheme.error 
+            else 
+                MaterialTheme.colorScheme.primary
+        ) {
+            Icon(
+                imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
+                contentDescription = if (isRecording) 
+                    stringResource(R.string.stop_recording) 
+                else 
+                    stringResource(R.string.start_recording),
+                modifier = Modifier.size(32.dp)
+            )
+        }
+        
+        // Simulate progress for demo
+        LaunchedEffect(isRecording) {
+            if (isRecording) {
+                while (isRecording && enrollmentProgress < 1f) {
+                    kotlinx.coroutines.delay(100)
+                    enrollmentProgress += 0.02f
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeaturesContent() {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        FeatureItem(
+            icon = Icons.Default.RecordVoiceOver,
+            title = stringResource(R.string.feature_voice_recognition),
+            description = stringResource(R.string.feature_voice_recognition_desc)
+        )
+        
+        FeatureItem(
+            icon = Icons.Default.Analytics,
+            title = stringResource(R.string.feature_daily_summaries),
+            description = stringResource(R.string.feature_daily_summaries_desc)
+        )
+        
+        FeatureItem(
+            icon = Icons.Default.CloudOff,
+            title = stringResource(R.string.feature_offline_mode),
+            description = stringResource(R.string.feature_offline_mode_desc)
+        )
+        
+        FeatureItem(
+            icon = Icons.Default.Security,
+            title = stringResource(R.string.feature_privacy),
+            description = stringResource(R.string.feature_privacy_desc)
+        )
+    }
+}
+
+@Composable
+private fun FeatureItem(
+    icon: ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+enum class OnboardingPage(
+    val titleRes: Int,
+    val descriptionRes: Int,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Button(
+                onClick = onGrantClick,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.grant_permission))
+            }
+        }
+    }
+}
+
+@Composable
+private fun VoiceSetupContent(
+    onVoiceEnrollmentComplete: () -> Unit
+) {
+    var isRecording by remember { mutableStateOf(false) }
+    var enrollmentProgress by remember { mutableStateOf(0f) }
+    
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        // Voice enrollment progress
+        CircularProgressIndicator(
+            progress = enrollmentProgress,
+            modifier = Modifier.size(80.dp),
+            strokeWidth = 6.dp
+        )
+        
+        Text(
+            text = stringResource(R.string.voice_enrollment_progress, (enrollmentProgress * 100).toInt()),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        // Recording instructions
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = stringResource(R.string.voice_enrollment_instructions),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+        
+        // Record button
+        FloatingActionButton(
+            onClick = {
+                isRecording = !isRecording
+                if (isRecording) {
+                    // Start voice enrollment
+                } else {
+                    // Stop voice enrollment
+                    if (enrollmentProgress >= 1f) {
+                        onVoiceEnrollmentComplete()
+                    }
+                }
+            },
+            modifier = Modifier.size(72.dp),
+            containerColor = if (isRecording) 
+                MaterialTheme.colorScheme.error 
+            else 
+                MaterialTheme.colorScheme.primary
+        ) {
+            Icon(
+                imageVector = if (isRecording) Icons.Default.Stop else Icons.Default.Mic,
+                contentDescription = if (isRecording) 
+                    stringResource(R.string.stop_recording) 
+                else 
+                    stringResource(R.string.start_recording),
+                modifier = Modifier.size(32.dp)
+            )
+        }
+        
+        // Simulate progress for demo
+        LaunchedEffect(isRecording) {
+            if (isRecording) {
+                while (isRecording && enrollmentProgress < 1f) {
+                    kotlinx.coroutines.delay(100)
+                    enrollmentProgress += 0.02f
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeaturesContent() {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        FeatureItem(
+            icon = Icons.Default.RecordVoiceOver,
+            title = stringResource(R.string.feature_voice_recognition),
+            description = stringResource(R.string.feature_voice_recognition_desc)
+        )
+        
+        FeatureItem(
+            icon = Icons.Default.Analytics,
+            title = stringResource(R.string.feature_daily_summaries),
+            description = stringResource(R.string.feature_daily_summaries_desc)
+        )
+        
+        FeatureItem(
+            icon = Icons.Default.CloudOff,
+            title = stringResource(R.string.feature_offline_mode),
+            description = stringResource(R.string.feature_offline_mode_desc)
+        )
+        
+        FeatureItem(
+            icon = Icons.Default.Security,
+            title = stringResource(R.string.feature_privacy),
+            description = stringResource(R.string.feature_privacy_desc)
+        )
+    }
+}
+
+@Composable
+private fun FeatureItem(
+    icon: ImageVector,
+    title: String,
+    description: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold
+            )
+            
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+enum class OnboardingPage(
+    val titleRes: Int,
+    val descriptionRes: Int,
     val icon: ImageVector
 ) {
     WELCOME(

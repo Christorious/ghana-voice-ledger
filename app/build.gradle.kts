@@ -259,6 +259,17 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("com.google.protobuf:protobuf-java:3.23.2")
+        eachDependency {
+            if (requested.group == "com.google.protobuf" && requested.name == "protobuf-java") {
+                useVersion("3.23.2")
+            }
+        }
+    }
+}
+
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -411,11 +422,6 @@ dependencies {
     implementation("com.google.firebase:firebase-perf-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
-
-    // App Center SDK - Always required for analytics and crash reporting
-    implementation(libs.appcenter.analytics)
-    implementation(libs.appcenter.crashes)
-
     // Google Cloud Speech - Conditionally included based on feature flag
     // Note: Temporarily disabled due to protobuf dependency conflicts with Firebase
     // TODO: Re-enable with proper dependency resolution or use alternative speech recognition

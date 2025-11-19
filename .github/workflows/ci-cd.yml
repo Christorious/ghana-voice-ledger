@@ -42,10 +42,10 @@ jobs:
       run: chmod +x gradlew
       
     - name: Run unit tests with coverage
-      run: ./gradlew testDebugUnitTest jacocoTestReport jacocoTestCoverageVerification --stacktrace
+      run: ./gradlew testDevDebugUnitTest jacocoTestReport jacocoTestCoverageVerification --stacktrace
       
     - name: Run lint checks
-      run: ./gradlew lintDebug --stacktrace
+      run: ./gradlew lintDevDebug --stacktrace
       
     - name: Generate test report
       uses: dorny/test-reporter@v1
@@ -167,7 +167,7 @@ jobs:
       run: chmod +x gradlew
       
     - name: Build debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: ./gradlew assembleDevDebug --stacktrace
       
     - name: Upload debug APK
       uses: actions/upload-artifact@v4

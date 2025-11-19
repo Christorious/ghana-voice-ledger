@@ -535,17 +535,6 @@ enum class TutorialAction {
     PLAY_DEMO,
     COMPLETE_STEP,
     START_PRACTICE,
-    COMPLETE_PRACTICE
-}
-
-// Helper functions to get tutorial content for each type
-private fun getFirstTimeUserTutorials(): List<Tutorial> {
-            icon = Icons.Default.RecordVoiceOver,
-            type = TutorialStepType.PRACTICE
-        ),
-        Tutorial(
-            id = "first_transaction",
-            titleRes = R.string.tutorial_first_transaction_title,
             descriptionRes = R.string.tutorial_first_transaction_description,
             icon = Icons.Default.Add,
             type = TutorialStepType.INTERACTIVE,

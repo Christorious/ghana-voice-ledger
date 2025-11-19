@@ -1,0 +1,3 @@
+#!/bin/bash
+# Gradle wrapper script for production builds
+exec /tmp/gradle-8.0/bin/gradle "$@"

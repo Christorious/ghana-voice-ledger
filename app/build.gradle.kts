@@ -259,6 +259,17 @@ android {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        force("com.google.protobuf:protobuf-java:3.23.2")
+        eachDependency {
+            if (requested.group == "com.google.protobuf" && requested.name == "protobuf-java") {
+                useVersion("3.23.2")
+            }
+        }
+    }
+}
+
 jacoco {
     toolVersion = "0.8.11"
 }
@@ -411,11 +422,6 @@ dependencies {
     implementation("com.google.firebase:firebase-perf-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
-
-    // App Center SDK - Always required for analytics and crash reporting
-    implementation(libs.appcenter.analytics)
-    implementation(libs.appcenter.crashes)
-
     // Google Cloud Speech - Optional, can be disabled via runtime flags
     // Using Google ML Kit for on-device speech recognition instead
     // For cloud-based speech-to-text, use REST API with OkHttp

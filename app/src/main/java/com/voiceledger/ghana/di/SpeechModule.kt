@@ -108,7 +108,7 @@ object SpeechModule {
      */
     @Provides
     @Singleton
-    @OfflineSpeechRecognizer
+    @OfflineSpeechRecognizerQualifier
     fun provideOfflineSpeechRecognizer(
         offlineSpeechRecognizer: OfflineSpeechRecognizer
     ): SpeechRecognizer {
@@ -135,4 +135,4 @@ annotation class OnlineSpeechRecognizer
  */
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
-annotation class OfflineSpeechRecognizer
+annotation class OfflineSpeechRecognizerQualifier

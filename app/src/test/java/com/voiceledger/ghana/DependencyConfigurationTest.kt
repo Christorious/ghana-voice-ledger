@@ -75,6 +75,10 @@ class DependencyConfigurationTest {
 
     @Test
     fun testGoogleCloudSpeechDependenciesAvailable() {
+        // Only run if Google Cloud Speech is enabled in build configuration
+        if (!BuildConfig.FEATURE_GOOGLE_CLOUD_SPEECH_ENABLED) {
+            return
+        }
         // Test that Google Cloud Speech classes are available
         try {
             Class.forName("com.google.cloud.speech.v1.SpeechClient")

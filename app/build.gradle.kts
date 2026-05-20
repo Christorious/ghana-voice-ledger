@@ -292,10 +292,10 @@ val coverageExclusions = listOf(
 val coverageSourceDirs = files("src/main/java", "src/main/kotlin")
 
 val coverageClassDirs = files(
-    fileTree("${buildDir}/tmp/kotlin-classes/debug") {
+    fileTree("${buildDir}/tmp/kotlin-classes/devDebug") {
         exclude(coverageExclusions)
     },
-    fileTree("${buildDir}/intermediates/javac/debug/classes") {
+    fileTree("${buildDir}/intermediates/javac/devDebug/classes") {
         exclude(coverageExclusions)
     }
 )
@@ -308,7 +308,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
     group = "verification"
     description = "Generates JaCoCo coverage reports for the debug build."
 
-    dependsOn("testDebugUnitTest")
+    dependsOn("testDevDebugUnitTest")
     classDirectories.setFrom(coverageClassDirs)
     sourceDirectories.setFrom(coverageSourceDirs)
     executionData.setFrom(coverageExecutionData)

@@ -256,7 +256,7 @@ android {
 // nested inside android.defaultConfig. correctErrorTypes is required by Hilt so
 // that Dagger sees real types instead of NonExistentClass during stub generation.
 kapt {
-    correctErrorTypes = false
+    correctErrorTypes = true
     arguments {
         arg("room.schemaLocation", "$projectDir/schemas")
     }
@@ -265,6 +265,14 @@ kapt {
 configurations.all {
     resolutionStrategy {
         force("com.google.protobuf:protobuf-java:3.23.2")
+        // A stale kotlin-reflect (1.6.10) was leaking onto the Kotlin 1.9.22
+        // compiler classpath and breaking kapt stub generation with
+        // "Could not load module <Error module>". Pin the Kotlin runtime
+        // artifacts to the compiler version.
+        force("org.jetbrains.kotlin:kotlin-reflect:${libs.versions.kotlin.get()}")
+        force("org.jetbrains.kotlin:kotlin-stdlib:${libs.versions.kotlin.get()}")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${libs.versions.kotlin.get()}")
+        force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:${libs.versions.kotlin.get()}")
         eachDependency {
             if (requested.group == "com.google.protobuf" && requested.name == "protobuf-java") {
                 useVersion("3.23.2")

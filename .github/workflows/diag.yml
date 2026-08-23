@@ -1,0 +1,34 @@
+name: KAPT Diagnostic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ 'ci/port-workflow-and-build-fixes' ]
+
+jobs:
+  diag:
+    name: Diagnose kapt stub failure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run kapt stub generation with full diagnostics
+        run: ./gradlew :app:kaptGenerateStubsDevDebugKotlin --info --stacktrace -Pkapt.verbose=true 2>&1 | tee kapt-diag.log || true
+
+      - name: Show real compiler errors
+        if: always()
+        run: |
+          echo "=================== e: / error: / .kt: lines ==================="
+          grep -nE "e: |error:|\.kt:[0-9]+|unresolved|cannot find|Caused by:|Unresolved" kapt-diag.log | grep -viE "org\.gradle|GradleWorkerMain" | head -120 || true
+          echo "=================== last 80 lines ==================="
+          tail -80 kapt-diag.log

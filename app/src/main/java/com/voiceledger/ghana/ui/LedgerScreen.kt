@@ -53,7 +53,8 @@ import java.util.Locale
 @Composable
 fun LedgerScreen(
     viewModel: LedgerViewModel,
-    onStartVoice: () -> Unit
+    onStartVoice: () -> Unit,
+    bottomBar: @Composable () -> Unit = {}
 ) {
     val transactions by viewModel.transactions.collectAsStateWithLifecycle()
     val todayTotal by viewModel.todayTotal.collectAsStateWithLifecycle()
@@ -81,6 +82,7 @@ fun LedgerScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = bottomBar,
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onStartVoice,

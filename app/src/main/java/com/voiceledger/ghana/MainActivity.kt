@@ -12,22 +12,29 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
-import com.voiceledger.ghana.ui.LedgerScreen
+import com.voiceledger.ghana.ui.AppRoot
+import com.voiceledger.ghana.ui.CreditViewModel
 import com.voiceledger.ghana.ui.LedgerViewModel
 import com.voiceledger.ghana.ui.theme.VoiceLedgerTheme
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: LedgerViewModel by viewModels()
+    private val ledgerViewModel: LedgerViewModel by viewModels()
+    private val creditViewModel: CreditViewModel by viewModels()
+
+    /** Where the next voice result should be delivered (set just before launching). */
+    private var pendingVoiceTarget: ((String) -> Unit)? = null
 
     private val speechLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
+            val target = pendingVoiceTarget
+            pendingVoiceTarget = null
+            if (result.resultCode == Activity.RESULT_OK && target != null) {
                 val spoken = result.data
                     ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                     ?.firstOrNull()
-                if (!spoken.isNullOrBlank()) viewModel.beginFromText(spoken)
+                if (!spoken.isNullOrBlank()) target(spoken)
             }
         }
 
@@ -36,6 +43,7 @@ class MainActivity : ComponentActivity() {
             if (granted) {
                 launchSpeech()
             } else {
+                pendingVoiceTarget = null
                 Toast.makeText(
                     this,
                     "Microphone permission is needed to record by voice",
@@ -48,12 +56,18 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             VoiceLedgerTheme {
-                LedgerScreen(viewModel = viewModel, onStartVoice = ::onStartVoice)
+                AppRoot(
+                    ledgerViewModel = ledgerViewModel,
+                    creditViewModel = creditViewModel,
+                    onRecordSale = { startVoice(ledgerViewModel::beginFromText) },
+                    onRecordCredit = { startVoice(creditViewModel::beginCreditFromText) }
+                )
             }
         }
     }
 
-    private fun onStartVoice() {
+    private fun startVoice(target: (String) -> Unit) {
+        pendingVoiceTarget = target
         val granted = ContextCompat.checkSelfPermission(
             this, Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
@@ -67,14 +81,12 @@ class MainActivity : ComponentActivity() {
                 RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
             )
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(
-                RecognizerIntent.EXTRA_PROMPT,
-                "Say your sale, e.g. \"sold 3 tilapia for 20 cedis\""
-            )
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now")
         }
         try {
             speechLauncher.launch(intent)
         } catch (e: Exception) {
+            pendingVoiceTarget = null
             Toast.makeText(
                 this,
                 "Speech recognition isn't available on this device",

@@ -256,7 +256,7 @@ android {
 // nested inside android.defaultConfig. correctErrorTypes is required by Hilt so
 // that Dagger sees real types instead of NonExistentClass during stub generation.
 kapt {
-    correctErrorTypes = true
+    correctErrorTypes = false
     arguments {
         arg("room.schemaLocation", "$projectDir/schemas")
     }

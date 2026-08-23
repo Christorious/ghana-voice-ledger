@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
                 val spoken = result.data
                     ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
                     ?.firstOrNull()
-                if (!spoken.isNullOrBlank()) viewModel.recordFromText(spoken)
+                if (!spoken.isNullOrBlank()) viewModel.beginFromText(spoken)
             }
         }
 

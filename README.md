@@ -2,6 +2,10 @@
 
 A voice-first ledger for Ghanaian traders and market vendors: **speak a sale, and it's recorded** — in cedis, offline, with the running daily total always in view.
 
+> 🌟 **Read [`VISION.md`](VISION.md) first** — why this exists: her little accountant that keeps
+> her day, gives her clarity on her growth, and turns honest daily effort into a financial
+> identity the formal world can trust.
+
 > **Status — honest version.** This repository previously contained a large (134-file)
 > Android codebase that was documented as "v1.0.0, production-ready" but **had never
 > compiled** — it was assembled by merging conflicting generated branches, leaving

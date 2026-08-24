@@ -2,7 +2,7 @@
 
 _**This file is the living source of truth for the app's architecture.** The interactive atlas and `SYSTEM.md` are both built from it._
 
-_Question status: **3 open · 8 resolved**._
+_Question status: **4 open · 8 resolved**._
 
 ## One paragraph
 
@@ -29,7 +29,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 4. **Confirm before saving** — Voice mishears — so nothing is saved until you okay it. _(adds CONFIRM)_
 5. **Saving to the ledger** — A confirmed sale lands in the local database and the screen updates itself. _(adds TVM, DB)_
 6. **The credit ledger** — The second tab: who owes you, and paying it down. _(adds CVM, CREDIT)_
-7. **Planned & deferred** — Designed for, not switched on. _(adds SUM, META, CLOUD)_
+7. **Planned & deferred** — Designed for, not switched on. _(adds SUM, DEMAND, META, CLOUD)_
 8. **The whole system** — Everything at once, for free exploration.
 
 ## Structures
@@ -82,6 +82,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 2. **Transcribe** — On device / recogniser.
 3. **Return** — Best hypothesis string.
 4. **(Next) Wake-word** — Tiny always-on trigger → capture.
+5. **(Next) Know her voice** — Speaker ID picks her out from customers.
 
 **Questions.**
 
@@ -193,22 +194,41 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 ### Planned / deferred
 
-#### S · Daily summary + share _(not switched on)_
+#### S · Insights & growth _(not switched on)_
 
-**In one line.** Later: a "good day" recap you can send to WhatsApp.
+**In one line.** Later: clarity on her day, and her growth over time.
 
-**What it does.** An end-of-day summary (total, best product, number of sales) you can share — the stickiness-and-growth feature. Next on the roadmap.
+**What it does.** Her little accountant's report — what she sold, what she made, her best product and best hours, and her growth day by day, week by week, month by month, plus a "good day" recap to share. Information so she can plan; not a planner.
 
-**How it's built.** Planned: derive from the same DAOs; a share intent to WhatsApp. Not built.
+**How it's built.** Planned: aggregate the same ledger; simple, legible visuals in her language; optional WhatsApp share. Not built.
 
 **Steps in execution.**
 
-1. **Summarise** — Totals by product/time.
-2. **Share** — System share sheet.
+1. **Today** — Sales, profit, best product.
+2. **Trend** — Day / week / month growth.
+3. **Share** — A "good day" recap.
 
 **Questions.**
 
 - **Q-S1** Next to build.
+
+#### F · Demand forecast _(not switched on)_
+
+**In one line.** Later: what sells, and when — the seasonal rhythm.
+
+**What it does.** From her own history: what's in demand most, the seasonal pattern of what she sells, and a sense of what will sell and when it's coming — so she can stock and plan ahead.
+
+**How it's built.** Planned: patterns over the ledger, later a small on-device model. Not built.
+
+**Steps in execution.**
+
+1. **Rank** — Top products / times.
+2. **Seasonality** — Weekly / monthly cycles.
+3. **Look ahead** — "Yam season is coming."
+
+**Questions.**
+
+- **Q-F1** Depends on months of real data.
 
 #### V · Metaphor views _(not switched on)_
 
@@ -293,6 +313,7 @@ Reference by ID. ✓ resolved (with date) · otherwise open.
 - **Q-R1** (R) Add customer autocomplete (pick a saved name as you type)?
 - ~~**Q-D1**~~ (D) ✓ Destructive fallback while pre-release; write migrations before real users (2026-08-24).
 - **Q-S1** (S) Next to build.
+- **Q-F1** (F) Depends on months of real data.
 - **Q-V1** (V) The most distinctive unbuilt idea.
 - **Q-X1** (X) Only if real usage demands it.
 

@@ -55,7 +55,7 @@ export const NODES = [
     one: `The device turns spoken words into text (push-to-talk today).`,
     what: `Today: Android's own recogniser, push-to-talk — tap, speak, it returns a best-guess sentence. North star: the "listening stall" — the phone in her pouch while she serves, capturing the sale hands-free.`,
     how: `Now: <code>RecognizerIntent.ACTION_RECOGNIZE_SPEECH</code> (free, no key, device-provided). Direction: split the two axes — <mark>language</mark> (Twi/Ga/Ewe/Pidgin) via <code>Meta MMS</code> / <code>GhanaNLP Khaya</code>, <mark>noise</mark> via a small speech-enhancement front-end. Bridge to hands-free = a tiny <mark>wake-word</mark> + short capture + end-of-day review. Vosk has no Ghanaian model; text corpora build the LM, not the acoustic model.`,
-    steps: [['Listen', 'Push-to-talk prompt + record.'], ['Transcribe', 'On device / recogniser.'], ['Return', 'Best hypothesis string.'], ['(Next) Wake-word', 'Tiny always-on trigger → capture.']],
+    steps: [['Listen', 'Push-to-talk prompt + record.'], ['Transcribe', 'On device / recogniser.'], ['Return', 'Best hypothesis string.'], ['(Next) Wake-word', 'Tiny always-on trigger → capture.'], ['(Next) Know her voice', 'Speaker ID picks her out from customers.']],
     cond: [
       { q: 'Understand Twi/Ga/Ewe + Pidgin?', to: 'Language axis — Meta MMS / GhanaNLP Khaya (not Vosk)' },
       { q: 'Hands-free "listening stall" — phone in pouch while serving?', to: 'Wake-word + short capture + end-of-day review' },
@@ -106,12 +106,19 @@ export const NODES = [
     cond: [{ q: 'Real migrations vs destructive reset?', r: 'Destructive fallback while pre-release; write migrations before real users (2026-08-24).' }] },
 
   // --- planned / deferred (ghosts) ---
-  { id: 'SUM', code: 'S', name: 'Daily summary + share', short: 'SUMMARY', group: 'planned', ghost: true, gx: 3, gy: 13, w: 2, d: 2, h: 34, kind: 'box',
-    one: `Later: a "good day" recap you can send to WhatsApp.`,
-    what: `An end-of-day summary (total, best product, number of sales) you can share — the stickiness-and-growth feature. Next on the roadmap.`,
-    how: `Planned: derive from the same DAOs; a share intent to WhatsApp. Not built.`,
-    steps: [['Summarise', 'Totals by product/time.'], ['Share', 'System share sheet.']],
+  { id: 'SUM', code: 'S', name: 'Insights & growth', short: 'INSIGHTS', group: 'planned', ghost: true, gx: 3, gy: 13, w: 2, d: 2, h: 34, kind: 'box',
+    one: `Later: clarity on her day, and her growth over time.`,
+    what: `Her little accountant's report — what she sold, what she made, her best product and best hours, and her growth day by day, week by week, month by month, plus a "good day" recap to share. Information so she can plan; not a planner.`,
+    how: `Planned: aggregate the same ledger; simple, legible visuals in her language; optional WhatsApp share. Not built.`,
+    steps: [['Today', 'Sales, profit, best product.'], ['Trend', 'Day / week / month growth.'], ['Share', 'A "good day" recap.']],
     cond: ['Next to build.'] },
+
+  { id: 'DEMAND', code: 'F', name: 'Demand forecast', short: 'DEMAND', group: 'planned', ghost: true, gx: 1, gy: 11, w: 2, d: 2, h: 30, kind: 'box',
+    one: `Later: what sells, and when — the seasonal rhythm.`,
+    what: `From her own history: what's in demand most, the seasonal pattern of what she sells, and a sense of what will sell and when it's coming — so she can stock and plan ahead.`,
+    how: `Planned: patterns over the ledger, later a small on-device model. Not built.`,
+    steps: [['Rank', 'Top products / times.'], ['Seasonality', 'Weekly / monthly cycles.'], ['Look ahead', '"Yam season is coming."']],
+    cond: ['Depends on months of real data.'] },
 
   { id: 'META', code: 'V', name: 'Metaphor views', short: 'MONEY-PILE', group: 'planned', ghost: true, gx: 1, gy: 6, w: 2, d: 2, h: 30, kind: 'screen',
     one: `Later: culturally-congruent ways to see the day.`,
@@ -187,10 +194,10 @@ export const CH = [
     story: `<p>Speaking "Ama owes 20 cedis for fish" runs the same mic → parser → confirm path into the <mark>credit view model</mark>. Customers are saved and reused, balances add up per person, and <mark>partial payments</mark> ("Received 10") settle a debt over time.</p>`,
     flow: [['CONFIRM', 'CVM', 'save', { customer: 'Ama', amount: 20.0 }], ['CVM', 'DB', 'customer + debt', {}], ['DB', 'CVM', 'balances', { 'Ama owes': 20.0 }], ['CVM', 'CREDIT', 'debtors', { row: 'Ama · GHS 20' }], ['CREDIT', 'CVM', 'Received 10', { pay: 10.0 }], ['CVM', 'DB', 'amountPaid', { amountPaid: 10.0 }]] },
 
-  { id: 'planned', title: 'Planned & deferred', reveal: ['SUM', 'META', 'CLOUD'],
+  { id: 'planned', title: 'Planned & deferred', reveal: ['SUM', 'DEMAND', 'META', 'CLOUD'],
     lede: `Designed for, not switched on.`,
-    story: `<p>Dashed boxes are the roadmap: a <mark>daily summary you can share to WhatsApp</mark> (next), the <mark>metaphor views</mark> from the UI vision, and the deferred heavy lifting — cloud sync, speaker ID, encryption — parked until real traders ask for it.</p>`,
-    flow: [['TVM', 'SUM', 'daily recap', { total: 'GHS 240' }], ['SUM', 'CREDIT', 'share', { to: 'WhatsApp' }]] },
+    story: `<p>Dashed boxes are the roadmap: <mark>insights & growth</mark> (her day's clarity + week/month trend), <mark>demand forecast</mark> (what sells and when), the <mark>metaphor views</mark> from the UI vision, and the deferred heavy lifting — cloud sync, encryption — parked until real traders ask for it. See <mark>VISION.md</mark> for the north star.</p>`,
+    flow: [['TVM', 'SUM', 'daily + growth', { total: 'GHS 240' }], ['DB', 'DEMAND', 'patterns', { top: 'Tilapia' }], ['SUM', 'CREDIT', 'share', { to: 'WhatsApp' }]] },
 
   { id: 'all', title: 'The whole system', reveal: [],
     lede: `Everything at once, for free exploration.`,

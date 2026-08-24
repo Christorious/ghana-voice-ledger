@@ -52,11 +52,16 @@ export const NODES = [
     cond: [{ q: 'Should the mic also auto-detect a credit phrase from the Today tab?', to: 'Roadmap' }] },
 
   { id: 'MIC', code: 'M', name: 'Speech-to-text', short: 'SPEECH', group: 'loop', gx: 10, gy: 1, w: 2, d: 2, h: 26, kind: 'slab',
-    one: `The device turns spoken words into text.`,
-    what: `Android's own speech recogniser. The trader speaks; it returns the best-guess sentence. Works with whatever languages the phone's recogniser supports.`,
-    how: `Platform <code>RecognizerIntent.ACTION_RECOGNIZE_SPEECH</code>, free-form model. No cloud key, no bundled model — provided by the device.`,
-    steps: [['Listen', 'Prompt + record.'], ['Transcribe', 'On device.'], ['Return', 'Best hypothesis string.']],
-    cond: ['Recogniser rarely produces Twi/Ga/Ewe words; those mostly help typed/manual entry for now.'] },
+    one: `The device turns spoken words into text (push-to-talk today).`,
+    what: `Today: Android's own recogniser, push-to-talk — tap, speak, it returns a best-guess sentence. North star: the "listening stall" — the phone in her pouch while she serves, capturing the sale hands-free.`,
+    how: `Now: <code>RecognizerIntent.ACTION_RECOGNIZE_SPEECH</code> (free, no key, device-provided). Direction: split the two axes — <mark>language</mark> (Twi/Ga/Ewe/Pidgin) via <code>Meta MMS</code> / <code>GhanaNLP Khaya</code>, <mark>noise</mark> via a small speech-enhancement front-end. Bridge to hands-free = a tiny <mark>wake-word</mark> + short capture + end-of-day review. Vosk has no Ghanaian model; text corpora build the LM, not the acoustic model.`,
+    steps: [['Listen', 'Push-to-talk prompt + record.'], ['Transcribe', 'On device / recogniser.'], ['Return', 'Best hypothesis string.'], ['(Next) Wake-word', 'Tiny always-on trigger → capture.']],
+    cond: [
+      { q: 'Understand Twi/Ga/Ewe + Pidgin?', to: 'Language axis — Meta MMS / GhanaNLP Khaya (not Vosk)' },
+      { q: 'Hands-free "listening stall" — phone in pouch while serving?', to: 'Wake-word + short capture + end-of-day review' },
+      { q: 'Hear her over market noise?', to: 'Small on-device speech-enhancement front-end (SAM-Audio is heavy / server-side)' },
+      { q: 'Where does Ghanaian training data come from?', r: 'The confirm sheet: every correction is an (audio, text) pair; sikabook-models is the seed corpus (2026-08-24).' },
+    ] },
 
   { id: 'PARSER', code: 'P', name: 'Parsers', short: 'PARSER', group: 'loop', gx: 12, gy: 5, w: 3, d: 3, h: 66, kind: 'tall',
     one: `Turns a spoken sentence into a structured sale or credit.`,

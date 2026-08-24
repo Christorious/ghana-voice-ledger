@@ -64,6 +64,47 @@ app/src/main/java/com/voiceledger/ghana/
    optional way to see the day — the most distinctive unbuilt idea.
 5. Later, only if validated with real traders: cloud backup, speaker ID, encryption.
 
+## Speech-to-text direction
+
+**Today** the app uses the device's built-in recogniser (`RecognizerIntent`) — free, no keys,
+no bundled model — as **push-to-talk**: tap the mic, speak, the parser + confirm sheet catch
+mishears. Good enough to ship; limited on offline use and on Ghanaian languages.
+
+**North star — the "listening stall".** The trader is serving a customer with both hands and
+all her attention; the phone is in her pouch / pocket / under the table. She never looks at it.
+The app should capture the sale/credit from how she naturally speaks.
+
+**The honest constraints.** True always-on ambient capture stacks ~6 frontier problems at once:
+far-field + cloth-occluded mic (low SNR), multiple speakers (needs diarization), always-on
+battery cost, **privacy/consent** (recording customers/bystanders), Ghanaian languages +
+code-switch, and pulling the transaction out of natural conversation. That is a multi-year
+research program, not a fine-tune.
+
+**Two model axes — keep them separate.**
+- **Language** (understand Twi/Ga/Ewe + Pidgin) → **Meta MMS** (open, 1,100+ langs incl.
+  Akan/Ewe/Ga) and/or **GhanaNLP Khaya / Abena** (Twi + Ghana-Pidgin ASR). *Not* Vosk — Vosk
+  has no Ghanaian model, and text corpora (our `sikabook-models`, GhanaNLP) build the
+  language-model half, not the acoustic model.
+- **Noise** (hear her over the market) → source separation / speech enhancement. **SAM-Audio**
+  (Meta, audio source separation) is the right *category* but is a heavy (~500M–3B) **server-side**
+  front-end — you cannot fine-tune Vosk "into" it (separator vs. recogniser are different models).
+
+**Realistic path to hands-free (the bridge, small not big):**
+1. **Now** — push-to-talk + a light on-device denoiser.
+2. **Next** — a **wake-word / keyword spotter** (tiny, always-on-feasible on cheap phones, like
+   "Hey Google") → short capture → **end-of-day review** (she fixes the batch when free, since
+   she isn't looking at the phone). Feels hands-free, ships on cheap phones, respects privacy.
+3. **Later** — a **compact speech-enhancement model** (RNNoise/DTLN-class, ~1 MB, real-time)
+   **fine-tuned on pouch-audio collected via the app** — the tractable cousin of SAM-Audio.
+4. **Data flywheel** — every confirm-sheet correction is a **(audio, correct text)** pair in our
+   exact domain/dialect/noise. The app is the harvester; `sikabook-models` is the seed corpus.
+   Ship constrained recognition now, collect (with consent), fine-tune MMS later.
+5. **Cheap levers that beat any model** — phone **face-up on the table** vs. a pouch; a **clip-on
+   / Bluetooth lapel mic** for a few cedis solves far-field better than a research lab.
+
+_Discussed 2026-08-24. Model note: SAM-Audio and other post-cutoff releases must be
+**web-verified**, not recalled from memory._
+
 ## A note on the older documentation
 
 This repository previously contained ~70 markdown files, most of which described the earlier

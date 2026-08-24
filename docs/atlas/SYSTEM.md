@@ -2,7 +2,7 @@
 
 _**This file is the living source of truth for the app's architecture.** The interactive atlas and `SYSTEM.md` are both built from it._
 
-_Question status: **4 open · 4 resolved**._
+_Question status: **3 open · 8 resolved**._
 
 ## One paragraph
 
@@ -70,21 +70,25 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 #### M · Speech-to-text
 
-**In one line.** The device turns spoken words into text.
+**In one line.** The device turns spoken words into text (push-to-talk today).
 
-**What it does.** Android's own speech recogniser. The trader speaks; it returns the best-guess sentence. Works with whatever languages the phone's recogniser supports.
+**What it does.** Today: Android's own recogniser, push-to-talk — tap, speak, it returns a best-guess sentence. North star: the "listening stall" — the phone in her pouch while she serves, capturing the sale hands-free.
 
-**How it's built.** Platform `RecognizerIntent.ACTION_RECOGNIZE_SPEECH`, free-form model. No cloud key, no bundled model — provided by the device.
+**How it's built.** Now: `RecognizerIntent.ACTION_RECOGNIZE_SPEECH` (free, no key, device-provided). Direction: split the two axes — **language** (Twi/Ga/Ewe/Pidgin) via `Meta MMS` / `GhanaNLP Khaya`, **noise** via a small speech-enhancement front-end. Bridge to hands-free = a tiny **wake-word** + short capture + end-of-day review. Vosk has no Ghanaian model; text corpora build the LM, not the acoustic model.
 
 **Steps in execution.**
 
-1. **Listen** — Prompt + record.
-2. **Transcribe** — On device.
+1. **Listen** — Push-to-talk prompt + record.
+2. **Transcribe** — On device / recogniser.
 3. **Return** — Best hypothesis string.
+4. **(Next) Wake-word** — Tiny always-on trigger → capture.
 
 **Questions.**
 
-- **Q-M1** Recogniser rarely produces Twi/Ga/Ewe words; those mostly help typed/manual entry for now.
+- **Q-M1** Understand Twi/Ga/Ewe + Pidgin? → _Language axis — Meta MMS / GhanaNLP Khaya (not Vosk)_
+- **Q-M2** Hands-free "listening stall" — phone in pouch while serving? → _Wake-word + short capture + end-of-day review_
+- **Q-M3** Hear her over market noise? → _Small on-device speech-enhancement front-end (SAM-Audio is heavy / server-side)_
+- ~~**Q-M4** Where does Ghanaian training data come from?~~ ✓ The confirm sheet: every correction is an (audio, text) pair; sikabook-models is the seed corpus (2026-08-24).
 
 #### P · Parsers
 
@@ -281,7 +285,10 @@ Payload shapes are what the design implies, not measured traffic.
 Reference by ID. ✓ resolved (with date) · otherwise open.
 
 - **Q-A1** (A) Should the mic also auto-detect a credit phrase from the Today tab?
-- **Q-M1** (M) Recogniser rarely produces Twi/Ga/Ewe words; those mostly help typed/manual entry for now.
+- **Q-M1** (M) Understand Twi/Ga/Ewe + Pidgin?
+- **Q-M2** (M) Hands-free "listening stall" — phone in pouch while serving?
+- **Q-M3** (M) Hear her over market noise?
+- ~~**Q-M4**~~ (M) ✓ The confirm sheet: every correction is an (audio, text) pair; sikabook-models is the seed corpus (2026-08-24).
 - ~~**Q-P1**~~ (P) ✓ Start small and transparent; expand from real usage (2026-08-24).
 - **Q-R1** (R) Add customer autocomplete (pick a saved name as you type)?
 - ~~**Q-D1**~~ (D) ✓ Destructive fallback while pre-release; write migrations before real users (2026-08-24).

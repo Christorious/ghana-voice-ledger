@@ -2,11 +2,11 @@
 
 _**This file is the living source of truth for the app's architecture.** The interactive atlas and `SYSTEM.md` are both built from it._
 
-_Question status: **4 open · 8 resolved**._
+_Question status: **3 open · 10 resolved**._
 
 ## One paragraph
 
-Ghana Voice Ledger is a small, offline Android app for market traders. A trader taps a mic and speaks a sale ("sold 3 tilapia for 20 cedis"); the device turns speech to text, a transparent parser turns text into a structured entry, a confirm sheet lets the trader fix any mishear, and it saves to a local Room database. A second tab is the credit ledger — who owes you, with partial payments. It builds, runs, and is unit-tested. Not built yet: multi-view UI, daily summaries, cloud sync, on-device ML.
+Ghana Voice Ledger is a small, offline Android app for market traders. A trader taps a mic and speaks a sale ("sold 3 tilapia for 20 cedis"); the device turns speech to text, a transparent parser turns text into a structured entry, a confirm sheet lets the trader fix any mishear, and it saves to a local Room database. A second tab, Insights, is her little accountant — Day/Week/Month profit (sales − expenses), a trend, best sellers and a share-ready recap; expenses are spoken just like sales. A third tab is the credit ledger — who owes you, with partial payments. It builds, runs, and is unit-tested (31 parser tests). Not built yet: demand forecast, metaphor views, cloud sync, on-device ML.
 
 ## Decisions locked
 
@@ -18,6 +18,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 | Voice | Device **speech-to-text** + a **transparent heuristic parser** (no ML, no cloud keys). Predictable and offline. | — |
 | Trust | **Confirm before save** — nothing persists until the trader okays the parsed entry (voice mishears are common). | — |
 | Credit model | A saved **Customer** table + **Debt** rows with `amountPaid` for **partial payments**; balances aggregate per customer. | — |
+| Profit | A separate, categorised **Expense** table subtracted from sales per period — sales and costs never blur; **profit** is simply their difference. | — |
 
 ## Cost model
 
@@ -28,9 +29,10 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 3. **Understanding it** — A plain sentence becomes an amount, a quantity, and a product. _(adds PARSER)_
 4. **Confirm before saving** — Voice mishears — so nothing is saved until you okay it. _(adds CONFIRM)_
 5. **Saving to the ledger** — A confirmed sale lands in the local database and the screen updates itself. _(adds TVM, DB)_
-6. **The credit ledger** — The second tab: who owes you, and paying it down. _(adds CVM, CREDIT)_
-7. **Planned & deferred** — Designed for, not switched on. _(adds SUM, DEMAND, META, CLOUD)_
-8. **The whole system** — Everything at once, for free exploration.
+6. **The money picture** — Sales are only half of it — costs make profit real. _(adds EXP, SUM)_
+7. **The credit ledger** — The second tab: who owes you, and paying it down. _(adds CVM, CREDIT)_
+8. **Planned & deferred** — Designed for, not switched on. _(adds DEMAND, META, CLOUD)_
+9. **The whole system** — Everything at once, for free exploration.
 
 ## Structures
 
@@ -54,13 +56,13 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 **In one line.** Hosts the two tabs and launches the microphone.
 
-**What it does.** The frame around everything: it holds the Today and Credit tabs and, when you tap a mic, opens speech recognition and hands the words to whichever tab you're on.
+**What it does.** The frame around everything: it holds the Today, Insights and Credit tabs and, when you tap a mic, opens speech recognition and hands the words to whichever tab you're on.
 
-**How it's built.** `MainActivity.kt` + `AppRoot.kt`. A bottom `NavigationBar` switches tabs; `registerForActivityResult` launches `RecognizerIntent` and routes the result to `ledgerViewModel` or `creditViewModel`.
+**How it's built.** `MainActivity.kt` + `AppRoot.kt`. A bottom `NavigationBar` switches the three tabs; `registerForActivityResult` launches `RecognizerIntent` and routes the result to the sales, expense or credit view model.
 
 **Steps in execution.**
 
-1. **Route tab** — Today ↔ Credit.
+1. **Route tab** — Today · Insights · Credit.
 2. **Launch mic** — RecognizerIntent.
 3. **Deliver text** — To the active view model.
 
@@ -97,7 +99,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 **What it does.** The interpreter. It reads "sold 3 tilapia for 20 cedis" and pulls out the amount (20), quantity (3), and product (Tilapia) — fixing common speech mishears and understanding local number words.
 
-**How it's built.** `AmountParser` (number words incl. Twi/Ga/Ewe + compounds; cedis+pesewas), reused by `TransactionParser` (product/quantity, canonicalisation) and `DebtParser` (customer name + note). Pure Kotlin, 21 unit tests. No ML.
+**How it's built.** `AmountParser` (number words incl. Twi/Ga/Ewe + compounds; cedis+pesewas), reused by `TransactionParser` (product/quantity, canonicalisation), `DebtParser` (customer name + note) and `ExpenseParser` (cost + keyword category guess). Pure Kotlin, 31 unit tests. No ML.
 
 **Steps in execution.**
 
@@ -105,6 +107,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 2. **Amount** — cedis + optional pesewas.
 3. **Sale: qty + product** — canonicalise mishears.
 4. **Credit: name + note** — "Ama … for fish".
+5. **Expense: cost + category** — "rice stock" → Stock.
 
 **Questions.**
 
@@ -114,9 +117,9 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 **In one line.** Nothing saves until the trader okays it.
 
-**What it does.** A small editable card that appears after parsing — item, quantity, amount (or customer, amount, note) — so a mishear can be fixed before it's recorded. Also opens when you tap an entry to edit it.
+**What it does.** A small editable card that appears after parsing — item, quantity, amount (or customer, amount, note; or expense, amount, category) — so a mishear can be fixed before it's recorded. Also opens when you tap an entry to edit it.
 
-**How it's built.** A Compose dialog bound to an editable draft (`TransactionDraft` / `DebtDraft`) in the view model; validates the amount on **Save**, then inserts or updates.
+**How it's built.** A Compose dialog bound to an editable draft (`TransactionDraft` / `ExpenseDraft` / `DebtDraft`) in the view model; validates the amount on **Save**, then inserts or updates.
 
 **Steps in execution.**
 
@@ -130,13 +133,53 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 **What it does.** Keeps the day's list and running total live on screen, and turns a confirmed draft into a saved sale (or an edit).
 
-**How it's built.** `LedgerViewModel` (AndroidViewModel). Exposes `transactions` + `todayTotal` as `StateFlow` from the DAO; `saveDraft()` inserts/updates via `TransactionDao`.
+**How it's built.** `LedgerViewModel` (AndroidViewModel). Exposes `transactions` (day-scoped) + `todayTotal` as `StateFlow` from the DAO; `saveDraft()` inserts/updates via `TransactionDao`.
 
 **Steps in execution.**
 
 1. **Observe** — DAO Flows → StateFlow.
 2. **Begin** — Parse → draft.
 3. **Save** — Insert or update.
+
+### Insights & growth
+
+#### S · Insights & growth
+
+**In one line.** Her day's clarity: sales, expenses, profit, and growth.
+
+**What it does.** Her little accountant's report. For Day / Week / Month: profit (sales − expenses) up top with a sales-vs-expenses breakdown and growth against the previous period, a 7/30-day trend, best sellers, the recent-expenses list, and a recap to share on WhatsApp.
+
+**How it's built.** `InsightsScreen` + `InsightsViewModel`. A period selector drives `flatMapLatest` over combined DAO flows (sales totals/counts, top products, daily trend) plus expense totals; profit and per-period growth are computed on top. Share via `ACTION_SEND`.
+
+**Steps in execution.**
+
+1. **Period** — Day / Week / Month.
+2. **Profit** — Sales − expenses, vs last period.
+3. **Trend + top** — 7/30-day bars, best sellers.
+4. **Share** — A recap to WhatsApp.
+
+**Questions.**
+
+- ~~**Q-S1** Show profit once expenses are tracked?~~ ✓ Done — expenses now feed profit (2026-08-25).
+
+#### E · Expenses
+
+**In one line.** Costs the trader pays — so profit becomes real.
+
+**What it does.** The other half of the money picture: restocking, transport, table toll, light bill, wages. Spoken like a sale ("bought rice stock for 200 cedis"), auto-sorted into a category, and subtracted from sales to give profit. Recorded from the Insights tab's gold mic.
+
+**How it's built.** `ExpenseViewModel` + `ExpenseParser` (reuses `AmountParser`; keyword category guess) write `Expense` rows via `ExpenseDao`; the recent-expenses list and confirm sheet live on the Insights tab.
+
+**Steps in execution.**
+
+1. **Hear** — Mic → "bought rice stock 200".
+2. **Categorise** — Stock / Transport / Rent / Utilities / Wages / Other.
+3. **Confirm** — Editable sheet → save.
+4. **Subtract** — Profit = sales − expenses.
+
+**Questions.**
+
+- ~~**Q-E1** Sharpen auto-categorisation as vocabulary grows?~~ ✓ Keyword guess now; expand from real usage.
 
 ### The credit ledger
 
@@ -176,41 +219,23 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 #### D · Room database
 
-**In one line.** The local SQLite store — sales, customers, debts.
+**In one line.** The local SQLite store — sales, expenses, customers, debts.
 
-**What it does.** Everything lives on the phone. Three tables: sales (transactions), customers, and debts (with how much has been paid). No server; works fully offline.
+**What it does.** Everything lives on the phone. Four tables: sales (transactions), expenses, customers, and debts (with how much has been paid). No server; works fully offline.
 
-**How it's built.** `LedgerDatabase` (Room v2). Tables `transactions`, `customers`, `debts` (FK → customer, cascade); DAOs expose `Flow` queries incl. the per-customer balance aggregate.
+**How it's built.** `LedgerDatabase` (Room v3). Tables `transactions`, `expenses`, `customers`, `debts` (FK → customer, cascade); DAOs expose `Flow` queries incl. per-customer balance and per-period totals.
 
 **Steps in execution.**
 
 1. **Write** — insert / update / delete.
 2. **Observe** — Flow queries.
-3. **Aggregate** — SUM(amount − amountPaid).
+3. **Aggregate** — SUM per period · balances.
 
 **Questions.**
 
 - ~~**Q-D1** Real migrations vs destructive reset?~~ ✓ Destructive fallback while pre-release; write migrations before real users (2026-08-24).
 
 ### Planned / deferred
-
-#### S · Insights & growth _(not switched on)_
-
-**In one line.** Later: clarity on her day, and her growth over time.
-
-**What it does.** Her little accountant's report — what she sold, what she made, her best product and best hours, and her growth day by day, week by week, month by month, plus a "good day" recap to share. Information so she can plan; not a planner.
-
-**How it's built.** Planned: aggregate the same ledger; simple, legible visuals in her language; optional WhatsApp share. Not built.
-
-**Steps in execution.**
-
-1. **Today** — Sales, profit, best product.
-2. **Trend** — Day / week / month growth.
-3. **Share** — A "good day" recap.
-
-**Questions.**
-
-- **Q-S1** Next to build.
 
 #### F · Demand forecast _(not switched on)_
 
@@ -283,6 +308,19 @@ Payload shapes are what the design implies, not measured traffic.
 | 8 | DB → TVM | flow update | `{"todayTotal":20}` |
 | 9 | TVM → TODAY | state | `{"list":"+1 sale"}` |
 
+### Record an expense → profit
+
+| # | From → To | Packet | Representative payload |
+|---|---|---|---|
+| 1 | SUM → SHELL | add expense | `{}` |
+| 2 | SHELL → MIC | listen | `{}` |
+| 3 | MIC → SHELL | heard | `{"text":"bought rice stock for 200 cedis"}` |
+| 4 | SHELL → PARSER | parse | `{"text":"bought rice stock for 200 cedis"}` |
+| 5 | PARSER → CONFIRM | draft | `{"desc":"Rice stock","amount":200,"category":"Stock"}` |
+| 6 | CONFIRM → EXP | save | `{"desc":"Rice stock","amount":200}` |
+| 7 | EXP → DB | insert | `{"table":"expenses"}` |
+| 8 | DB → SUM | flow update | `{"profit":"sales − expenses"}` |
+
 ### Record a credit + payment
 
 | # | From → To | Packet | Representative payload |
@@ -310,9 +348,10 @@ Reference by ID. ✓ resolved (with date) · otherwise open.
 - **Q-M3** (M) Hear her over market noise?
 - ~~**Q-M4**~~ (M) ✓ The confirm sheet: every correction is an (audio, text) pair; sikabook-models is the seed corpus (2026-08-24).
 - ~~**Q-P1**~~ (P) ✓ Start small and transparent; expand from real usage (2026-08-24).
+- ~~**Q-S1**~~ (S) ✓ Done — expenses now feed profit (2026-08-25).
+- ~~**Q-E1**~~ (E) ✓ Keyword guess now; expand from real usage.
 - **Q-R1** (R) Add customer autocomplete (pick a saved name as you type)?
 - ~~**Q-D1**~~ (D) ✓ Destructive fallback while pre-release; write migrations before real users (2026-08-24).
-- **Q-S1** (S) Next to build.
 - **Q-F1** (F) Depends on months of real data.
 - **Q-V1** (V) The most distinctive unbuilt idea.
 - **Q-X1** (X) Only if real usage demands it.
@@ -321,7 +360,7 @@ Reference by ID. ✓ resolved (with date) · otherwise open.
 
 **Platform gives:** Android gives us on-device speech-to-text (<code>RecognizerIntent</code>), Room/SQLite persistence, Jetpack Compose + Material 3 UI, and <code>ViewModel</code>/<code>StateFlow</code> lifecycle. No cloud, no API keys, no ML runtime.
 
-**We own:** The parsers (number words incl. Twi/Ga/Ewe, cedis+pesewas, product/name extraction), the confirm-before-save flow, the ledger + credit data model with partial payments, the two-tab UI, and the warm theme.
+**We own:** The parsers (number words incl. Twi/Ga/Ewe, cedis+pesewas, product/name/expense extraction), the confirm-before-save flow, the ledger + expenses + credit data model with partial payments, the profit/insights aggregation, the three-tab UI, and the warm theme.
 
 ## Planned filesystem
 
@@ -329,9 +368,9 @@ Reference by ID. ✓ resolved (with date) · otherwise open.
 app/src/main/java/com/voiceledger/ghana/
   MainActivity.kt              # Compose host + speech launcher + tab routing
   VoiceLedgerApplication.kt
-  voice/  AmountParser · TransactionParser · DebtParser
-  data/   Transaction · Customer · Debt · *Dao · LedgerDatabase
-  ui/     AppRoot · LedgerScreen · CreditScreen · *ViewModel · theme/
+  voice/  AmountParser · TransactionParser · DebtParser · ExpenseParser
+  data/   Transaction · Customer · Debt · Expense · *Dao · LedgerDatabase
+  ui/     AppRoot · LedgerScreen · InsightsScreen · CreditScreen · *ViewModel · theme/
 ```
 
 ## How this file is maintained

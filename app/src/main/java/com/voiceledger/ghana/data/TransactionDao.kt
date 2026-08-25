@@ -13,6 +13,10 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
     fun observeAll(): Flow<List<Transaction>>
 
+    /** Sales from [start] onward (used for the day-scoped "Today" ledger). */
+    @Query("SELECT * FROM transactions WHERE timestamp >= :start ORDER BY timestamp DESC")
+    fun observeSince(start: Long): Flow<List<Transaction>>
+
     @Query("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE timestamp >= :startOfDay")
     fun observeTotalSince(startOfDay: Long): Flow<Double>
 

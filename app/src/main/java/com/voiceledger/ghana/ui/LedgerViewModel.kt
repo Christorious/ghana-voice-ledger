@@ -35,7 +35,8 @@ class LedgerViewModel(app: Application) : AndroidViewModel(app) {
     private val dao = LedgerDatabase.get(app).transactionDao()
 
     val transactions: StateFlow<List<Transaction>> =
-        dao.observeAll().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        dao.observeSince(startOfToday())
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val todayTotal: StateFlow<Double> =
         dao.observeTotalSince(startOfToday())

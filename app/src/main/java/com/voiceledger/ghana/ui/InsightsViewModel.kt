@@ -21,9 +21,12 @@ enum class Period(val label: String) { DAY("Day"), WEEK("Week"), MONTH("Month") 
 
 data class InsightsState(
     val period: Period = Period.DAY,
-    val total: Double = 0.0,
+    val total: Double = 0.0,          // sales in the period
     val count: Int = 0,
-    val growthPct: Int? = null,   // vs previous same-length period; null = no previous data
+    val salesGrowthPct: Int? = null,  // sales vs previous same-length period; null = no data
+    val expenses: Double = 0.0,       // costs in the period
+    val profit: Double = 0.0,         // sales − expenses
+    val profitGrowthPct: Int? = null, // profit vs previous period; null = no positive baseline
     val topProducts: List<ProductTotal> = emptyList(),
     val daily: List<DayTotal> = emptyList()
 )
@@ -31,30 +34,51 @@ data class InsightsState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class InsightsViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val dao = LedgerDatabase.get(app).transactionDao()
+    private val db = LedgerDatabase.get(app)
+    private val dao = db.transactionDao()
+    private val expenseDao = db.expenseDao()
 
     private val _period = MutableStateFlow(Period.DAY)
     val period: StateFlow<Period> = _period.asStateFlow()
 
     fun setPeriod(p: Period) { _period.value = p }
 
+    /** Sales-side aggregates, kept together so the expense flows can be combined on top. */
+    private data class SalesAgg(
+        val total: Double,
+        val count: Int,
+        val prevTotal: Double,
+        val top: List<ProductTotal>,
+        val daily: List<DayTotal>
+    )
+
     val state: StateFlow<InsightsState> = _period.flatMapLatest { p ->
         val b = bounds(p)
         val trendSince = startOfDaysAgo(if (p == Period.MONTH) 29 else 6)
-        combine(
+        val sales = combine(
             dao.observeTotalBetween(b.curStart, b.curEnd),
             dao.observeCountBetween(b.curStart, b.curEnd),
             dao.observeTotalBetween(b.prevStart, b.curStart),
             dao.observeTopProducts(b.curStart, b.curEnd, 5),
             dao.observeDailyTotals(trendSince)
         ) { total, count, prevTotal, top, daily ->
+            SalesAgg(total, count, prevTotal, top, daily)
+        }
+        combine(
+            sales,
+            expenseDao.observeTotalBetween(b.curStart, b.curEnd),
+            expenseDao.observeTotalBetween(b.prevStart, b.curStart)
+        ) { s, expenses, prevExpenses ->
             InsightsState(
                 period = p,
-                total = total,
-                count = count,
-                growthPct = growth(total, prevTotal),
-                topProducts = top,
-                daily = daily
+                total = s.total,
+                count = s.count,
+                salesGrowthPct = growth(s.total, s.prevTotal),
+                expenses = expenses,
+                profit = s.total - expenses,
+                profitGrowthPct = growth(s.total - expenses, s.prevTotal - prevExpenses),
+                topProducts = s.top,
+                daily = s.daily
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InsightsState())
@@ -63,7 +87,9 @@ class InsightsViewModel(app: Application) : AndroidViewModel(app) {
     fun shareText(s: InsightsState): String = buildString {
         appendLine("Ghana Voice Ledger — ${s.period.label} recap")
         appendLine("Sales: GHS ${"%.2f".format(s.total)} from ${s.count} ${if (s.count == 1) "sale" else "sales"}")
-        s.growthPct?.let { appendLine("${if (it >= 0) "▲" else "▼"} ${kotlin.math.abs(it)}% vs previous ${s.period.label.lowercase()}") }
+        if (s.expenses > 0.0049) appendLine("Expenses: GHS ${"%.2f".format(s.expenses)}")
+        appendLine("Profit: GHS ${"%.2f".format(s.profit)}")
+        s.profitGrowthPct?.let { appendLine("${if (it >= 0) "▲" else "▼"} ${kotlin.math.abs(it)}% vs previous ${s.period.label.lowercase()}") }
         s.topProducts.firstOrNull()?.let { appendLine("Top: ${it.name} (GHS ${"%.2f".format(it.total)})") }
     }.trim()
 

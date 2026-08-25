@@ -14,6 +14,7 @@ import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import com.voiceledger.ghana.ui.AppRoot
 import com.voiceledger.ghana.ui.CreditViewModel
+import com.voiceledger.ghana.ui.ExpenseViewModel
 import com.voiceledger.ghana.ui.InsightsViewModel
 import com.voiceledger.ghana.ui.LedgerViewModel
 import com.voiceledger.ghana.ui.theme.VoiceLedgerTheme
@@ -23,6 +24,7 @@ class MainActivity : ComponentActivity() {
 
     private val ledgerViewModel: LedgerViewModel by viewModels()
     private val insightsViewModel: InsightsViewModel by viewModels()
+    private val expenseViewModel: ExpenseViewModel by viewModels()
     private val creditViewModel: CreditViewModel by viewModels()
 
     /** Where the next voice result should be delivered (set just before launching). */
@@ -61,8 +63,10 @@ class MainActivity : ComponentActivity() {
                 AppRoot(
                     ledgerViewModel = ledgerViewModel,
                     insightsViewModel = insightsViewModel,
+                    expenseViewModel = expenseViewModel,
                     creditViewModel = creditViewModel,
                     onRecordSale = { startVoice(ledgerViewModel::beginFromText) },
+                    onRecordExpense = { startVoice(expenseViewModel::beginFromText) },
                     onRecordCredit = { startVoice(creditViewModel::beginCreditFromText) }
                 )
             }

@@ -24,8 +24,10 @@ import androidx.compose.runtime.setValue
 fun AppRoot(
     ledgerViewModel: LedgerViewModel,
     insightsViewModel: InsightsViewModel,
+    expenseViewModel: ExpenseViewModel,
     creditViewModel: CreditViewModel,
     onRecordSale: () -> Unit,
+    onRecordExpense: () -> Unit,
     onRecordCredit: () -> Unit
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -39,6 +41,8 @@ fun AppRoot(
         )
         1 -> InsightsScreen(
             viewModel = insightsViewModel,
+            expenseViewModel = expenseViewModel,
+            onRecordExpense = onRecordExpense,
             bottomBar = bottomBar
         )
         else -> CreditScreen(

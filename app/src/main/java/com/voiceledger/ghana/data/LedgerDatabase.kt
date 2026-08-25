@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [Transaction::class, Customer::class, Debt::class],
-    version = 2,
+    entities = [Transaction::class, Customer::class, Debt::class, Expense::class],
+    version = 3,
     exportSchema = false
 )
 abstract class LedgerDatabase : RoomDatabase() {
@@ -15,6 +15,7 @@ abstract class LedgerDatabase : RoomDatabase() {
     abstract fun transactionDao(): TransactionDao
     abstract fun customerDao(): CustomerDao
     abstract fun debtDao(): DebtDao
+    abstract fun expenseDao(): ExpenseDao
 
     companion object {
         @Volatile

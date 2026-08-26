@@ -33,6 +33,21 @@ Upload to the Colab session (or push this `speech/` folder to a repo and `git cl
     --audio-root audio/test  --out manifests/test.jsonl  --check-audio
 ```
 
+## 3b. (Optional) Multilingual — all four FISD languages at once
+Repeat steps 2–3 for each zip with a `--lang` tag, then concatenate the manifests. Whisper
+finetunes fine on mixed Ga + Asante/Akuapem Twi + Fante, covering far more of Ghana in one model:
+```bash
+# for each: unzip -> cp audios to audio/train_<lang> & audio/test_<lang> -> prep with --lang
+!python prepare_fsid_ga.py --data-csv fsid/fsid-asanti-twi-data/fisd-asanti-twi-90p/data.csv \
+    --audio-root audio/train_asante --out manifests/asante_train.jsonl --lang asante-twi --oversample-money 2 --check-audio
+# ...repeat for akuapem-twi, fanti, ga...
+!cat manifests/*_train.jsonl > manifests/train.jsonl
+!cat manifests/*_test.jsonl  > manifests/test.jsonl
+```
+Then finetune as below. Use `--language` matching Whisper's closest token (try `sw`/`ha`/`yo`);
+the model learns the actual language from the data. Consider `whisper-small` for the multilingual
+run if the GPU allows — more capacity helps across four languages (keep a `base`/`tiny` distill for phones).
+
 ## 4. Finetune
 ```bash
 !python finetune_whisper_ga.py --model openai/whisper-base --epochs 6 --batch 16 --language sw

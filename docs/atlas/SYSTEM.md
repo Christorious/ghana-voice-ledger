@@ -19,7 +19,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 | Trust | **Confirm before save** — nothing persists until the trader okays the parsed entry (voice mishears are common). | — |
 | Credit model | A saved **Customer** table + **Debt** rows with `amountPaid` for **partial payments**; balances aggregate per customer. | — |
 | Profit | A separate, categorised **Expense** table subtracted from sales per period — sales and costs never blur; **profit** is simply their difference. | — |
-| Speech | Offline **Ga** via **whisper-base finetuned on the FISD-Ga corpus → whisper.cpp** (MIT, ~60–80 MB), behind a `SpeechRecognizer` interface with `RecognizerIntent` as fallback; A/B a Meta **MMS** Ga adapter (allowed — non-commercial). Numbers protected by a spotter; **Ga TTS read-back** for non-literate confirmation. Vosk/Kaldi ruled out (no Ga acoustic model). See `speech/STRATEGY.md` + `IDEAS.md`. | — |
+| Speech | Offline Ghanaian ASR via **whisper-base finetuned on the full FISD corpus (Ga + Asante/Akuapem Twi + Fante, ~150 h) → whisper.cpp** (MIT, ~60–80 MB), behind a `SpeechRecognizer` interface with `RecognizerIntent` as fallback; A/B a Meta **MMS** Ga adapter (allowed — non-commercial). Numbers protected by a spotter; **Ga TTS read-back** for non-literate confirmation. Vosk/Kaldi ruled out (no Ga acoustic model). See `speech/STRATEGY.md` + `IDEAS.md`. | — |
 
 ## Cost model
 
@@ -77,7 +77,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 **What it does.** Today: Android's own recogniser, push-to-talk — tap, speak, it returns a best-guess sentence. North star: the "listening stall" — the phone in her pouch while she serves, capturing the sale hands-free.
 
-**How it's built.** Now: `RecognizerIntent` (device, push-to-talk) as a fallback. **Decided** offline path: finetune `whisper-base` on the ~40 h Ga Financial Inclusion Speech Dataset → `ggml`/q5 → `whisper.cpp` on device (MIT, ~60–80 MB), behind a `SpeechRecognizer` interface; A/B against a Meta `MMS` Ga adapter (now allowed — non-commercial project). Bias with our trading lexicon; **protect numbers** with a spotter; **speak the entry back in Ga** (MMS-TTS, offline) for non-literate confirmation. See `speech/STRATEGY.md` + `IDEAS.md`. Vosk ruled out (no Ga acoustic model).
+**How it's built.** Now: `RecognizerIntent` (device, push-to-talk) as a fallback. **Decided** offline path: finetune `whisper-base` on the FISD corpus — Ga + Asante/Akuapem Twi + Fante, ~150 h, one multilingual model → `ggml`/q5 → `whisper.cpp` on device (MIT, ~60–80 MB), behind a `SpeechRecognizer` interface; A/B against a Meta `MMS` Ga adapter (now allowed — non-commercial project). Bias with our trading lexicon; **protect numbers** with a spotter; **speak the entry back in Ga** (MMS-TTS, offline) for non-literate confirmation. See `speech/STRATEGY.md` + `IDEAS.md`. Vosk ruled out (no Ga acoustic model).
 
 **Steps in execution.**
 
@@ -93,7 +93,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 - **Q-M2** Hands-free "listening stall" — phone in pouch while serving? → _Tiny wake-word cascade wakes the heavy model + end-of-day review_
 - **Q-M3** Hear her over market noise? → _Noise-augmented training + a small on-device enhancement front-end_
 - **Q-M4** Confirm a sale for a trader who cannot read? → _Speak the parsed entry back in Ga via MMS-TTS, offline (accessibility + trust)_
-- ~~**Q-M5** Where does Ghanaian training data come from?~~ ✓ FISD-Ga (Ashesi/Lacuna, ~40 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
+- ~~**Q-M5** Where does Ghanaian training data come from?~~ ✓ Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
 
 #### P · Parsers
 
@@ -349,7 +349,7 @@ Reference by ID. ✓ resolved (with date) · otherwise open.
 - **Q-M2** (M) Hands-free "listening stall" — phone in pouch while serving?
 - **Q-M3** (M) Hear her over market noise?
 - **Q-M4** (M) Confirm a sale for a trader who cannot read?
-- ~~**Q-M5**~~ (M) ✓ FISD-Ga (Ashesi/Lacuna, ~40 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
+- ~~**Q-M5**~~ (M) ✓ Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
 - ~~**Q-P1**~~ (P) ✓ Start small and transparent; expand from real usage (2026-08-24).
 - ~~**Q-S1**~~ (S) ✓ Done — expenses now feed profit (2026-08-25).
 - ~~**Q-E1**~~ (E) ✓ Keyword guess now; expand from real usage.

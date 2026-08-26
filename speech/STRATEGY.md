@@ -25,6 +25,15 @@ Dataset** (Ashesi University + Nokwary Technologies, funded by Lacuna Fund). Mea
 | Transcripts | Ga text + English translation, TAB-separated `data.csv` |
 | License | Open (Lacuna Fund); commonly CC BY-NC-SA — **confirm before commercial ship** |
 
+**Update (2026-08-26): we now have the whole FISD family.** Ga + **Asante Twi** + **Akuapem Twi**
++ **Fante** — **~104k utterances / ~150 h**, same layout per language. Twi is Ghana's most-spoken
+language, so Asante+Akuapem+Fante multiply the app's reach; the Akuapem set even contains English
+code-mixing (e.g. *"Nnipa yɛ bad"*), which trains the code-switching robustness real traders need.
+A separate 100-clip `26-sample_alpha` (`.wav`, Asante Twi) is a *preview* of a different corpus —
+worth chasing the full version later, not part of FISD. **Plan: one multilingual finetune across
+all four** (Whisper handles mixed languages; the Twi dialects share vocabulary), tagging manifests
+with `--lang`, rather than shipping four separate models.
+
 **Implication.** ~40 h across many voices is *plenty to adapt a pretrained multilingual
 model to Ga acoustics*, but only 117 sentences means **thin lexical variety** — a model
 trained on this alone will know Ga *sounds* well but generalise poorly to arbitrary market

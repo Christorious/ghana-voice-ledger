@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """
-Prepare the Financial Inclusion Speech Dataset (Ga) for Whisper finetuning.
+Prepare the Financial Inclusion Speech Dataset for Whisper finetuning.
 
-The dataset (Ashesi University / Nokwary Technologies, Lacuna Fund) ships as:
+Works for every language/dialect in the FISD family — they share the same layout:
+Ga, Asante Twi, Akuapem Twi, Fante (Ashesi University / Nokwary Technologies, Lacuna Fund).
+Pass --lang to tag records so per-language manifests can be merged for ONE multilingual finetune
+(~104k utterances / ~150h across the four). Example layout (Ga):
     fsid-ga/fisd-ga-90p/{data.csv, audios/*.ogg}   # train split (~24.5k clips)
     fsid-ga/fisd-ga-10p/{data.csv, audios/*.ogg}   # test  split (~2.8k clips)
 
@@ -80,6 +83,9 @@ def main():
     ap.add_argument("--out", required=True, help="Output JSONL manifest.")
     ap.add_argument("--oversample-money", type=int, default=1,
                     help="Repeat number/money utterances N times (>=1) to bias the model. Default 1 = off.")
+    ap.add_argument("--lang", default=None,
+                    help="Optional language/dialect tag (e.g. ga, asante-twi, akuapem-twi, fanti) "
+                         "written into each record — merge per-language manifests for a multilingual finetune.")
     ap.add_argument("--check-audio", action="store_true",
                     help="Warn (and drop) rows whose audio file is missing under --audio-root.")
     args = ap.parse_args()
@@ -109,6 +115,8 @@ def main():
                 reps = max(1, args.oversample_money)
 
             rec = {"audio": audio_path.replace("\\", "/"), "sentence": sentence}
+            if args.lang:
+                rec["lang"] = args.lang
             for _ in range(reps):
                 out.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 n_out += 1

@@ -77,7 +77,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 **What it does.** Today: Android's own recogniser, push-to-talk — tap, speak, it returns a best-guess sentence. North star: the "listening stall" — the phone in her pouch while she serves, capturing the sale hands-free.
 
-**How it's built.** Now: `RecognizerIntent` (device, push-to-talk) as a fallback. **Decided** offline path: finetune `whisper-base` on the ~40 h Ga Financial Inclusion Speech Dataset → `ggml`/q5 → `whisper.cpp` on device (MIT, ~60–80 MB), behind a `SpeechRecognizer` interface; A/B against a Meta `MMS` Ga adapter (now allowed — non-commercial project). Bias with our trading lexicon; **protect numbers** with a spotter; **speak the entry back in Ga** (Khaya TTS) for non-literate confirmation. See `speech/STRATEGY.md` + `IDEAS.md`. Vosk ruled out (no Ga acoustic model).
+**How it's built.** Now: `RecognizerIntent` (device, push-to-talk) as a fallback. **Decided** offline path: finetune `whisper-base` on the ~40 h Ga Financial Inclusion Speech Dataset → `ggml`/q5 → `whisper.cpp` on device (MIT, ~60–80 MB), behind a `SpeechRecognizer` interface; A/B against a Meta `MMS` Ga adapter (now allowed — non-commercial project). Bias with our trading lexicon; **protect numbers** with a spotter; **speak the entry back in Ga** (MMS-TTS, offline) for non-literate confirmation. See `speech/STRATEGY.md` + `IDEAS.md`. Vosk ruled out (no Ga acoustic model).
 
 **Steps in execution.**
 
@@ -92,7 +92,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 - ~~**Q-M1** Understand Twi/Ga/Ewe + Pidgin?~~ ✓ Finetune whisper-base on FISD-Ga → whisper.cpp; A/B a Meta MMS Ga adapter (2026-08-26).
 - **Q-M2** Hands-free "listening stall" — phone in pouch while serving? → _Tiny wake-word cascade wakes the heavy model + end-of-day review_
 - **Q-M3** Hear her over market noise? → _Noise-augmented training + a small on-device enhancement front-end_
-- **Q-M4** Confirm a sale for a trader who cannot read? → _Speak the parsed entry back in Ga via Khaya TTS (accessibility + trust)_
+- **Q-M4** Confirm a sale for a trader who cannot read? → _Speak the parsed entry back in Ga via MMS-TTS, offline (accessibility + trust)_
 - ~~**Q-M5** Where does Ghanaian training data come from?~~ ✓ FISD-Ga (Ashesi/Lacuna, ~40 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
 
 #### P · Parsers

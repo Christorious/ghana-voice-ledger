@@ -92,6 +92,41 @@ The app knows things the ASR doesn't — let it catch mistakes the model can't.
 5. **Confirm-sheet flywheel + per-trader adapter (idea 5)** — the model becomes hers.
 6. **Then** the moonshot (speech→intent, idea 3) and the cascade/diarization (8, 9) for the stall.
 
-**Practical accelerator:** don't start from vanilla whisper-base if an **already-Ghanaian
-checkpoint** exists (Akan/Twi Whisper finetunes are public) — warm-start from the closest one.
-(Being verified by the research pass; will fold model ids + TTS licenses in here.)
+---
+
+## Grounding (research pass, 2026-08-26)
+
+The boldest ideas above are backed by real tools and numbers:
+
+- **The target is ~10% WER, not "good enough."** "Benchmarking Akan ASR" (arXiv 2507.02407)
+  finetunes Whisper/MMS/wav2vec2 **on FISD** and reports **~10% WER / ~6% CER in-domain** — vs
+  **86–95% WER out-of-domain**. This both validates finetuning-in-domain and sets our sanity check.
+- **Ga/Twi/Ewe TTS is open and offline** — Meta **MMS-TTS** VITS checkpoints:
+  `facebook/mms-tts-gaa` (Ga), `facebook/mms-tts-aka` (Twi/Akan), `facebook/mms-tts-ewe` (Ewe).
+  Small, CPU-friendly, ONNX-exportable → runs on-device for **idea 2 (Ga read-back)** and generates
+  the **idea 4** augmentation corpus. CC-BY-NC (fine for us). GhanaNLP **Khaya** TTS is cloud/paid
+  only — prototype baseline, not the shippable path.
+- **TTS augmentation genuinely works** for exactly our "few unique sentences" case:
+  8.7% WER gain (arXiv 2204.00291), 38.6% relative reduction (arXiv 2305.10951), up to 14.3%
+  absolute (arXiv 2509.15373). Vary synthesized speaker/prosody + add market noise or gains shrink.
+- **Number safety-net is a real on-device component** — **sherpa-onnx open-vocabulary keyword
+  spotting** decodes just a supplied list (number words + "cedis/pesewas") offline on Android.
+  Note: sherpa-onnx **hotword biasing needs a transducer model, not Whisper**; whisper.cpp only
+  does *soft* initial-prompt biasing. So a hard slot grammar means running a sherpa-onnx transducer
+  in parallel (idea 1, path b).
+- **Wake-word cascade** — `openWakeWord` (Apache-2.0), `micro-wake-word` (MIT): tiny, permissive,
+  phone-friendly. Good for idea 8.
+- **End-to-end speech→slots (idea 3)** — Whisper-SLU with **prefix-tuning** gives +40.7% slot-filling
+  over zero-shot and targets low-resource; viable with tens of hours. A v2 experiment.
+- **Warm-start caution:** public Ghanaian ASR checkpoints exist (`GiftMark/akan-whisper-model` from
+  whisper-small; `dkt-py-bot/Whisper-FineTuned-DL-Twi` from tiny) but are **small and under-documented —
+  `GiftMark` has *no stated license*, so don't ship from it without clarifying provenance.** The
+  strongest, best-documented seed to A/B is **`facebook/mms-1b-all`** (Akan/Ewe adapters). Also useful:
+  the `ghananlpcommunity/twi-speech-text-multispeaker-16k` dataset for adding Twi later.
+
+### The grounded "highest-leverage 3"
+1. **TTS-augmented synthetic data** (MMS-TTS-gaa) → fixes the 117-sentence gap; 8–38% WER gains; open/offline.
+2. **whisper.cpp + parse-to-slots, hardened with a sherpa-onnx KWS number/currency spotter** → protects the amounts, the only output that truly can't be wrong; the same KWS gives the wake-word trigger.
+3. **MMS-TTS Ga read-back** → the non-literate-trader trust mechanism; ship it early.
+
+_Sources: arXiv 2507.02407, 2204.00291, 2305.10951, 2509.15373; huggingface.co/facebook/mms-tts-gaa|aka|ewe, mms-1b-all; k2-fsa.github.io/sherpa (KWS, hotwords, diarization); github.com/dscripka/openWakeWord; github.com/OHF-Voice/micro-wake-word; developer.khaya.ai._

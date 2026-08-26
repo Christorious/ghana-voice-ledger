@@ -55,10 +55,20 @@ Why Whisper-base as the default, and how the others compare:
 | **Meta MMS (Ga adapter)** | ✅ **now viable** (project is free/open-source) | Excellent Ga support (`gaa` is a supported language; adapters ~2.5M weights; strong low-data WER). CC-BY-NC 4.0 was the *only* blocker — **moot for a non-commercial, open-source app.** Worth A/B-testing against Whisper; deploy via sherpa-onnx / ONNX Runtime Mobile (~300–350 MB int8). |
 | wav2vec2-CTC → **sherpa-onnx** | ⭐ documented fallback | If Whisper WER is inadequate: CTC is faster per clip on weak CPUs, and sherpa-onnx gives native **hotword biasing + KenLM shallow fusion**. Use a *permissively-licensed* wav2vec2 base (not MMS). ~300–350 MB int8 is the downside. |
 
-**Honest accuracy expectation.** ~20–35 % raw WER on Ga with ~40 h (in line with Akan/Twi
-finetunes and MMS-Turkish-4h ≈ 22 %). But **effective task accuracy is much higher** because
-(a) the parser only needs numbers/keywords right, and (b) we add hotword biasing + fuzzy
-lexicon correction. This is good enough to be useful and to start the data flywheel.
+**Honest accuracy expectation — better than first thought.** The "Benchmarking Akan ASR" paper
+(arXiv 2507.02407) finetunes Whisper/MMS/wav2vec2 **on FISD itself** and reports **~10 % WER /
+~6 % CER in-domain** (vs 86–95 % WER for out-of-domain/generic models). Since we finetune on
+FISD-Ga and use it in the *same* domain, **~10–20 % WER is a realistic target** — and **effective
+task accuracy is higher still** because the parser only needs numbers/keywords right, we add a
+number/currency spotter, and fuzzy lexicon correction. Read-speech → noisy-market-speech will
+cost some accuracy; the confirm-sheet flywheel closes that gap. Bottom line: this can be
+genuinely accurate, not merely "good enough."
+
+**TTS for two jobs (now concrete).** Meta **MMS-TTS** ships open, offline Ghanaian voices —
+`facebook/mms-tts-gaa` (Ga), `-aka` (Twi), `-ewe` (Ewe), CC-BY-NC. Use them to (a) **speak the
+parsed entry back in Ga** so a non-literate trader can confirm by ear, and (b) **synthesize an
+augmentation corpus** to break FISD's 117-sentence ceiling (TTS augmentation shows 8–38 % WER
+reductions in the literature). See `IDEAS.md`.
 
 ## The staged roadmap
 

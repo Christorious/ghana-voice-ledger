@@ -15,6 +15,8 @@ becomes a data flywheel that improves the model from real use.
 3. **`COLAB.md`** — copy-paste runbook to train on a free GPU and download the model `.bin`.
 4. **`finetune_whisper_ga.py`** — the actual HuggingFace finetuning pipeline + ggml export.
 5. **`android_whisper.md`** — how to put the model in the app behind the existing voice interface.
+6. **`readback.py` / `readback.md`** — speak the parsed sale back in Twi/Ga (MMS-TTS) so a
+   non-literate trader confirms by ear. Runs text-only now; audio on Colab / once TTS deps installed.
 
 ## Status
 - ✅ Dataset analysed (`D:\Documents\11-fsid_ga.zip` = Ga slice of FISD; ~40 h, 117 financial sentences, 53 speakers).

@@ -28,6 +28,7 @@ export const DECISIONS = [
   { axis: 'Trust', decision: '**Confirm before save** — nothing persists until the trader okays the parsed entry (voice mishears are common).', adr: '—' },
   { axis: 'Credit model', decision: 'A saved **Customer** table + **Debt** rows with `amountPaid` for **partial payments**; balances aggregate per customer.', adr: '—' },
   { axis: 'Profit', decision: 'A separate, categorised **Expense** table subtracted from sales per period — sales and costs never blur; **profit** is simply their difference.', adr: '—' },
+  { axis: 'Speech', decision: 'Offline **Ga** via **whisper-base finetuned on the FISD-Ga corpus → whisper.cpp** (MIT, ~60–80 MB), behind a `SpeechRecognizer` interface with `RecognizerIntent` as fallback; A/B a Meta **MMS** Ga adapter (allowed — non-commercial). Numbers protected by a spotter; **Ga TTS read-back** for non-literate confirmation. Vosk/Kaldi ruled out (no Ga acoustic model). See `speech/STRATEGY.md` + `IDEAS.md`.', adr: '—' },
 ];
 
 export const GROUPS = [
@@ -56,13 +57,14 @@ export const NODES = [
   { id: 'MIC', code: 'M', name: 'Speech-to-text', short: 'SPEECH', group: 'loop', gx: 10, gy: 1, w: 2, d: 2, h: 26, kind: 'slab',
     one: `The device turns spoken words into text (push-to-talk today).`,
     what: `Today: Android's own recogniser, push-to-talk — tap, speak, it returns a best-guess sentence. North star: the "listening stall" — the phone in her pouch while she serves, capturing the sale hands-free.`,
-    how: `Now: <code>RecognizerIntent.ACTION_RECOGNIZE_SPEECH</code> (free, no key, device-provided). Direction: split the two axes — <mark>language</mark> (Twi/Ga/Ewe/Pidgin) via <code>Meta MMS</code> / <code>GhanaNLP Khaya</code>, <mark>noise</mark> via a small speech-enhancement front-end. Bridge to hands-free = a tiny <mark>wake-word</mark> + short capture + end-of-day review. Vosk has no Ghanaian model; text corpora build the LM, not the acoustic model.`,
-    steps: [['Listen', 'Push-to-talk prompt + record.'], ['Transcribe', 'On device / recogniser.'], ['Return', 'Best hypothesis string.'], ['(Next) Wake-word', 'Tiny always-on trigger → capture.'], ['(Next) Know her voice', 'Speaker ID picks her out from customers.']],
+    how: `Now: <code>RecognizerIntent</code> (device, push-to-talk) as a fallback. <mark>Decided</mark> offline path: finetune <code>whisper-base</code> on the ~40 h Ga Financial Inclusion Speech Dataset → <code>ggml</code>/q5 → <code>whisper.cpp</code> on device (MIT, ~60–80 MB), behind a <code>SpeechRecognizer</code> interface; A/B against a Meta <code>MMS</code> Ga adapter (now allowed — non-commercial project). Bias with our trading lexicon; <mark>protect numbers</mark> with a spotter; <mark>speak the entry back in Ga</mark> (Khaya TTS) for non-literate confirmation. See <code>speech/STRATEGY.md</code> + <code>IDEAS.md</code>. Vosk ruled out (no Ga acoustic model).`,
+    steps: [['Listen', 'Push-to-talk (fallback) / on-device capture.'], ['Transcribe', 'Finetuned Ga whisper.cpp, offline.'], ['Protect numbers', 'Closed-set spotter cross-checks the amount.'], ['Read back', '(Next) speak the entry in Ga to confirm.'], ['(Next) Know her voice', 'Speaker ID picks her out from customers.']],
     cond: [
-      { q: 'Understand Twi/Ga/Ewe + Pidgin?', to: 'Language axis — Meta MMS / GhanaNLP Khaya (not Vosk)' },
-      { q: 'Hands-free "listening stall" — phone in pouch while serving?', to: 'Wake-word + short capture + end-of-day review' },
-      { q: 'Hear her over market noise?', to: 'Small on-device speech-enhancement front-end (SAM-Audio is heavy / server-side)' },
-      { q: 'Where does Ghanaian training data come from?', r: 'The confirm sheet: every correction is an (audio, text) pair; sikabook-models is the seed corpus (2026-08-24).' },
+      { q: 'Understand Twi/Ga/Ewe + Pidgin?', r: 'Finetune whisper-base on FISD-Ga → whisper.cpp; A/B a Meta MMS Ga adapter (2026-08-26).' },
+      { q: 'Hands-free "listening stall" — phone in pouch while serving?', to: 'Tiny wake-word cascade wakes the heavy model + end-of-day review' },
+      { q: 'Hear her over market noise?', to: 'Noise-augmented training + a small on-device enhancement front-end' },
+      { q: 'Confirm a sale for a trader who cannot read?', to: 'Speak the parsed entry back in Ga via Khaya TTS (accessibility + trust)' },
+      { q: 'Where does Ghanaian training data come from?', r: 'FISD-Ga (Ashesi/Lacuna, ~40 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).' },
     ] },
 
   { id: 'PARSER', code: 'P', name: 'Parsers', short: 'PARSER', group: 'loop', gx: 12, gy: 5, w: 3, d: 3, h: 66, kind: 'tall',

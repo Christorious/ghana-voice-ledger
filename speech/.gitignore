@@ -1,0 +1,11 @@
+# Generated / large artifacts — never commit the dataset, audio, manifests, or models.
+audio/
+manifests/
+fsid/
+*.zip
+*.ogg
+*.wav
+*.jsonl
+*.bin
+whisper-ga-*/
+whisper.cpp/

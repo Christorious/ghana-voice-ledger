@@ -1,327 +1,78 @@
-# Voice Ledger Ghana
+# Ghana Voice Ledger
 
-A voice-powered financial transaction recording application designed specifically for Ghanaian small business owners and market vendors.
+A voice-first ledger for Ghanaian traders and market vendors: **speak a sale, and it's recorded** — in cedis, offline, with the running daily total always in view.
 
-## Overview
+> 🌟 **Read [`VISION.md`](VISION.md) first** — why this exists: her little accountant that keeps
+> her day, gives her clarity on her growth, and turns honest daily effort into a financial
+> identity the formal world can trust.
 
-Voice Ledger Ghana enables users to record financial transactions using natural voice commands in English, Twi, and other Ghanaian languages. The app uses advanced speech recognition and machine learning to automatically categorize transactions, identify speakers, and generate daily summaries.
+> **Status — honest version.** This repository previously contained a large (134-file)
+> Android codebase that was documented as "v1.0.0, production-ready" but **had never
+> compiled** — it was assembled by merging conflicting generated branches, leaving
+> truncated files, duplicate declarations, and cross-file schema conflicts throughout.
+> That source has been replaced with a small, coherent **core app that actually builds and
+> runs**. The valuable ideas (voice capture, the Room data model, and the cultural-cognition
+> research) are being reintroduced on this working foundation rather than debugged in place.
 
-## Features
+## What the core app does today
 
-### Core Functionality
-- **Voice Transaction Recording**: Record sales, purchases, and expenses using natural speech
-- **Multi-Language Support**: English, Twi, Ga, Ewe, and other Ghanaian languages
-- **Offline Capability**: Full functionality without internet connection
-- **Speaker Identification**: Automatic identification of different speakers/users
-- **Smart Categorization**: AI-powered transaction categorization
-- **Daily Summaries**: Automated daily business summaries with insights
+- **Record a sale by voice** — tap *Record sale* and say something like
+  *"sold 3 tilapia for 20 cedis"*. It uses the device's built-in speech recognition
+  (no cloud keys, no bundled ML models).
+- **Parse it** into product, quantity, and amount with a simple, transparent heuristic
+  (`TransactionParser`) — including spoken number words ("two yams 15 cedis").
+- **Store it** in a local Room database (`transactions` table).
+- **See the running total** for today plus a scrollable history; delete entries you got wrong.
+- **Add manually** as a fallback when voice isn't available.
 
-### Advanced Features
-- **Real-time Processing**: Instant transaction processing and feedback
-- **Data Privacy**: End-to-end encryption and local data storage
-- **Battery Optimization**: Efficient power management for all-day use
-- **Accessibility**: Full accessibility support for users with disabilities
-- **Export Capabilities**: Export data in multiple formats (CSV, PDF, Excel)
+## Tech stack (core)
 
-## Technical Architecture
+- Kotlin, Jetpack Compose (Material 3)
+- Room (SQLite) for local persistence
+- `AndroidViewModel` + `StateFlow` for state
+- Android `RecognizerIntent` for speech-to-text
+- Min SDK 24, target/compile SDK 34, JDK 17
 
-### Technology Stack
-- **Platform**: Android (Kotlin)
-- **UI Framework**: Jetpack Compose with Material 3
-- **Architecture**: Clean Architecture with MVVM
-- **Database**: Room with SQLite
-- **Dependency Injection**: Hilt
-- **Speech Recognition**: Google Cloud Speech API + Offline TensorFlow Lite
-- **Machine Learning**: TensorFlow Lite for on-device processing
-- **Audio Processing**: WebRTC VAD, custom audio utilities
-- **Security**: AES encryption, biometric authentication
+Deliberately **not** in the core yet (removed with the broken source; to be reintroduced
+as working features): Hilt DI, on-device TensorFlow Lite / speaker ID, Google Cloud Speech,
+Firebase, the offline-sync queue, and the multi-flavor release/deploy pipeline.
 
-### Key Components
-- **Voice Agent Service**: Continuous voice monitoring and processing
-- **Speech Recognition Manager**: Multi-provider speech recognition
-- **Transaction Processor**: ML-powered transaction parsing and categorization
-- **Speaker Identification**: TensorFlow Lite-based speaker recognition
-- **Offline Queue Manager**: Handles offline transaction synchronization
-- **Security Manager**: Encryption and privacy protection
-
-## Project Structure
+## Project structure
 
 ```
-app/
-├── src/main/java/com/voiceledger/ghana/
-│   ├── data/                    # Data layer (repositories, DAOs, entities)
-│   ├── domain/                  # Domain layer (use cases, models, repositories)
-│   ├── presentation/            # UI layer (screens, view models, compose)
-│   ├── ml/                      # Machine learning components
-│   ├── service/                 # Background services
-│   ├── security/                # Security and encryption
-│   ├── offline/                 # Offline functionality
-│   ├── performance/             # Performance optimization
-│   ├── analytics/               # Analytics and monitoring
-│   └── di/                      # Dependency injection modules
-├── src/test/                    # Unit tests
-├── src/androidTest/             # Integration tests
-└── src/main/res/               # Resources (layouts, strings, etc.)
+app/src/main/java/com/voiceledger/ghana/
+├── MainActivity.kt              # Compose host + speech-recognition launcher
+├── VoiceLedgerApplication.kt
+├── data/                        # Room: Transaction, TransactionDao, LedgerDatabase
+├── ui/                          # LedgerViewModel, LedgerScreen, theme/
+└── voice/                       # TransactionParser (speech → structured sale)
 ```
 
-## Getting Started
+## Build & run
 
-### Prerequisites
-- Android Studio Hedgehog (2023.1.1) or later
-- Android SDK 34
-- Kotlin 1.9.0+
-- Java 17+
-
-### Setup Instructions
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/voiceledger/ghana-voice-ledger.git
-   cd ghana-voice-ledger
-   ```
-
-2. **Configure local properties**
-   ```bash
-   cp local.properties.example local.properties
-   # Edit local.properties with your SDK path and API keys
-   ```
-
-3. **Set up API keys**
-   - Google Cloud Speech API key
-   - Firebase configuration
-   - Analytics keys (see local.properties.example)
-
-4. **Build the project**
-   ```bash
-   ./gradlew build
-   ```
-
-5. **Run tests**
-   ```bash
-   # Run unit tests
-   ./gradlew test
-   
-   # Run integration tests (requires connected device/emulator)
-   ./gradlew connectedDebugAndroidTest
-   ```
-   
-   For detailed integration test documentation, see [INTEGRATION_TESTS.md](INTEGRATION_TESTS.md)
-
-6. **Generate coverage reports**
-   ```bash
-   ./gradlew jacocoTestReport
-   ```
-
-   The HTML report is available at `app/build/reports/jacoco/jacocoTestReport/html/index.html`. To enforce the 70% minimum coverage threshold locally, run:
-
-   ```bash
-   ./gradlew jacocoTestCoverageVerification
-   ```
-
-   See [docs/COVERAGE.md](docs/COVERAGE.md) for detailed coverage guidance.
-> 📘 For a complete onboarding checklist, secrets configuration, recommended build commands, and feature toggle reference, see the top-level [Developer Guide](DEVELOPER_GUIDE.md).
-
-### Configuration
-
-#### Required API Keys
-- **TensorFlow Lite**: For offline ML models (always required)
-
-#### Optional API Keys (Feature-Dependent)
-- **Google Cloud Speech API**: Required when `feature.googleCloudSpeech.enabled=true`
-- **Firebase**: Required when `feature.firebase.enabled=true`
-
-#### Optional Configuration
-- **Performance Monitoring**: Enable detailed performance tracking
-- **Advanced Analytics**: Enhanced user behavior analytics
-- **Beta Features**: Access to experimental features
-
-#### Feature Toggles
-Optional service integrations are controlled via Gradle properties. Update `gradle.properties` or provide `-P` flags when invoking Gradle.
-
-| Property | Description | BuildConfig flag | Default |
-| --- | --- | --- | --- |
-| `feature.firebase.enabled` | Enables Firebase plugins (Google Services, Crashlytics, Performance Monitoring, App Distribution) and related dependencies. | `BuildConfig.FEATURE_FIREBASE_ENABLED` | `false` |
-| `feature.googleCloudSpeech.enabled` | Includes the Google Cloud Speech SDK and Google Auth dependency. | `BuildConfig.FEATURE_GOOGLE_CLOUD_SPEECH_ENABLED` | `false` |
-| `feature.webrtc.enabled` | Adds the WebRTC voice activity detection dependency. | `BuildConfig.FEATURE_WEBRTC_ENABLED` | `false` |
-
-To enable a feature locally, set the property to `true` in `gradle.properties` or pass it on the command line:
 ```bash
-./gradlew assembleDebug -Pfeature.firebase.enabled=true
+./gradlew assembleDebug        # produces app/build/outputs/apk/debug/app-debug.apk
+./gradlew installDebug         # install on a connected device/emulator
+./gradlew testDebugUnitTest    # unit tests
 ```
-Remember to supply the corresponding API keys in `local.properties` when enabling Firebase or Google Cloud Speech.
 
+Requires Android SDK 34 and a JDK 17. Set `sdk.dir` in `local.properties`.
 
-## Development
+## The idea behind it
 
-### Dependency Management
-- Dependencies and plugin versions are centralized in `gradle/libs.versions.toml` via the Gradle Version Catalog.
-- Use the provided `libs` aliases in build scripts instead of hardcoding version numbers.
-
-### Code Style
-- Follow Kotlin coding conventions
-- Use ktlint for code formatting
-- Maintain 70% test coverage minimum (enforced by JaCoCo)
-
-### Architecture Guidelines
-- Follow Clean Architecture principles
-- Use MVVM pattern for UI components
-- Implement Repository pattern for data access
-- Use Dependency Injection with Hilt
-
-### Testing Strategy
-- Unit tests for business logic
-- Integration tests for data layer
-- UI tests for critical user flows
-- Performance tests for audio processing
-
-## Security & Privacy
-
-### Data Protection
-- All sensitive data encrypted at rest
-- Voice recordings processed locally when possible
-- No personal data transmitted without explicit consent
-- Biometric authentication for app access
-
-### Privacy Features
-- Local-first data storage
-- Optional cloud backup with encryption
-- Granular privacy controls
-- Data retention policies
-
-## Performance Optimization
-
-### Battery Efficiency
-- Intelligent voice activation detection
-- Background processing optimization
-- Adaptive quality based on battery level
-- Power-aware ML model selection
-
-### Memory Management
-- Efficient audio buffer management
-- ML model caching strategies
-- Database query optimization
-- Memory leak prevention
-
-## Accessibility
-
-### Supported Features
-- Screen reader compatibility
-- Voice navigation
-- High contrast themes
-- Large text support
-- Motor accessibility features
-
-## Localization
-
-### Supported Languages
-- English (primary)
-- Twi (Akan)
-- Ga
-- Ewe
-- Hausa
-- Dagbani
-
-### Cultural Adaptations
-- Local currency formatting (Ghana Cedis)
-- Cultural business practices
-- Local product vocabulary
-- Regional dialects support
-
-## Contributing
-
-### Development Process
-1. Fork the repository
-2. Create a feature branch
-3. Implement changes with tests
-4. Submit pull request
-5. Code review and merge
-
-### Guidelines
-- Follow the existing code style
-- Add tests for new features
-- Update documentation
-- Ensure accessibility compliance
-
-## Deployment
-
-### Current Release
-
-**Version 1.0.0** is now available for production deployment.
-
-For comprehensive release information, including testing coverage, artifact metadata, Play Store distribution procedures, and post-release monitoring, see:
-
-- **[Release Notes v1.0.0](docs/releases/1.0.0.md)** - Complete release documentation
-- **[Deployment Guide](DEPLOYMENT.md)** - Infrastructure and deployment procedures
-- **[Release Build Guide](RELEASE_BUILD_GUIDE.md)** - Detailed build process
-
-### Build Variants
-- **Debug**: Development builds with logging
-- **Release**: Production builds with optimization and ProGuard/R8
-- **Beta**: Testing builds with additional logging
-
-### Release Process
-1. Update version numbers
-2. Run full test suite
-3. **Verify ProGuard configuration**: `./scripts/verify-proguard.sh`
-4. Generate signed APK: `./gradlew assembleProdRelease`
-5. Test release build on device
-6. See [Release Notes](docs/releases/1.0.0.md#play-store-distribution-guide) for Play Store deployment
-7. Monitor crash reports via Firebase and App Center
-
-### ProGuard/R8 Configuration
-The app uses comprehensive ProGuard/R8 rules for code shrinking and obfuscation:
-- **Configuration**: `app/proguard-rules.pro` (353 lines, 127 keep rules)
-- **Verification**: Run `./scripts/verify-proguard.sh` to validate configuration
-- **Documentation**: See [ProGuard Configuration Guide](PROGUARD_CONFIGURATION.md)
-- **Testing**: See [ProGuard Testing Guide](PROGUARD_TESTING_GUIDE.md)
-- **Quick Reference**: See [ProGuard Quick Reference](PROGUARD_QUICK_REFERENCE.md)
-
-## Support
-
-### Documentation
-- [API Documentation](docs/API.md)
-- [User Guide](docs/USER_GUIDE.md)
-- [Developer Guide](docs/DEVELOPER_GUIDE.md)
-- [Code Coverage Guide](docs/COVERAGE.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-
-### Community
-- [GitHub Issues](https://github.com/voiceledger/ghana-voice-ledger/issues)
-- [Discussions](https://github.com/voiceledger/ghana-voice-ledger/discussions)
-- [Discord Community](https://discord.gg/voiceledger)
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- Google Cloud Speech API team
-- TensorFlow Lite community
-- Android Jetpack Compose team
-- Ghanaian language consultants
-- Beta testing community
+The design goal is to meet traders where they already are: capturing a sale *the way it is
+spoken*, in Ghana Cedis, without imposing a Western accounting mental model. The research
+that motivates this lives in [`CULTURAL_FINANCIAL_COGNITION_RESEARCH.md`](CULTURAL_FINANCIAL_COGNITION_RESEARCH.md).
 
 ## Roadmap
 
-### Version 1.0 (Current)
-- ✅ Core voice recording functionality
-- ✅ Basic transaction categorization
-- ✅ Offline support
-- ✅ Multi-language support
+- Twi/Ga/Ewe number words and product vocabulary in the parser
+- Daily summaries and simple insights
+- Optional speaker identification (returning-customer recognition)
+- Cloud backup / sync
 
-### Version 1.1 (Planned)
-- 🔄 Advanced analytics dashboard
-- 🔄 Cloud synchronization
-- 🔄 Team collaboration features
-- 🔄 Advanced reporting
+## Note on the older documentation
 
-### Version 2.0 (Future)
-- 📋 Integration with banking APIs
-- 📋 Advanced ML models
-- 📋 Web dashboard
-- 📋 API for third-party integrations
-
----
-
-**Voice Ledger Ghana** - Empowering Ghanaian businesses through voice technology.
+Many top-level `*.md` files (build-status reports, APK guides, "final verification" notes)
+describe the previous non-compiling codebase and its aspirational feature set. They are
+retained for history but should not be taken as an accurate description of the current app.

@@ -1,3 +1,8 @@
+> **VISION / RESEARCH.** This is the thesis behind the product — how Ghanaian market women think
+> about money — and it guides the roadmap (e.g. the credit ledger came directly from it). It is
+> not a description of implemented features. See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for the
+> current build.
+
 # Cultural Financial Cognition Research
 ## Designing Sales Representation Congruent with Market Women's Financial Thinking
 

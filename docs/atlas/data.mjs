@@ -47,7 +47,7 @@ export const NODES = [
     cond: [] },
 
   { id: 'SHELL', code: 'A', name: 'App shell', short: 'APP SHELL', group: 'loop', gx: 6, gy: 3, w: 3, d: 2, h: 40, kind: 'box',
-    one: `Hosts the two tabs and launches the microphone.`,
+    one: `Hosts the three tabs and launches the microphone.`,
     what: `The frame around everything: it holds the Today, Insights and Credit tabs and, when you tap a mic, opens speech recognition and hands the words to whichever tab you're on.`,
     how: `<code>MainActivity.kt</code> + <code>AppRoot.kt</code>. A bottom <code>NavigationBar</code> switches the three tabs; <code>registerForActivityResult</code> launches <code>RecognizerIntent</code> and routes the result to the sales, expense or credit view model.`,
     steps: [['Route tab', 'Today · Insights · Credit.'], ['Launch mic', 'RecognizerIntent.'], ['Deliver text', 'To the active view model.']],

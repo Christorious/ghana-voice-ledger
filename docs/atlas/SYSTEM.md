@@ -54,7 +54,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 
 #### A · App shell
 
-**In one line.** Hosts the two tabs and launches the microphone.
+**In one line.** Hosts the three tabs and launches the microphone.
 
 **What it does.** The frame around everything: it holds the Today, Insights and Credit tabs and, when you tap a mic, opens speech recognition and hands the words to whichever tab you're on.
 

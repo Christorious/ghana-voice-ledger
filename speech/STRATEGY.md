@@ -36,7 +36,15 @@ parsing with our own trading vocabulary** (`sikabook-models/trading_corpus.txt` 
 > **Primary: finetune `openai/whisper-base` (74M) on FISD-Ga with HuggingFace →
 > convert to `ggml` → run offline with `whisper.cpp` on Android.**
 
-Why this and not the others:
+**This project is non-commercial, open-source, and free — built for the traders, not for
+profit.** That removes the licensing constraint that shaped this table: **Meta MMS (CC-BY-NC)
+is now fully usable.** Whisper-base stays the *primary* recommendation purely on **deployment
+simplicity** (whisper.cpp is the easiest offline runtime on cheap phones, ~60–80 MB), but
+**MMS is now a strong co-candidate worth A/B-testing** — it has already seen Ga in pretraining
+and its adapters finetune well on little data. Plan: train both on Colab, compare WER on the
+test split, ship whichever wins the accuracy/size/speed trade on a real budget phone.
+
+Why Whisper-base as the default, and how the others compare:
 
 | Option | Verdict | Reason |
 |---|---|---|
@@ -44,7 +52,7 @@ Why this and not the others:
 | Whisper-tiny (39M) | ✅ fallback for weakest phones | ~30–45 MB q5, fastest; higher WER. |
 | Whisper-small (244M) | server/eval only | Best WER but too slow/heavy on budget CPUs. |
 | **Vosk / Kaldi** | ❌ ruled out | No Ga acoustic model or phoneme lexicon exists; Kaldi isn't a finetuning tool; ~40 h is far below from-scratch needs. (Vosk's *runtime* is great — but there's no Ga model to run.) |
-| **Meta MMS (Ga adapter)** | ❌ for shipping | Technically excellent (Ga = `gaa` is supported; adapters ~2.5M weights; great low-data WER) **but weights are CC-BY-NC 4.0 — non-commercial. Blocker.** |
+| **Meta MMS (Ga adapter)** | ✅ **now viable** (project is free/open-source) | Excellent Ga support (`gaa` is a supported language; adapters ~2.5M weights; strong low-data WER). CC-BY-NC 4.0 was the *only* blocker — **moot for a non-commercial, open-source app.** Worth A/B-testing against Whisper; deploy via sherpa-onnx / ONNX Runtime Mobile (~300–350 MB int8). |
 | wav2vec2-CTC → **sherpa-onnx** | ⭐ documented fallback | If Whisper WER is inadequate: CTC is faster per clip on weak CPUs, and sherpa-onnx gives native **hotword biasing + KenLM shallow fusion**. Use a *permissively-licensed* wav2vec2 base (not MMS). ~300–350 MB int8 is the downside. |
 
 **Honest accuracy expectation.** ~20–35 % raw WER on Ga with ~40 h (in line with Akan/Twi
@@ -77,7 +85,9 @@ lexicon correction. This is good enough to be useful and to start the data flywh
 
 ## Open risks / to confirm
 
-1. **License** of FISD for commercial use — confirm on the Ashesi repo before shipping a paid app.
+1. **License** — project is non-commercial/open-source, so FISD (Lacuna, likely CC BY-NC-SA) and
+   MMS (CC-BY-NC) are both fine to use. Honour attribution + share-alike: **release the finetuned
+   models open-source** too. (If the goal ever changes to a paid product, revisit MMS.)
 2. **Read-speech → spontaneous-speech gap** — mitigated by Stage 2 flywheel; consider recording a
    few hundred real market utterances to add.
 3. **Language token** for Whisper: Ga isn't a native Whisper language; use a placeholder/related

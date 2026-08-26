@@ -64,15 +64,26 @@ def is_money_num(sentence: str) -> bool:
     return any(cue in s for cue in MONEY_NUM_CUES)
 
 
-def read_rows(data_csv: str):
+def read_rows(data_csv: str, fmt: str = "fisd"):
+    """Yield (audio_basename, transcription) for each row, for either corpus format."""
     with open(data_csv, encoding="utf-8") as f:
-        header = f.readline()  # skip header
+        f.readline()  # skip header
         for line in f:
-            cols = line.rstrip("\n").split("\t")
-            if len(cols) < 4:
+            line = line.rstrip("\n")
+            if not line.strip():
                 continue
-            _idx, filepath, transcription, translation = cols[0], cols[1], cols[2], cols[3]
-            yield os.path.basename(filepath), transcription, translation
+            if fmt == "alpha":
+                # comma-separated `path,Text` (path never contains a comma → split once).
+                parts = line.split(",", 1)
+                if len(parts) < 2:
+                    continue
+                filepath, transcription = parts[0], parts[1]
+            else:
+                cols = line.split("\t")
+                if len(cols) < 4:
+                    continue
+                filepath, transcription = cols[1], cols[2]
+            yield os.path.basename(filepath), transcription
 
 
 def main():
@@ -86,6 +97,9 @@ def main():
     ap.add_argument("--lang", default=None,
                     help="Optional language/dialect tag (e.g. ga, asante-twi, akuapem-twi, fanti) "
                          "written into each record — merge per-language manifests for a multilingual finetune.")
+    ap.add_argument("--format", choices=["fisd", "alpha"], default="fisd",
+                    help="fisd = TAB-separated `<idx> Audio-Filepath Transcription Translation` (FISD family). "
+                         "alpha = comma-separated `path,Text` (Alpha TWI conversational/novel dataset).")
     ap.add_argument("--check-audio", action="store_true",
                     help="Warn (and drop) rows whose audio file is missing under --audio-root.")
     args = ap.parse_args()
@@ -95,7 +109,7 @@ def main():
     speakers = set()
 
     with open(args.out, "w", encoding="utf-8") as out:
-        for basename, transcription, _translation in read_rows(args.data_csv):
+        for basename, transcription in read_rows(args.data_csv, args.format):
             n_in += 1
             audio_path = os.path.join(args.audio_root, basename)
             if args.check_audio and not os.path.isfile(audio_path):

@@ -29,10 +29,17 @@ Dataset** (Ashesi University + Nokwary Technologies, funded by Lacuna Fund). Mea
 + **Fante** — **~104k utterances / ~150 h**, same layout per language. Twi is Ghana's most-spoken
 language, so Asante+Akuapem+Fante multiply the app's reach; the Akuapem set even contains English
 code-mixing (e.g. *"Nnipa yɛ bad"*), which trains the code-switching robustness real traders need.
-A separate 100-clip `26-sample_alpha` (`.wav`, Asante Twi) is a *preview* of a different corpus —
-worth chasing the full version later, not part of FISD. **Plan: one multilingual finetune across
-all four** (Whisper handles mixed languages; the Twi dialects share vocabulary), tagging manifests
-with `--lang`, rather than shipping four separate models.
+Plus a *different, complementary* corpus: the **Alpha TWI Speech-to-Text Dataset**
+(`26-sample_alpha`) — **conversational + novel** Twi (general domain, *not* financial), full set
+**4 h / 42 speakers / 134 sentences**, collected with listen-before-submit (clean labels). We
+currently hold a **120-clip sample** (100 train / 20 test; `.wav` 44.1 kHz stereo; `path,Text`
+format — read via `prepare_fsid_ga.py --format alpha`). Its value is precisely that it's *off*
+FISD's narrow financial script: it broadens Twi vocabulary and helps the model generalize beyond
+fixed prompts. Fold it into the Twi mix, and get the full 4 h when available.
+
+**Plan: one multilingual finetune** across Ga + Asante/Akuapem Twi + Fante (+ Alpha Twi as extra
+general-domain Twi) — Whisper handles mixed languages and the Twi dialects share vocabulary — tagging
+each source with `--lang`, rather than shipping separate per-language models.
 
 **Implication.** ~40 h across many voices is *plenty to adapt a pretrained multilingual
 model to Ga acoustics*, but only 117 sentences means **thin lexical variety** — a model

@@ -93,7 +93,7 @@ Ghana Voice Ledger is a small, offline Android app for market traders. A trader 
 - **Q-M2** Hands-free "listening stall" — phone in pouch while serving? → _Tiny wake-word cascade wakes the heavy model + end-of-day review_
 - **Q-M3** Hear her over market noise? → _Noise-augmented training + a small on-device enhancement front-end_
 - **Q-M4** Confirm a sale for a trader who cannot read? → _Speak the parsed entry back in Ga via MMS-TTS, offline (accessibility + trust)_
-- ~~**Q-M5** Where does Ghanaian training data come from?~~ ✓ Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
+- ~~**Q-M5** Where does Ghanaian training data come from?~~ ✓ Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + the Alpha TWI conversational/novel set + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
 
 #### P · Parsers
 
@@ -349,7 +349,7 @@ Reference by ID. ✓ resolved (with date) · otherwise open.
 - **Q-M2** (M) Hands-free "listening stall" — phone in pouch while serving?
 - **Q-M3** (M) Hear her over market noise?
 - **Q-M4** (M) Confirm a sale for a trader who cannot read?
-- ~~**Q-M5**~~ (M) ✓ Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
+- ~~**Q-M5**~~ (M) ✓ Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + the Alpha TWI conversational/novel set + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).
 - ~~**Q-P1**~~ (P) ✓ Start small and transparent; expand from real usage (2026-08-24).
 - ~~**Q-S1**~~ (S) ✓ Done — expenses now feed profit (2026-08-25).
 - ~~**Q-E1**~~ (E) ✓ Keyword guess now; expand from real usage.

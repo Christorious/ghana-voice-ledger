@@ -44,6 +44,12 @@ finetunes fine on mixed Ga + Asante/Akuapem Twi + Fante, covering far more of Gh
 !cat manifests/*_train.jsonl > manifests/train.jsonl
 !cat manifests/*_test.jsonl  > manifests/test.jsonl
 ```
+Add the **Alpha TWI** dataset (conversational/novel Twi, different format) the same way:
+```bash
+!python prepare_fsid_ga.py --data-csv sample_alpha_dataset/sample_train/train_transcription.csv \
+    --audio-root audio/alpha_train --out manifests/alpha_train.jsonl --format alpha --lang asante-twi
+# (.wav 44.1kHz stereo — the HF Audio(16000) cast in the trainer resamples/downmixes automatically)
+```
 Then finetune as below. Use `--language` matching Whisper's closest token (try `sw`/`ha`/`yo`);
 the model learns the actual language from the data. Consider `whisper-small` for the multilingual
 run if the GPU allows — more capacity helps across four languages (keep a `base`/`tiny` distill for phones).

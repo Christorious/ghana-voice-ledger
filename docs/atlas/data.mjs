@@ -64,7 +64,7 @@ export const NODES = [
       { q: 'Hands-free "listening stall" — phone in pouch while serving?', to: 'Tiny wake-word cascade wakes the heavy model + end-of-day review' },
       { q: 'Hear her over market noise?', to: 'Noise-augmented training + a small on-device enhancement front-end' },
       { q: 'Confirm a sale for a trader who cannot read?', to: 'Speak the parsed entry back in Ga via MMS-TTS, offline (accessibility + trust)' },
-      { q: 'Where does Ghanaian training data come from?', r: 'Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).' },
+      { q: 'Where does Ghanaian training data come from?', r: 'Full FISD family — Ga + Asante/Akuapem Twi + Fante (~104k utterances, ~150 h) + the Alpha TWI conversational/novel set + confirm-sheet corrections (the flywheel) + TTS augmentation (2026-08-26).' },
     ] },
 
   { id: 'PARSER', code: 'P', name: 'Parsers', short: 'PARSER', group: 'loop', gx: 12, gy: 5, w: 3, d: 3, h: 66, kind: 'tall',

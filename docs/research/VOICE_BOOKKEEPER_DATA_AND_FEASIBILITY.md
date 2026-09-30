@@ -361,7 +361,7 @@ Links are grouped by the section they support. Entries marked with an asterisk w
 - GRA modified taxation scheme https://gra.gov.gh/domestic-tax/tax-types/individual/modified-taxation-scheme/
 - OZÉ case study, UNCDF https://www.uncdf.org/article/7271/a-digital-bookkeeping-app-to-improve-access-to-finance-a-case-study-from-ghana
 - Susu collectors https://en.wikipedia.org/wiki/Susu_collectors
-- Formalisation of micro firms, Benin randomised trial (Benhassine, McKenzie, Pouliquen, Santini) https://www.povertyactionlab.org/evaluation/formalization-small-businesses-benin
+- Does inducing informal firms to formalize make sense? Experimental evidence from Benin (Benhassine, McKenzie, Pouliquen, Santini, Journal of Public Economics 2018) https://www.sciencedirect.com/science/article/abs/pii/S0047272717301883
 - Personal VAD (Google) https://arxiv.org/abs/1908.04284
 
 ### Comparable products and the research landscape (sections 8 and 10)

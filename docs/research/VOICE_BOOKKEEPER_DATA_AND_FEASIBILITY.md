@@ -6,13 +6,15 @@ Research memorandum, 30 September 2026. Prepared for the ghana-voice-ledger and 
 
 Every factual claim below carries one of three tags. **[V]** means the source file was read directly during this study: a licence file, a benchmark result file, a dataset README, or code in the two repositories. **[S]** means the figure came from a search-engine summary of the named source, because the session's network policy denied direct access to almost every host outside github.com (Hugging Face, arXiv, Zenodo, Kaggle, Mozilla, vendor documentation, Ghanaian government and university sites were all blocked). **[E]** marks an estimate or a design inference. Anything tagged [S] should be re-read at the source before it is quoted in a grant application or a paper. The list of items that most need re-verification is at the end.
 
+**Purpose of the project.** The author has stated that the project is non-commercial and in the public interest: the tool is to be free to traders, its aim is to widen their access to the financial resources available in Ghana and to give them direct insight into their own day-to-day trading, and its data will be released openly. Section 4.1 sets out what that changes for licensing, and it should be repeated in ethics applications, funding applications and the app's consent screen.
+
 ## 1. Summary
 
 The project is feasible in a narrower form than the one described in the repositories, and the narrowing is dictated by data. Measured on an independent Ghanaian benchmark, the best speech recogniser available for Twi transcribes free speech with a word error rate near 45 percent, and every general-purpose cloud model, including Gemini and every Whisper variant, performs far worse [V]. That floor rules out the always-listening agent that transcribes bargaining at a fish stall and silently books the sale. It does not rule out a voice bookkeeper. On the finance-domain read speech that already exists for Twi, Fante and Ga, a 153-million-parameter open model reaches a word error rate near 19 percent [V], which is workable when the recognition task is constrained to item, quantity and price, the amount is read back before it is booked, and the user speaks into the phone rather than across a stall.
 
 Three findings from the code should shape the plan before any data work starts. The Android app has no working speech recognition: the offline recogniser returns canned strings chosen by audio buffer length, the voice activity detector is simulated, speaker identification falls back to a mock embedding, and the Google Cloud path is disabled [V]. The status report's claims of 98 percent completion and 95 percent recognition accuracy therefore describe the user interface and database shell, not a voice system. The models repository holds a sound plan and a working rules-based extractor, but its licence matrix contains errors that matter: FLEURS has no Akan configuration [V], Meta's newer Omnilingual ASR is Apache-2.0 rather than licence-blocked like MMS [V], and the Twi-English code-switching corpus carries an Apache-2.0 tag on Hugging Face rather than the assumed non-commercial default [S]. Finally, the Kiro prompt documents in the app repository gloss two Akan numerals wrongly, reading "dunum" as ten and "aduonum" as twenty when they mean fifteen and fifty; the Python rules in sikabook-models have the correct values [V].
 
-The data situation is better than a first search suggests and worse than the repositories assume. Around 150 hours of permissively licensed Akan and Ga speech exist in the finance domain, roughly 250 hours of Ghanaian-language speech under CC-BY-4.0 arrived in 2026 through Google's WAXAL release, and 95 hours of Twi-English code-switched speech may be usable after a licence confirmation. Nothing conversational, nothing recorded in a market, and nothing in Ghanaian Pidgin exists anywhere. The 5,000-hour University of Ghana corpus, the largest in the country, is licensed for non-commercial use with no derivatives and cannot train a shipped model [V]. The gap between what exists and what the product needs is therefore a specific, affordable one: on the order of 20 to 50 hours of consented, in-domain, structured sale utterances, which a small team can collect for a few thousand dollars in one season.
+The data situation is better than a first search suggests and worse than the repositories assume. Around 150 hours of permissively licensed Akan and Ga speech exist in the finance domain, roughly 250 hours of Ghanaian-language speech under CC-BY-4.0 arrived in 2026 through Google's WAXAL release, and 95 hours of Twi-English code-switched speech may be usable after a licence confirmation. Nothing conversational, nothing recorded in a market, and nothing in Ghanaian Pidgin exists anywhere. The 5,000-hour University of Ghana corpus, the largest in the country, is licensed for non-commercial use with no derivatives, so it cannot train a model for commercial distribution, although a non-commercial project such as this one may use it under the conditions in section 4.1 [V]. The gap between what exists and what the product needs is therefore a specific, affordable one: on the order of 20 to 50 hours of consented, in-domain, structured sale utterances, which a small team can collect for a few thousand dollars in one season.
 
 The project also sits in an identifiable research field. A Luxembourg group has published the only quantified voice-to-ledger pipeline for an African language, reaching 76 to 85 percent amount accuracy on Mooré and Mooré-French speech, Microsoft Research Africa has published the only field study of voice entry at a shop counter, and a large wave of unevaluated prototypes exists on every continent. No voice bookkeeper for informal traders has published user evidence in any language, so a measured Ghanaian deployment would be a first (section 10).
 
@@ -46,7 +48,7 @@ For on-device use, one development changes the picture from what sikabook-models
 
 The table lists what exists, what it contains and whether it can train a commercial on-device model. Hours are as stated by the source; "conversational" and "market" columns are empty for every row because no such corpus exists.
 
-| Dataset | Languages | Hours | Style | Licence | Shippable? | Tag |
+| Dataset | Languages | Hours | Style | Licence | Commercial use? | Tag |
 |---|---|---|---|---|---|---|
 | Ashesi/Nokwary Financial Inclusion Speech Dataset (Lacuna Fund, 2022) | Akuapem Twi 38, Asante Twi 30, Fante 39, Ga 40 | ~148, ~200 speakers per language | Read prompts from a Wizard-of-Oz financial app plus phonetically balanced sentences | CC-BY-4.0 (LICENSE file in repository) | Yes, with attribution; confirm licence inside the archives at adr.ashesi.edu.gh | [V] |
 | Google WAXAL (Feb 2026) | Akan ~36, Ewe ~54, Dagbani ~51, Dagaare ~54, Ikposo ~51 (ASR); Twi, Fante, Ewe TTS voices | ~250 Ghanaian of ~1,250 total | Elicited natural speech | CC-BY-4.0 | Yes; per-language hours are third-party estimates | [S] |
@@ -64,6 +66,11 @@ The table lists what exists, what it contains and whether it can train a commerc
 | MMS training audio | many | not released | Bible readings | Weights CC-BY-NC-4.0 | No | [V] |
 
 Coverage by language is uneven in ways that should drive sequencing. Akan is the only language with more than a hundred permissively licensed hours. Ga exists almost solely through the Ashesi corpus, and Omnilingual ASR does not list it, so a Ga recogniser must be trained rather than adapted. Ewe has WAXAL and BibleTTS under open terms and is where Omnilingual already performs best. Dagbani has the best Common Voice presence of any Ghanaian language. Ghanaian Pidgin has no dataset at all; GhanaNLP's own inventory records "no data" for it, and the nearest substitutes are Nigerian Pidgin in Common Voice and in the WaZoBiaSpeech release. No corpus of Ghanaian English speech exists on its own. Two of these findings correct the sikabook-models licence matrix: FLEURS contains Hausa and no Akan [V], and WAXAL covers 21 languages of which six are Ghanaian, not 27 [S].
+
+
+### 4.1 What changes because the project is non-commercial
+
+The author has stated that the project has no commercial purpose: the tool is to be free to traders, is meant to widen their access to finance and their insight into their own businesses, and will release its data openly. This changes the licence analysis in one direction only. Creative Commons non-commercial clauses restrict the use rather than the user, so a free tool with no revenue, grant-funded research and published papers fall within them, and several resources marked unusable in the table become available: the University of Ghana corpus with roughly 518 transcribed hours across Akan, Ewe, Dagbani and Dagaare, GhanaNLP's ghana-speech with 263 hours of Twi, AfriSpeech-200's Ghanaian-accented English, NaijaVoices, and Meta's MMS weights with their per-language adapters, which reach usable error rates from about four hours of fine-tuning data [V]. Two cautions remain. The University of Ghana licence also forbids derivatives, and a model fine-tuned on the corpus is arguably one, so such a model can be trained and used within the project but its weights should not be redistributed without the lab's written agreement; the lab's own work overlaps with this project, so ask rather than assume. And non-commercial status attaches to each use rather than to the project's intentions, so if a bank, a mobile-money operator or a lender later wished to deploy the model, or if anything were ever charged for, models trained on non-commercial data could not follow. The practical policy is to keep the provenance tiers the models repository already defines and, where it matters, to train two lines: a research line that uses everything available, and an open line trained only on CC-BY, CC0, Apache-licensed and self-collected data, whose weights can be released without restriction and handed to any partner. The stated purpose also strengthens ethics applications and funding applications, since LINGUA Africa and Lacuna Fund prefer open, non-commercial outputs, and it belongs on the app's consent screen, because traders' willingness to be recorded turns on who benefits.
 
 ## 5. Resources from elsewhere that transfer
 
@@ -119,6 +126,13 @@ A recurring question is whether a Ghanaian language can be contributed to "the s
 
 What is open is the interface. Android allows any application to implement `android.speech.RecognitionService`; once installed and selected under Settings and Voice input it becomes the recogniser to which other applications' SpeechRecognizer calls are routed, with no change on their side, and open keyboards such as HeliBoard and AnySoftKeyboard honour that selection while Gboard and SwiftKey hard-wire their own engines [S]. Kõnele, an Estonian project distributed on F-Droid, has used exactly this route for over a decade to expose open-source recognisers to the whole phone through the standard intents [V]. The practical form of contributing Twi to the platform is therefore a Twi recognition service backed by sherpa-onnx and the fine-tuned model from section 3, which would give every compliant application Twi voice input, make the ledger app one consumer among many, and serve as an opt-in channel for the consented in-domain recordings section 6 calls for. A general dictation service at today's error rates would frustrate users; one scoped to numbers, prices and goods, and labelled as such, would not. For contributions to open projects rather than to Google, Mozilla Common Voice accepts CC0 sentences and recordings and already has Twi enabled, Omnilingual ASR is Apache-2.0 and documents a fine-tuning path for adding languages [V], the k2-fsa projects host community-trained models in their releases, and GhanaNLP's Khaya and benchmark are the Ghanaian home for both data and models.
 
+
+### 7.2 Close-talk wearables, asynchronous structuring and decision models
+
+Two product categories from outside the domain inform the design. Wearable recorders such as Plaud's Note and NotePin record a conversation from a card or a pin worn by the speaker, then transcribe it in the cloud with speaker labels, custom vocabulary and templated summaries produced by frontier language models, and the vendor claims 112 languages [S]. Little of that stack transfers directly: it is cloud-bound, its language claims are unverified for Twi, and it does nothing about the consent of the customer on the other side of the counter. What does transfer is the form factor and the timing. A microphone on the trader's lapel or a pin on the apron turns the acoustic problem from far-field to close-talk, and at the noise levels in section 8 that is the difference between usable and unusable audio. A device that captures short notes through the day and lets the trader confirm them at closing time separates capture from confirmation, which answers Dukawalla's finding that owners cannot stop to record while customers wait, at the cost of the immediate read-back that catches errors while memory is fresh; the two modes can coexist, and a wired lapel microphone costing a few dollars with the phone in a pocket delivers the acoustic benefit without a proprietary device.
+
+Decision models are the second category. Jev, released by TypeSafe AI in September 2026, and Laya, an Apache-2.0 open-weight model of about 421 million parameters from Convai Innovations, take a state such as a transcript together with a typed question and a fixed set of allowed answers, and return a chosen option with a calibrated probability for every option in a single forward pass, in roughly 33 milliseconds for Laya on local hardware, without generating text; Laya's backbone is ModernBERT-large, it claims coverage of more than a hundred languages, and it needs about a gigabyte of memory [S]. That is the shape of the classification and gating steps in this pipeline: whether an utterance is a sale, a purchase or a credit entry, which product from a closed vocabulary was named, which unit applies, and whether the amount is confident enough to book or must be read back. The sikabook-models plan already assigns these steps to a fine-tuned MiniLM, which is the same design at a fraction of the size, and a calibrated confidence output is precisely what the confirmation threshold needs. Whether Laya's multilingual claim reaches Twi is untested, its memory footprint sits at the limit of a 3 to 4 GB phone, and any deployment would need fine-tuning on Ghanaian transcripts, so its sensible role is as a server-side or evaluation-side comparator against the on-device classifier rather than a replacement for it.
+
 ## 8. Users, markets and the evidence on record keeping
 
 The informal sector employs about 69 percent of Ghana's 12 million workers on the 2023 household survey [S], and the 2024 establishment census counted 1.87 million establishments of which 92 percent are informal and micro-sized [S]. Literacy in the 2021 census is 69.8 percent nationally, 87.9 in Greater Accra and 32.8 in Savannah, with women below the national figure in 12 of 16 regions [S]. Twi is the market lingua franca in Accra as well as Kumasi, with Ga, Ewe, Hausa and Pidgin alongside; Dagbani and Hausa dominate in Tamale, Fante in Takoradi [S]. Twi-English code-switching is pervasive, and English numerals routinely sit inside Twi price frames [S]. Web-traffic shares in Ghana put Samsung around 26 percent and Transsion brands together around 33 percent, and unit sales are dominated by Tecno Spark and Pop, itel A-series and Infinix Smart and Hot lines with 2 to 4 GB of memory [S]; a gigabyte of data costs roughly 3 to 10 cedis depending on bundle [S].
@@ -169,3 +183,194 @@ The network policy in this session denied every host except github.com, so the f
 ## Principal sources read directly
 
 GhanaNLP nsanku-asr-benchmark result files and README (github.com/GhanaNLP/nsanku-asr-benchmark); Ashesi-Org/Financial-Inclusion-Speech-Dataset README and LICENSE; HCI-LAB-UGSPEECHDATA/speech_data_ghana_ug README; facebookresearch/omnilingual-asr README, lang_ids.py and per_language_results_table_7B_llm_asr.csv; facebookresearch/fairseq examples/mms/README.md; k2-fsa/sherpa docs for omnilingual-asr (models.rst, android.rst) and k2-fsa/sherpa-onnx scripts/omnilingual-asr; common-voice/cv-dataset scripted-speech cv-corpus-27.0-2026-09-11.json and spontaneous-speech 5.0; lhotse FLEURS recipe language list; masakhane-io/bibleTTS index; BibleNLP/ebible translations.csv; wanchichen/mms_unlab_v2 language map; openai/whisper tokenizer.py; MicrosoftDocs Azure speech language-support includes; Android developer documentation on foreground service types and background start restrictions; ggml-org/whisper.cpp benchmark threads; davamix/ondevice-streaming-asr-bench; Microsoft Research Dukawalla project page; facebookresearch/sam-audio README and LICENSE; open-mmlab/Amphion Emilia-Pipe README; Kaljurand/K6nele README; the Android RecognitionService reference; the mouna80/latell2026-moore-french-cs code README; the Dukawalla manuscript hosted by Microsoft Research; ACL Anthology metadata for LoResLM 2025; and the two project repositories.
+
+## References
+
+Links are grouped by the section they support. Entries marked with an asterisk were read directly during this study; the rest were located through search summaries and should be opened and checked before citation.
+
+### The two project repositories and the benchmark that anchors section 3
+
+- Christorious/ghana-voice-ledger* https://github.com/Christorious/ghana-voice-ledger
+- Christorious/sikabook-models* https://github.com/Christorious/sikabook-models
+- GhanaNLP nsanku ASR benchmark, per-language result files* https://github.com/GhanaNLP/nsanku-asr-benchmark
+- GhanaNLP ghana-voice-chat (griot-nano-1, stable-twi-tts)* https://github.com/GhanaNLP/ghana-voice-chat
+- GhanaNLP organisation and Khaya API https://github.com/GhanaNLP and https://translation.ghananlp.org/
+- Meta Omnilingual ASR (README, language list, per-language results)* https://github.com/facebookresearch/omnilingual-asr
+- Omnilingual ASR paper https://arxiv.org/abs/2511.09690
+- sherpa-onnx Omnilingual ASR models and Android notes* https://github.com/k2-fsa/sherpa/blob/master/docs/source/onnx/omnilingual-asr/models.rst
+- sherpa-onnx https://github.com/k2-fsa/sherpa-onnx
+- Meta MMS README and licence* https://github.com/facebookresearch/fairseq/blob/main/examples/mms/README.md
+- OpenAI Whisper tokenizer (language list)* https://github.com/openai/whisper/blob/main/whisper/tokenizer.py
+- WAXAL-NET fine-tuned edge models https://arxiv.org/abs/2606.02375
+- Benchmarking Akan ASR across domain-specific datasets https://arxiv.org/abs/2507.02407
+- Ghanaian adolescent-health ASR benchmarking and domain adaptation https://arxiv.org/abs/2609.29798
+- Voice of a Continent, mapping African speech technology https://arxiv.org/abs/2505.18436
+- ASR for African low-resource languages, systematic review https://arxiv.org/abs/2510.01145
+
+### Ghanaian speech datasets (section 4)
+
+- Ashesi and Nokwary Financial Inclusion Speech Dataset, README and CC-BY-4.0 licence* https://github.com/Ashesi-Org/Financial-Inclusion-Speech-Dataset (data pages https://adr.ashesi.edu.gh/datasets/10 to /13)
+- UGSpeechData, University of Ghana HCI Lab* https://github.com/HCI-LAB-UGSPEECHDATA/speech_data_ghana_ug and DOI https://doi.org/10.57760/sciencedb.22298
+- UGSpeechData paper, Data in Brief 2025 https://www.sciencedirect.com/science/article/pii/S2352340925006043 and https://pmc.ncbi.nlm.nih.gov/articles/PMC12301755/
+- KasaSpeech on Hugging Face https://huggingface.co/datasets/ghanaopenai/Ghana_English-Twi_Code-switching_Speech and on Kaggle https://www.kaggle.com/datasets/responsibleailab/ghana-english-twi-code-switched-speech-corpus
+- Mozilla Common Voice release statistics (cv-corpus-27.0)* https://github.com/common-voice/cv-dataset/tree/main/datasets/scripted-speech and language onboarding docs https://github.com/common-voice/common-voice/blob/main/docs/LANGUAGE.md
+- Google WAXAL https://huggingface.co/datasets/google/WaxalNLP and paper https://arxiv.org/abs/2602.02734
+- FLEURS language list (lhotse recipe)* https://github.com/lhotse-speech/lhotse/blob/master/lhotse/recipes/fleurs.py
+- BibleTTS* https://github.com/masakhane-io/bibleTTS and http://www.openslr.org/129/
+- GhanaNLP ghana-speech https://huggingface.co/datasets/ghananlpcommunity/ghana-speech and ghana-speech-eval https://huggingface.co/datasets/ghananlpcommunity/ghana-speech-eval
+- Twi speech-text multispeaker https://huggingface.co/datasets/ghananlpcommunity/twi-speech-text-multispeaker-16k
+- AfriSpeech-200 https://huggingface.co/datasets/intronhealth/afrispeech-200 and https://github.com/intron-innovation/AfriSpeech-200
+- AfriSpeech public corpus selector (per-language hours)* https://github.com/AfriSpeech/afrispeech-selector
+- AfriSwitch https://arxiv.org/abs/2608.26434 and https://huggingface.co/datasets/intronhealth/AfriSwitch
+- UGAkan impaired speech dataset https://arxiv.org/abs/2602.05406
+- GhanaNLP curated datasets and models https://github.com/GhanaNLP/ghanaian-nlp-datasets-models
+- UNICEF West and Central Africa NLP landscape https://github.com/UNICEF-Ventures/wca-nlp-landscape
+- Lacuna Fund language datasets https://lacunafund.org/datasets/language/
+
+### Transferable resources from elsewhere (section 5)
+
+- NaijaVoices https://arxiv.org/abs/2505.20564 and https://huggingface.co/datasets/naijavoices/naijavoices-dataset
+- WaZoBiaSpeech / African Voices (EqualyzAI) https://huggingface.co/datasets/Africanvoice/naija_african_voices
+- Baoulé ASR mixture https://huggingface.co/datasets/Tree-AI-lab/baoule-asr-dataset-mixture
+- AfriSpeech-Dialog https://arxiv.org/abs/2502.03945
+- AfroDigits https://arxiv.org/abs/2303.12582
+- Spoken Swahili Digit Dataset https://github.com/regak/Spoken-Swahili-Digit-Dataset
+- Gridspace-Stanford Harper Valley Bank* https://github.com/cricketclub/gridspace-stanford-harper-valley
+- SpokenWOZ https://arxiv.org/abs/2305.13040
+- DSTC11 speech-aware MultiWOZ https://github.com/Orange-OpenSource/olisia-dstc11
+- STOP spoken task-oriented parsing* https://github.com/facebookresearch/spoken_task_oriented_parsing
+- Timers and Such https://arxiv.org/abs/2104.01604
+- SLURP https://arxiv.org/abs/2011.13205
+- AudioMNIST* https://github.com/soerenab/AudioMNIST and Free Spoken Digit Dataset* https://github.com/Jakobovski/free-spoken-digit-dataset
+- YECS Yoruba-English code-switching https://mozilladatacollective.com/datasets/cmo09pqp300gbnx07xcl42los
+- MUCS 2021 Hindi-English https://www.openslr.org/104/
+- ASCEND* https://github.com/HLTCHKUST/ASCEND
+- GESMA Ghanaian environmental soundscapes https://zenodo.org/records/18315044 and https://pmc.ncbi.nlm.nih.gov/articles/PMC13090659/
+- DEMAND noise https://zenodo.org/record/1227121 and MUSAN https://www.openslr.org/17/
+- CHiME-8 DASR data and tooling https://www.chimechallenge.org/challenges/chime8/task1/data and https://github.com/chimechallenge/chime-utils
+- GigaSpeech* https://github.com/SpeechColab/GigaSpeech
+- eBible corpus metadata* https://github.com/BibleNLP/ebible
+- MMS unlabelled data language map (XEUS pretraining)* https://github.com/wanchichen/mms_unlab_v2
+- MasakhaNER 2.0* https://github.com/masakhane-io/masakhane-ner, AfriSenti* https://github.com/afrisenti-semeval/afrisent-semeval-2023, AfriQA* https://github.com/masakhane-io/afriqa, MAFAND-MT* https://github.com/masakhane-io/lafand-mt, MasakhaNEWS* https://github.com/masakhane-io/masakhane-news
+- WFP food prices for Ghana (HDX) https://data.humdata.org/dataset/wfp-food-prices-for-ghana
+- XEUS https://arxiv.org/pdf/2407.00837, w2v-BERT 2.0 fine-tuning* https://github.com/huggingface/blog/blob/main/fine-tune-w2v2-bert.md, AfriHuBERT* https://github.com/nii-yamagishilab/AfriHuBERT
+
+### Creating data, ethics and funding (section 6)
+
+- MMS adapter fine-tuning recipe* https://github.com/huggingface/blog/blob/main/mms_adapters.md
+- Data-efficiency benchmark across African languages https://arxiv.org/pdf/2512.10968
+- Whisper fine-tuning study, 10 minutes to 50 hours https://link.springer.com/article/10.1186/s13636-024-00349-3
+- TTS augmentation and self-training for Gronings* https://github.com/Bartelds/asr-augmentation and https://arxiv.org/pdf/2305.10951
+- Synthetic voice data for African ASR https://arxiv.org/abs/2507.17578
+- Lig-Aikuma field recording app https://lig-aikuma.imag.fr/index.html
+- Karya open-source recording libraries* https://github.com/karya-inc and report https://reports.karya.in/
+- Label Studio* https://github.com/HumanSignal/label-studio
+- Swivuriso / African Next Voices https://arxiv.org/abs/2512.02201
+- Kencorpus https://arxiv.org/abs/2208.12081
+- Kunkado Bambara radio corpus https://aclanthology.org/2026.africanlp-main.18/
+- Kallaama* https://github.com/gauthelo/kallaama-speech-dataset
+- AfriVoices-KE (transcription rates) https://arxiv.org/pdf/2604.08448
+- Digital Umuganda lessons https://www.mozillafoundation.org/en/blog/lessons-from-building-for-kinyarwanda-on-common-voice/
+- sherpa-onnx hotwords https://k2-fsa.github.io/sherpa/onnx/hotwords/index.html and keyword spotting https://k2-fsa.github.io/sherpa/onnx/kws/index.html
+- Few-shot keyword spotting in any language https://arxiv.org/abs/2104.01454
+- Inter-annotator agreement for transcription https://arxiv.org/pdf/2211.16319 and https://arxiv.org/pdf/2409.10858
+- Data Protection Commission of Ghana, registration https://dataprotection.org.gh/registration/ and compliance guidelines https://dataprotection.org.gh/wp-content/uploads/2025/07/GUIDELINES-TO-DEMONSTRATE-DATA-PROTECTION-COMPLIANCE.pdf
+- Data Protection Act 2012 (Act 843) https://ghalii.org/akn/gh/act/2012/843/eng@2012-05-18
+- University of Ghana Ethics Committee for the Humanities https://isser.ug.edu.gh/ethics-committee-for-the-humanities and KNUST research ethics https://ogr.knust.edu.gh/research-ethics
+- CIOMS guidance on participant compensation https://www.ncbi.nlm.nih.gov/books/NBK614423/
+- LINGUA Africa* https://www.microsoft.com/en-us/research/academic-program/lingua-africa-open-call-for-inclusive-ai-language-projects/
+- Lacuna Fund https://lacunafund.org/apply/index.html
+- GSMA Innovation Fund for Impactful AI https://www.gsma.com/solutions-and-impact/connectivity-for-good/mobile-for-development/blog/announcing-the-gsma-innovation-fund-for-impactful-ai-grantees/
+- Deep Learning Indaba 2026 https://deeplearningindaba.com/2026/
+- Zindi AI4D African language dataset challenge https://zindi.africa/competitions/ai4d-african-language-dataset-challenge
+- SAM Audio repository and licence* https://github.com/facebookresearch/sam-audio, paper https://arxiv.org/abs/2512.18099, model card https://huggingface.co/facebook/sam-audio-large
+- When audio separation hurts zero-shot ASR https://arxiv.org/html/2603.04710v2
+- AudioShake on SAM Audio https://www.audioshake.ai/post/targeted-vs-generative-audio-separation-reflections-on-metas-sam-benchmark-results
+- Emilia-Pipe* https://github.com/open-mmlab/Amphion/tree/main/preprocessors/Emilia
+- YODAS https://arxiv.org/abs/2406.00899, YODAS v3 https://arxiv.org/html/2609.29448v1, CS-YODAS https://aclanthology.org/2026.lrec-1.456/
+- Data provenance across text, speech and video https://arxiv.org/pdf/2412.17847
+
+### Architecture (section 7)
+
+- Android foreground service types* https://developer.android.com/develop/background-work/services/fgs/service-types and background-start restrictions* https://developer.android.com/develop/background-work/services/fgs/restrictions-bg-start
+- Android 15 behaviour changes* https://developer.android.com/about/versions/15/behavior-changes-15
+- Google Play SMS and call log policy https://support.google.com/googleplay/android-developer/answer/10208820
+- Android RecognitionService reference* https://developer.android.com/reference/android/speech/RecognitionService
+- Kõnele* https://github.com/Kaljurand/K6nele
+- sherpa-onnx on a Helio G80 phone (issue 3144)* https://github.com/k2-fsa/sherpa-onnx/issues/3144
+- On-device streaming ASR benchmark (Snapdragon 870)* https://github.com/davamix/ondevice-streaming-asr-bench
+- whisper.cpp benchmarks* https://github.com/ggml-org/whisper.cpp/issues/89 and https://github.com/ggml-org/whisper.cpp/discussions/3567
+- llama.cpp GBNF grammars* https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md
+- MediaPipe LLM inference (maintenance mode) https://ai.google.dev/edge/mediapipe/solutions/genai/llm_inference/android and ML Kit GenAI https://developers.google.com/ml-kit/genai
+- Pipecat* https://github.com/pipecat-ai/pipecat and LiveKit Agents* https://github.com/livekit/agents
+- Silero VAD* https://github.com/snakers4/silero-vad
+- MTN MoMo developer portal https://momodeveloper.mtn.com/Ghana_Collection_productDetails and community client* https://github.com/sparkplug/momoapi-python
+- Hubtel developers https://developers.hubtel.com/ and KYC policy https://explore.hubtel.com/legal/kyc-policy/
+- Arkesel USSD short codes https://arkesel.com/ussd-shortcode-business-ghana/ and voice https://arkesel.com/voice-sms/
+- Twilio Ghana voice pricing https://www.twilio.com/en-us/voice/pricing/gh and Africa's Talking voice https://africastalking.com/voice
+- WhatsApp Business pricing change, October 2026 https://www.jbklutse.com/whatsapp-business-charging-ghana-october-2026/
+- Ghana VAT reform 2026 https://www.crowe.com/gh/news/ghana-vat-reform-2026 and e-VAT https://www.fonoa.com/resources/blog/ghana-e-vat-e-invoicing-2026
+- Plaud NotePin https://global.plaud.ai/pages/plaud-notepin-wearable-ai-note-taker and Plaud Note https://www.plaud.ai/products/plaud-note-ai-voice-recorder
+- Laya decision model https://laya.convaiinnovations.com/ and https://www.eesel.ai/blog/laya-ai; Jev versus LLMs https://towardsdatascience.com/jev-vs-llms-when-ai-moves-from-generation-to-decision-making/
+- Slot error rate and entity metrics https://arxiv.org/pdf/2506.22858 and number normalisation and WER https://arxiv.org/html/2609.21084v1
+
+### Users, markets and record keeping (section 8)
+
+- Informal sector share of employment, GSS via GNA https://gna.org.gh/2025/08/ghanas-growing-employment-remains-unsecured-in-the-informal-sector-gss/
+- IBES I 2024 factsheet https://statsghana.gov.gh/gssmain/fileUpload/pressrelease/factsheet.pdf and coverage https://www.myjoyonline.com/92-3-of-businesses-in-ghana-remain-informal-gss/
+- Literacy, 2021 census https://www.graphic.com.gh/news/general-news/literacy-rate-now-69-8-per-cent.html and GSS illiteracy report https://census2021.statsghana.gov.gh/gssmain/fileUpload/reportthemesub/Illiteracy%20in%20Ghana%20-%20Trends%20Patterns%20and%20Correlates.pdf
+- Kejetia market noise, Sackey et al. 2024 https://onlinelibrary.wiley.com/doi/10.1155/2024/7658837 and https://pubmed.ncbi.nlm.nih.gov/38962428/
+- Twi-English code-switching studies https://laghana.org/gjl/index.php/gjl/article/view/39 and https://journals.sagepub.com/doi/abs/10.1177/1367006913481136
+- Old-cedi quoting habit https://www.ghanaweb.com/GhanaHomePage/NewsArchive/Why-do-Ghanaians-still-trade-quoting-new-Cedis-in-old-currency-495452 and https://www.sciencedirect.com/science/article/abs/pii/S0167487010000498
+- NCA data subscriptions https://nca.org.gh/wp-content/uploads/2025/09/Data-Subscription-July-2025-1.pdf; data prices https://www.jbklutse.com/cheapest-data-bundle-ghana/
+- GSMA Mobile Economy Sub-Saharan Africa 2024 https://event-assets.gsma.com/pdf/GSMA_ME_SSA_2024_Web.pdf
+- Mobile money 2025 figures https://www.myjoyonline.com/total-mobile-money-transaction-values-grew-by-50-8-to-gh%C2%A24-54trn-in-2025/ and E-levy repeal https://gra.gov.gh/news/portfolio/electronic-transfer-levy-repealed-in-april-2025/
+- GhQR adoption https://www.newsghana.com.gh/ghipss-pushes-ghqr-beyond-transport-after-slow-start/
+- Digital payments and trade credit among informal firms https://pmc.ncbi.nlm.nih.gov/articles/PMC11168480/
+- Mobile money adoption among Makola petty traders https://journals.sagepub.com/doi/10.1177/21582440251378112
+- Record keeping in the Central Region https://www.academia.edu/79319173/Licensed_under_Creative_Common_FINANCIAL_RECORDS_KEEPING_AND_BUSINESS_DECISION_MAKING_PRACTICES_BY_SMALL_AND_MICRO_ENTERPRISE_OWNERS_IN_GHANA_EVIDENCE_FROM_THE_CENTRAL_REGION and Sekondi-Takoradi https://www.researchgate.net/publication/324591406_Financial_Record_Keeping_Practices_of_Small_Business_Operators_in_the_Sekondi-Takoradi_Metropolitan_Area_of_Ghana
+- Business practices in small firms, McKenzie and Woodruff https://www.nber.org/system/files/working_papers/w21505/w21505.pdf
+- Rules of thumb, Drexler, Fischer and Schoar https://www.aeaweb.org/articles?id=10.1257/app.6.2.1
+- Cash versus in-kind grants in Ghana, Fafchamps et al. https://www.sciencedirect.com/science/article/abs/pii/S0304387813001375
+- Consulting and capital for Accra tailors, Karlan, Knight and Udry https://www.povertyactionlab.org/evaluation/consulting-and-capital-experiments-microenterprise-tailors-ghana
+- Business training reassessed, McKenzie https://documents1.worldbank.org/curated/en/593081600709463800/pdf/Small-Business-Training-to-Improve-Management-Practices-in-Developing-Countries-Reassessing-the-Evidence-for-Training-Doesn-t-Work.pdf
+- GRA modified taxation scheme https://gra.gov.gh/domestic-tax/tax-types/individual/modified-taxation-scheme/
+- OZÉ case study, UNCDF https://www.uncdf.org/article/7271/a-digital-bookkeeping-app-to-improve-access-to-finance-a-case-study-from-ghana
+- Susu collectors https://en.wikipedia.org/wiki/Susu_collectors
+
+### Comparable products and the research landscape (sections 8 and 10)
+
+- Dukawalla manuscript* https://www.microsoft.com/en-us/research/wp-content/uploads/2024/11/Dukawalla_VoiceInterfacesforSmallBusinessesinAfrica.pdf, arXiv https://arxiv.org/abs/2505.05170, project page* https://www.microsoft.com/en-us/research/project/dukawalla/
+- Ouattara et al., LoResLM 2025 position paper https://aclanthology.org/2025.loreslm-1.15/
+- Generator-guided amount recovery, LaTeLL 2026, code release* https://github.com/mouna80/latell2026-moore-french-cs; Klein publication list* https://jacquesklein2302.github.io/publications/publicationsPerYear.html; TruX group https://www.uni.lu/snt-en/research-groups/trux/
+- WolBanking77 https://arxiv.org/abs/2509.19271 and* https://github.com/abdoukarim/wolbanking77
+- DarijaBanking https://arxiv.org/abs/2405.16482
+- Microsoft Research India, interfaces for low-literate users https://www.microsoft.com/en-us/research/project/uis-low-literate-users/ and Medhi et al. CHI 2009 https://dl.acm.org/doi/pdf/10.1145/1518701.1518970
+- Task success versus ASR accuracy, Raza https://link.springer.com/article/10.1007/s10772-021-09806-2
+- FormBharo https://arxiv.org/abs/2608.06027
+- Digital Green voice pipeline https://arxiv.org/abs/2609.20504, agricultural ASR benchmark https://arxiv.org/abs/2602.03868, Farmer.Chat https://arxiv.org/abs/2409.08916
+- Project Gecko and Paza (Microsoft) https://www.microsoft.com/en-us/research/project/project-gecko/
+- IPA and Viamo Tanzania trial https://poverty-action.org/leveraging-voice-based-digital-learning-and-generative-ai-enhance-financial-literacy-and-credit
+- Viamo Ask Viamo Anything, GSMA case study https://www.gsma.com/solutions-and-impact/connectivity-for-good/mobile-for-development/gsma_resources/voice-first-generative-ai-for-impact-insights-from-viamos-ask-viamo-anything-pilot-in-zambia/
+- Pindo and I&M Bank Kinyarwanda voice agent https://taarifa.rw/2026/07/29/im-bank-pindo-launch-rwandas-first-kinyarwanda-voice-ai-banking-agent/
+- Ghost Ledger https://techpoint.africa/feature/nigerian-tech-founder-built-bookkeeping-tool/
+- Kola Market and the GSMA grant https://techafricanews.com/2025/11/28/gsma-backs-ghanaian-ai-startups-to-drive-inclusive-growth/
+- Sikaflow https://sikaflow.com/
+- TraderWise* https://github.com/ramzyq/traderwise; safepay (MTN hackathon)* https://github.com/august-web/safepay
+- Abena AI https://wsa-global.org/winner/abena-ai/; Nokwary https://nokwary.com/
+- Ghana to integrate local languages into AI tools with Google https://www.gbcghanaonline.com/news/education/ghana-to-integrate-twi-ewe-dagbani-and-hausa-into-ai-tools/2026/
+- VoiceKhata https://voicekhata.com/
+- Hishab (Bangladesh) https://www.telecompaper.com/news/robi-hishab-launch-voice-call-based-transaction-record-management-service--1245748
+- Jota (Brazil) https://startups.com.br/negocios/fintech/com-pagamento-por-voz-jota-quer-crescer-5-vezes-em-2026/
+- Sarvam and Mahindra Finance https://www.voicendata.com/artificialintelligence/mahindra-finance-expands-voice-ai-deployment-with-sarvam-12515960
+- Kippa's failure https://launchbaseafrica.com/2025/08/18/founders-exit-website-down-the-unraveling-of-target-global-backed-kippa-that-raised-over-14m/ and https://techcabal.com/2024/02/23/kippa-users-left-in-the-dark/
+- OZÉ in 2025 https://disruptafrica.com/2025/06/20/meet-the-fintech-ghanaian-lending-startup-oze/
+- Prototype wave, representative repositories*: https://github.com/Darkjay123/voiceledger, https://github.com/Godzilla-lab/tradevoice, https://github.com/chibuike-kt/ruby, https://github.com/Oluwatemmy/OJAAI, https://github.com/Markkaruga254/fahari-ledger, https://github.com/CodeknightTim/SemaBiashara, https://github.com/Ashuza11/faida-voice, https://github.com/AshesReformed/pocketmunshi, https://github.com/HammadIsmail/digimunshi-backend, https://github.com/134shubhamyadav/VoiceKhata, https://github.com/notsravan/dukaan-saathi, https://github.com/NicholasArthurKusumo/warung-suara
+- AfriVox-v2 (numeric error rate) https://arxiv.org/abs/2605.03590 and AfriSpeech-MultiBench https://arxiv.org/abs/2511.14255
+- Switch-aware evaluation for English-Yoruba https://arxiv.org/abs/2609.11786; Yoruba-English fine-tuning https://proceedings.mlr.press/v302/bolarinwa26a
+- Sometin Beta Pass Notin (Nigerian distillation) https://arxiv.org/abs/2605.17710
+- SCRIBE numeric-aware evaluation* https://github.com/adalat-ai-tech/scribe-eval and https://arxiv.org/abs/2605.20712
+- Indic inverse text normalisation https://arxiv.org/abs/2203.16825
+- Fleurs-SLU https://arxiv.org/abs/2501.06117 and Speech-MASSIVE* https://github.com/hlt-mt/speech-massive
+- Flavors of Moonshine https://arxiv.org/abs/2509.02523
+- LoResLM call for papers https://loreslm.github.io/cfp and AfricaNLP 2026 proceedings https://aclanthology.org/2026.africanlp-main.pdf

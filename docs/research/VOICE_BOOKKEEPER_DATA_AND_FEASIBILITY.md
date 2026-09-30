@@ -10,7 +10,7 @@ Every factual claim below carries one of three tags. **[V]** means the source fi
 
 **Origin of the project.** The author's interest began after senior high school, working at a polythene stall in Tema for a trader who was exact and fair about money and trusted no one else with it. The original idea was a phone that would listen to her transactions and keep the record of every sale, so that she could check what had been sold in her absence and know her total at the end of the day. The wider aspiration is an open-source tool that gives individual traders a clear view of their own flow of transactions, motivates them by making their earnings visible, and over time brings more structure to the informal economy from the individual outward. Section 12 turns this origin into the questions the project has not yet asked.
 
-**Companion documents in this folder.** LIT_REVIEW_ROBUST_VOICE_ACTIVATION_MARKET_NOISE.md, LIT_REVIEW_FEDERATED_LEARNING_ON_DEVICE_SPEECH.md, INTERACTION_CORPUS_METHODS_AND_SOUTH_ASIA.md (the structure of trader-customer interaction, how the comparable corpora were collected, and what South Asia is doing) and EMAIL_SNT_LUXEMBOURG_DRAFT.md.
+**Companion documents in this folder.** LIT_REVIEW_ROBUST_VOICE_ACTIVATION_MARKET_NOISE.md, LIT_REVIEW_FEDERATED_LEARNING_ON_DEVICE_SPEECH.md, INTERACTION_CORPUS_METHODS_AND_SOUTH_ASIA.md (the structure of trader-customer interaction, how the comparable corpora were collected, and what South Asia is doing), FIELD_STUDY_PROTOCOL_AND_CONSENT.md (the draft protocol, instruments and consent forms for the market study) and EMAIL_SNT_LUXEMBOURG_DRAFT.md.
 
 ## 1. Summary
 

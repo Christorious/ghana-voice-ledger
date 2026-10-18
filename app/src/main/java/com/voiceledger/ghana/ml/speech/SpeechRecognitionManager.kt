@@ -16,7 +16,7 @@ import javax.inject.Singleton
 @Singleton
 class SpeechRecognitionManager @Inject constructor(
     private val context: Context,
-    private val googleSpeechRecognizer: GoogleCloudSpeechRecognizer?,
+    private val googleSpeechRecognizer: SpeechRecognizer?,
     private val offlineSpeechRecognizer: OfflineSpeechRecognizer
 ) {
     

@@ -54,6 +54,11 @@ interface SpeechRecognizer {
      * Enable or disable code-switching detection
      */
     fun setCodeSwitchingEnabled(enabled: Boolean)
+
+    /**
+     * Release any engine resources. Recognizers that hold none need not override it.
+     */
+    fun cleanup() {}
 }
 
 /**

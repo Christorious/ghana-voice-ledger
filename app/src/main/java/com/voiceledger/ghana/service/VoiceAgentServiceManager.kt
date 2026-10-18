@@ -261,14 +261,3 @@ enum class ServiceConnectionState {
     CONNECTING,
     CONNECTED
 }
-
-/**
- * Power optimization settings
- */
-data class PowerOptimizationSettings(
-    val audioProcessingEnabled: Boolean = true,
-    val backgroundSyncEnabled: Boolean = true,
-    val processingIntervalMs: Long = 1000,
-    val vadSensitivity: Float = 0.5f,
-    val audioBufferSize: Int = 2048
-)

@@ -71,13 +71,6 @@ android {
             useSupportLibrary = true
         }
 
-        // Room schema export
-        kapt {
-            arguments {
-                arg("room.schemaLocation", "$projectDir/schemas")
-            }
-        }
-
         // Build config fields from local.properties or environment variables
         val properties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
@@ -256,6 +249,16 @@ android {
     task("checkReleaseAarMetadata") {
         dependsOn("checkDevReleaseAarMetadata", "checkStagingReleaseAarMetadata", "checkProdReleaseAarMetadata")
         description = "Alias for checking release AAR metadata for all variants"
+    }
+}
+
+// kapt configuration must be applied at the top level of the build script, not
+// nested inside android.defaultConfig. correctErrorTypes is required by Hilt so
+// that Dagger sees real types instead of NonExistentClass during stub generation.
+kapt {
+    correctErrorTypes = true
+    arguments {
+        arg("room.schemaLocation", "$projectDir/schemas")
     }
 }
 

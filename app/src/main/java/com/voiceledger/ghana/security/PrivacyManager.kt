@@ -1,6 +1,7 @@
 package com.voiceledger.ghana.security
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -78,7 +79,7 @@ data class DataDeletionResult(
  */
 @Singleton
 class PrivacyManager @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val encryptionService: EncryptionService
 ) {
 

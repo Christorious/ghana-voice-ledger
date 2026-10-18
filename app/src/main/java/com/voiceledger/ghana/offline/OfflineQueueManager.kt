@@ -8,7 +8,6 @@ import com.voiceledger.ghana.data.local.entity.toDomain
 import com.voiceledger.ghana.data.local.entity.toEntity
 import com.voiceledger.ghana.data.repository.TransactionRepository
 import com.voiceledger.ghana.data.repository.DailySummaryRepository
-import com.voiceledger.ghana.domain.service.NetworkMonitorService
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -32,7 +31,6 @@ class OfflineQueueManager @Inject constructor(
     private val offlineOperationDao: OfflineOperationDao,
     private val transactionRepository: TransactionRepository,
     private val dailySummaryRepository: DailySummaryRepository,
-    private val networkMonitorService: NetworkMonitorService,
     private val gson: Gson,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {

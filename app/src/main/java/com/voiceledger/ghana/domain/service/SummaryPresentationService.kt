@@ -1,6 +1,7 @@
 package com.voiceledger.ghana.domain.service
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.voiceledger.ghana.data.local.entity.DailySummary
 import com.voiceledger.ghana.domain.repository.DailySummaryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,7 +54,7 @@ data class PresentationState(
  */
 @Singleton
 class SummaryPresentationService @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val dailySummaryRepository: DailySummaryRepository
 ) {
 

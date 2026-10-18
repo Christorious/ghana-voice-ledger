@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.voiceledger.ghana.domain.service.DailySummaryService
+import com.voiceledger.ghana.domain.service.DailySummaryGenerator
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -16,7 +16,7 @@ import dagger.assisted.AssistedInject
 class DailySummaryWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val dailySummaryService: DailySummaryService
+    private val dailySummaryGenerator: DailySummaryGenerator
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -24,7 +24,7 @@ class DailySummaryWorker @AssistedInject constructor(
             // Generate daily summary for yesterday
             val yesterday = System.currentTimeMillis() - (24 * 60 * 60 * 1000)
             
-            dailySummaryService.generateDailySummary(yesterday)
+            dailySummaryGenerator.generateDailySummary(yesterday)
             
             Result.success()
             

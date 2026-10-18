@@ -1,6 +1,7 @@
 package com.voiceledger.ghana.security
 
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -46,7 +47,7 @@ data class EncryptedData(
  */
 @Singleton
 class EncryptionService @Inject constructor(
-    private val context: Context
+    @ApplicationContext private val context: Context
 ) {
 
     companion object {

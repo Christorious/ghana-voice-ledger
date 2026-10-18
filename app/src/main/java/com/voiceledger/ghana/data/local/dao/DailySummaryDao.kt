@@ -44,7 +44,7 @@ interface DailySummaryDao {
     @Query("SELECT * FROM daily_summaries ORDER BY transactionCount DESC LIMIT 1")
     suspend fun getBusiestDay(): DailySummary?
     
-    @Query("SELECT topProduct, COUNT(*) as frequency FROM daily_summaries GROUP BY topProduct ORDER BY frequency DESC LIMIT 1")
+    @Query("SELECT topProduct FROM daily_summaries GROUP BY topProduct ORDER BY COUNT(*) DESC LIMIT 1")
     suspend fun getMostFrequentTopProduct(): String?
     
     @Query("SELECT AVG(averageTransactionValue) FROM daily_summaries WHERE date BETWEEN :startDate AND :endDate")

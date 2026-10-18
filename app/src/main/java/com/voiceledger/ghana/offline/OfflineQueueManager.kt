@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.work.*
 import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
 import com.voiceledger.ghana.data.local.entity.OfflineOperationEntity
-import com.voiceledger.ghana.data.local.entity.toDomain
+import com.voiceledger.ghana.data.local.entity.toOfflineOperation
 import com.voiceledger.ghana.data.local.entity.toEntity
-import com.voiceledger.ghana.data.repository.TransactionRepository
-import com.voiceledger.ghana.data.repository.DailySummaryRepository
+import com.voiceledger.ghana.domain.repository.TransactionRepository
+import com.voiceledger.ghana.domain.repository.DailySummaryRepository
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -380,7 +380,7 @@ class OfflineQueueManager @Inject constructor(
                 }
                 
                 persisted.forEach { entity ->
-                    val operation = entity.toDomain()
+                    val operation = entity.toOfflineOperation()
                     pendingOperations[operation.id] = operation
                 }
                 

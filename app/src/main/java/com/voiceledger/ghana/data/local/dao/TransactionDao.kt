@@ -41,7 +41,9 @@ interface TransactionDao {
     @Query("SELECT COUNT(*) FROM transactions WHERE date = :date")
     suspend fun getTransactionCountForDate(date: String): Int
     
-    @Query("SELECT product, COUNT(*) as count FROM transactions WHERE date = :date GROUP BY product ORDER BY count DESC LIMIT 1")
+    // Only the product is selected: Room maps a single-column result to String?.
+    // Selecting the count as well would give a two-column cursor it cannot convert.
+    @Query("SELECT product FROM transactions WHERE date = :date GROUP BY product ORDER BY COUNT(*) DESC LIMIT 1")
     suspend fun getTopProductForDate(date: String): String?
     
     @Query("SELECT COUNT(DISTINCT customerId) FROM transactions WHERE date = :date AND customerId IS NOT NULL")
@@ -88,23 +90,21 @@ interface TransactionDao {
     
     // Advanced analytics queries
     @Query("""
-        SELECT strftime('%H', datetime(timestamp/1000, 'unixepoch')) as hour, 
-               SUM(amount) as total 
-        FROM transactions 
-        WHERE date = :date 
-        GROUP BY hour 
-        ORDER BY total DESC 
+        SELECT CAST(strftime('%H', datetime(timestamp/1000, 'unixepoch')) AS INTEGER) AS hour
+        FROM transactions
+        WHERE date = :date
+        GROUP BY hour
+        ORDER BY SUM(amount) DESC
         LIMIT 1
     """)
     suspend fun getMostProfitableHourForDate(date: String): Int?
     
     @Query("""
-        SELECT strftime('%H', datetime(timestamp/1000, 'unixepoch')) as hour, 
-               COUNT(*) as count 
-        FROM transactions 
-        WHERE date = :date 
-        GROUP BY hour 
-        ORDER BY count DESC 
+        SELECT strftime('%H', datetime(timestamp/1000, 'unixepoch')) AS hour
+        FROM transactions
+        WHERE date = :date
+        GROUP BY hour
+        ORDER BY COUNT(*) DESC
         LIMIT 1
     """)
     suspend fun getPeakHourForDate(date: String): String?

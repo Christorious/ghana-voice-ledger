@@ -4,6 +4,8 @@ agp = "8.1.4"
 # is built against one exact Kotlin version. 1.5.8 requires Kotlin 1.9.22.
 # Hilt 2.51.x also requires Kotlin 1.9.20+ metadata.
 kotlin = "1.9.22"
+# KSP releases are pinned to a Kotlin version: <kotlin>-<ksp>. Must track `kotlin`.
+ksp = "1.9.22-1.0.17"
 hilt = "2.51.1"
 composeBom = "2024.02.00"
 composeCompiler = "1.5.8"
@@ -136,6 +138,6 @@ leakcanary = { module = "com.squareup.leakcanary:leakcanary-android", version.re
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }

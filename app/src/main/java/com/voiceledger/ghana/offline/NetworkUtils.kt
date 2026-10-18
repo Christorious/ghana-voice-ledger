@@ -22,7 +22,6 @@ object NetworkUtils {
     private var appContext: Context? = null
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
-    private var appContext: Context? = null
     
     private fun resolveContext(context: Context? = null): Context? {
         val resolved = context?.applicationContext ?: appContext
@@ -78,19 +77,13 @@ object NetworkUtils {
     }
     
     /**
-     * Check if network is available
+     * Check if network is available.
+     * Context is optional: the application context captured in initialize() is used when omitted.
      */
-    fun isNetworkAvailable(context: Context): Boolean {
-        if (testMode) {
-            return testNetworkAvailable
-        }
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
     fun isNetworkAvailable(context: Context? = null): Boolean {
-        val ctx = context ?: appContext ?: return false
-        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
-        val connectivityManager = obtainConnectivityManager(context) ?: return false
-        
+        if (testMode) return testNetworkAvailable
+        val cm = obtainConnectivityManager(context) ?: return false
+
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = cm.activeNetwork ?: return false
             val capabilities = cm.getNetworkCapabilities(network) ?: return false
@@ -98,50 +91,30 @@ object NetworkUtils {
                 capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } else {
             @Suppress("DEPRECATION")
-            val networkInfo = cm.activeNetworkInfo
-            networkInfo?.isConnected == true
+            cm.activeNetworkInfo?.isConnected == true
         }
     }
 
     /**
-     * Check if network is metered (mobile data)
+     * Check if the active network is metered (mobile data).
      */
-    fun isNetworkMetered(context: Context): Boolean {
-        if (testMode) {
-            return false
-        }
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     fun isNetworkMetered(context: Context? = null): Boolean {
-        val ctx = context ?: appContext ?: return false
-        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+        if (testMode) return false
+        val cm = obtainConnectivityManager(context) ?: return false
         return cm.isActiveNetworkMetered
-        val connectivityManager = obtainConnectivityManager(context) ?: return false
-        return connectivityManager.isActiveNetworkMetered
     }
 
     /**
-     * Get network type
+     * Get the active network type.
      */
-    fun getNetworkType(context: Context): NetworkType {
-        if (testMode) {
-            return if (testNetworkAvailable) NetworkType.WIFI else NetworkType.NONE
-        }
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return NetworkType.NONE
-            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkType.NONE
-
     fun getNetworkType(context: Context? = null): NetworkType {
-        val ctx = context ?: appContext ?: return NetworkType.NONE
-        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return NetworkType.NONE
-        val connectivityManager = obtainConnectivityManager(context) ?: return NetworkType.NONE
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (testMode) return if (testNetworkAvailable) NetworkType.WIFI else NetworkType.NONE
+        val cm = obtainConnectivityManager(context) ?: return NetworkType.NONE
+
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = cm.activeNetwork ?: return NetworkType.NONE
             val capabilities = cm.getNetworkCapabilities(network) ?: return NetworkType.NONE
-            
-            return when {
+            when {
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkType.WIFI
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> NetworkType.MOBILE
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> NetworkType.ETHERNET
@@ -149,11 +122,9 @@ object NetworkUtils {
             }
         } else {
             @Suppress("DEPRECATION")
-            val networkInfo = connectivityManager.activeNetworkInfo ?: return NetworkType.NONE
-
             val networkInfo = cm.activeNetworkInfo ?: return NetworkType.NONE
-            
-            return when (networkInfo.type) {
+            @Suppress("DEPRECATION")
+            when (networkInfo.type) {
                 ConnectivityManager.TYPE_WIFI -> NetworkType.WIFI
                 ConnectivityManager.TYPE_MOBILE -> NetworkType.MOBILE
                 ConnectivityManager.TYPE_ETHERNET -> NetworkType.ETHERNET
@@ -163,46 +134,26 @@ object NetworkUtils {
     }
 
     /**
-     * Estimate network quality based on connection type and capabilities
+     * Estimate network quality based on connection type and capabilities.
      */
     fun estimateNetworkQuality(context: Context? = null): NetworkQuality {
         if (!isNetworkAvailable(context)) return NetworkQuality.NONE
+        if (testMode) return if (testNetworkAvailable) NetworkQuality.GOOD else NetworkQuality.NONE
+        val cm = obtainConnectivityManager(context) ?: return NetworkQuality.NONE
 
-        if (testMode) {
-            return if (testNetworkAvailable) NetworkQuality.GOOD else NetworkQuality.NONE
-        }
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = connectivityManager.activeNetwork ?: return NetworkQuality.NONE
-            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return NetworkQuality.NONE
-
-        
-        val ctx = context ?: appContext ?: return NetworkQuality.NONE
-        val cm = ctx.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return NetworkQuality.NONE
-        val connectivityManager = obtainConnectivityManager(context) ?: return NetworkQuality.NONE
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val network = cm.activeNetwork ?: return NetworkQuality.NONE
             val capabilities = cm.getNetworkCapabilities(network) ?: return NetworkQuality.NONE
-            
-            return when {
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
-                    // WiFi is generally good quality
-                    NetworkQuality.GOOD
-                }
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                    // Estimate based on cellular capabilities
-                    when {
-                        capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) -> NetworkQuality.GOOD
-                        else -> NetworkQuality.FAIR // Assume mobile data is fair quality
-                    }
+            when {
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> NetworkQuality.GOOD
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> when {
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED) -> NetworkQuality.GOOD
+                    else -> NetworkQuality.FAIR
                 }
                 else -> NetworkQuality.FAIR
             }
         } else {
-            // Fallback for older Android versions
-            return when (getNetworkType()) {
+            when (getNetworkType(context)) {
                 NetworkType.WIFI -> NetworkQuality.GOOD
                 NetworkType.MOBILE -> NetworkQuality.FAIR
                 NetworkType.ETHERNET -> NetworkQuality.EXCELLENT
@@ -210,7 +161,8 @@ object NetworkUtils {
             }
         }
     }
-    
+
+
     /**
      * Start monitoring network changes
      */
@@ -255,32 +207,22 @@ object NetworkUtils {
      * Update network state
      */
     private fun updateNetworkState() {
-        val ctx = appContext ?: return
-        
-        _networkState.value = NetworkState(
-            isAvailable = isNetworkAvailable(ctx),
-            isMetered = isNetworkMetered(ctx),
-            networkType = getNetworkType(ctx),
-            networkQuality = estimateNetworkQuality(ctx),
-            lastUpdate = System.currentTimeMillis()
-        val context = resolveContext() ?: return
-        val connectivityManager = obtainConnectivityManager(context)
         val timestamp = System.currentTimeMillis()
-        
-        if (connectivityManager == null) {
+        val context = resolveContext()
+        if (context == null || obtainConnectivityManager(context) == null) {
             _networkState.value = NetworkState(lastUpdate = timestamp)
             return
         }
-        
+
         _networkState.value = NetworkState(
-            isAvailable = isNetworkAvailable(),
-            isMetered = isNetworkMetered(),
-            networkType = getNetworkType(),
-            networkQuality = estimateNetworkQuality(),
+            isAvailable = isNetworkAvailable(context),
+            isMetered = isNetworkMetered(context),
+            networkType = getNetworkType(context),
+            networkQuality = estimateNetworkQuality(context),
             lastUpdate = timestamp
         )
     }
-    
+
     /**
      * Stop network monitoring
      */

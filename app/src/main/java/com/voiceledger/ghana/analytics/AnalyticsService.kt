@@ -220,8 +220,17 @@ class AnalyticsService @Inject constructor(
         generationTimeMs: Long
     ) {
         analyticsScope.launch {
-            
-   /**
+            val bundle = Bundle().apply {
+                putDouble(PARAM_TRANSACTION_AMOUNT, totalSales)
+                putInt(PARAM_QUANTITY, transactionCount)
+                topProduct?.let { putString(PARAM_PRODUCT_NAME, it) }
+                putLong(PARAM_PROCESSING_TIME, generationTimeMs)
+            }
+            logEvent(EVENT_DAILY_SUMMARY_GENERATED, bundle)
+        }
+    }
+
+    /**
      * Enable/disable analytics collection
      */
     fun setAnalyticsCollectionEnabled(enabled: Boolean) {

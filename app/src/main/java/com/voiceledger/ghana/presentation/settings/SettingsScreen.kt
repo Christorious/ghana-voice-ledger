@@ -131,7 +131,7 @@ fun SettingsScreen(
                         SettingsItem(
                             title = if (uiState.hasSellerProfile) "Voice Profile" else "Set Up Voice Profile",
                             subtitle = if (uiState.hasSellerProfile) {
-                                "Profile: ${uiState.sellerProfileName ?: \"Seller\"}"
+                                "Profile: ${uiState.sellerProfileName ?: "Seller"}"
                             } else {
                                 "Enroll your voice for better accuracy"
                             },
@@ -601,4 +601,4 @@ private fun SettingsScreenPreview() {
     VoiceLedgerTheme {
         // Preview would need mock data
     }
-}"
+}

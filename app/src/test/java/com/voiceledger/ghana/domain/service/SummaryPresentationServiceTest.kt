@@ -424,8 +424,14 @@ class SummaryPresentationServiceTest {
         assertTrue(presentation.duration > 0)
         assertTrue(presentation.duration < 300) // Should be less than 5 minutes
     }
-}empt
-yList()
+
+    @Test
+    fun `presentation should handle empty summary`() = runTest {
+        // Given
+        val emptySummary = sampleSummary.copy(
+            totalSales = 0.0,
+            transactionCount = 0,
+            recommendations = emptyList()
         )
 
         // When

@@ -70,8 +70,7 @@ import timber.log.Timber
         SpeakerProfile::class,
         ProductVocabulary::class,
         AudioMetadata::class,
-        OfflineOperationEntity::class,
-        OfflineOperation::class
+        OfflineOperationEntity::class
     ],
     version = 2,
     exportSchema = true

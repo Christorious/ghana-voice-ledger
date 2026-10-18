@@ -109,7 +109,7 @@ object SpeechModule {
     @Provides
     @Singleton
     @OfflineSpeechRecognizerQualifier
-    fun provideOfflineSpeechRecognizer(
+    fun provideOfflineSpeechRecognizerBinding(
         offlineSpeechRecognizer: OfflineSpeechRecognizer
     ): SpeechRecognizer {
         return offlineSpeechRecognizer

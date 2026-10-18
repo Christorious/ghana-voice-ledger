@@ -11,23 +11,20 @@ object DatabaseMigrations {
     
     /**
      * Migration from version 1 to 2
-     * Adds offline_operations table for persistent offline queue
+     *
+     * Two separate drafts of this migration had been spliced together in the
+     * source: one adding the offline_operations table, one adding performance
+     * indices. Both were intended, so this does both, once.
      */
     val MIGRATION_1_2 = object : Migration(1, 2) {
         override fun migrate(database: SupportSQLiteDatabase) {
-     * Adds offline_operations table for offline-first architecture
-     */
-    val MIGRATION_1_2 = object : Migration(1, 2) {
-        override fun migrate(database: SupportSQLiteDatabase) {
-            // Create offline_operations table for queuing operations when offline
+            // Offline sync queue. Columns must match OfflineOperationEntity.
             database.execSQL("""
                 CREATE TABLE IF NOT EXISTS offline_operations (
                     id TEXT PRIMARY KEY NOT NULL,
                     type TEXT NOT NULL,
                     data TEXT NOT NULL,
                     timestamp INTEGER NOT NULL,
-                    priority TEXT NOT NULL,
-                    status TEXT NOT NULL,
                     priority TEXT NOT NULL DEFAULT 'NORMAL',
                     status TEXT NOT NULL DEFAULT 'PENDING',
                     errorMessage TEXT,
@@ -35,19 +32,12 @@ object DatabaseMigrations {
                     retryCount INTEGER NOT NULL DEFAULT 0
                 )
             """)
-            
-            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_status ON offline_operations(status)")
-            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_priority ON offline_operations(priority)")
-            database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_timestamp ON offline_operations(timestamp)")
-            // Create indexes for efficient querying
+
             database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_timestamp ON offline_operations(timestamp)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_type ON offline_operations(type)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_status ON offline_operations(status)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_offline_operations_priority ON offline_operations(priority)")
-     * Adds performance indices for high-frequency query columns
-     */
-    val MIGRATION_1_2 = object : Migration(1, 2) {
-        override fun migrate(database: SupportSQLiteDatabase) {
+
             // Add indices to transactions table
             database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_needsReview ON transactions(needsReview)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_synced ON transactions(synced)")
@@ -55,25 +45,21 @@ object DatabaseMigrations {
             database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_date_needsReview ON transactions(date, needsReview)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_synced_timestamp ON transactions(synced, timestamp)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_transactions_customerId_timestamp ON transactions(customerId, timestamp)")
-            
             // Add indices to daily_summaries table
             database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_summaries_synced ON daily_summaries(synced)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_summaries_timestamp ON daily_summaries(timestamp)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_daily_summaries_date_synced ON daily_summaries(date, synced)")
-            
             // Add indices to audio_metadata table
             database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_speechDetected ON audio_metadata(speechDetected)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_contributedToTransaction ON audio_metadata(contributedToTransaction)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_transactionId ON audio_metadata(transactionId)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_audio_metadata_powerSavingMode ON audio_metadata(powerSavingMode)")
-            
             // Add indices to speaker_profiles table
             database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_isActive ON speaker_profiles(isActive)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_synced ON speaker_profiles(synced)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_createdAt ON speaker_profiles(createdAt)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_isSeller_isActive ON speaker_profiles(isSeller, isActive)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_speaker_profiles_lastVisit_isActive ON speaker_profiles(lastVisit, isActive)")
-            
             // Add indices to product_vocabulary table
             database.execSQL("CREATE INDEX IF NOT EXISTS index_product_vocabulary_frequency ON product_vocabulary(frequency)")
             database.execSQL("CREATE INDEX IF NOT EXISTS index_product_vocabulary_isLearned ON product_vocabulary(isLearned)")

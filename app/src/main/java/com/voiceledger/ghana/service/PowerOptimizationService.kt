@@ -38,9 +38,9 @@ class PowerOptimizationService @Inject constructor(
     private var isOptimizationActive = false
     
     companion object {
-        private const val NOTIFICATION_CHANNEL_ID = \"power_optimization\"
+        private const val NOTIFICATION_CHANNEL_ID = "power_optimization"
         private const val NOTIFICATION_ID = 2001
-        private const val BATTERY_CHECK_WORK_TAG = \"battery_check\"
+        private const val BATTERY_CHECK_WORK_TAG = "battery_check"
     }
     
     init {
@@ -105,7 +105,7 @@ class PowerOptimizationService @Inject constructor(
         voiceAgentServiceManager.setVADSensitivity(0.5f) // Normal sensitivity
         
         // Cancel any power-saving work
-        WorkManager.getInstance(context).cancelAllWorkByTag(\"power_save\")
+        WorkManager.getInstance(context).cancelAllWorkByTag("power_save")
     }
     
     /**
@@ -154,7 +154,7 @@ class PowerOptimizationService @Inject constructor(
         scheduleMarketOpeningWakeUp()
         
         // Cancel all background work
-        WorkManager.getInstance(context).cancelAllWorkByTag(\"power_save\")
+        WorkManager.getInstance(context).cancelAllWorkByTag("power_save")
     }
     
     /**
@@ -168,11 +168,11 @@ class PowerOptimizationService @Inject constructor(
                     .setRequiresBatteryNotLow(true)
                     .build()
             )
-            .addTag(\"power_save\")
+            .addTag("power_save")
             .build()
         
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            \"power_save_sync\",
+            "power_save_sync",
             ExistingPeriodicWorkPolicy.REPLACE,
             syncWork
         )
@@ -184,11 +184,11 @@ class PowerOptimizationService @Inject constructor(
     private fun scheduleMarketOpeningWakeUp() {
         val wakeUpWork = OneTimeWorkRequestBuilder<MarketWakeUpWorker>()
             .setInitialDelay(calculateTimeUntilMarketOpen(), TimeUnit.MILLISECONDS)
-            .addTag(\"market_wakeup\")
+            .addTag("market_wakeup")
             .build()
         
         WorkManager.getInstance(context).enqueueUniqueWork(
-            \"market_wakeup\",
+            "market_wakeup",
             ExistingWorkPolicy.REPLACE,
             wakeUpWork
         )
@@ -217,7 +217,7 @@ class PowerOptimizationService @Inject constructor(
             .build()
         
         WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-            \"battery_check\",
+            "battery_check",
             ExistingPeriodicWorkPolicy.KEEP,
             batteryCheckWork
         )
@@ -229,23 +229,23 @@ class PowerOptimizationService @Inject constructor(
     private fun updatePowerNotification(powerState: PowerState) {
         val (title, content, icon) = when (powerState.powerMode) {
             PowerMode.NORMAL -> Triple(
-                \"Voice Ledger - Normal Mode\",
-                \"Battery: ${powerState.batteryLevel}% | All features active\",
+                "Voice Ledger - Normal Mode",
+                "Battery: ${powerState.batteryLevel}% | All features active",
                 R.drawable.ic_battery_full
             )
             PowerMode.POWER_SAVE -> Triple(
-                \"Voice Ledger - Power Save\",
-                \"Battery: ${powerState.batteryLevel}% | Reduced background activity\",
+                "Voice Ledger - Power Save",
+                "Battery: ${powerState.batteryLevel}% | Reduced background activity",
                 R.drawable.ic_battery_alert
             )
             PowerMode.CRITICAL_SAVE -> Triple(
-                \"Voice Ledger - Critical Save\",
-                \"Battery: ${powerState.batteryLevel}% | Minimal functionality\",
+                "Voice Ledger - Critical Save",
+                "Battery: ${powerState.batteryLevel}% | Minimal functionality",
                 R.drawable.ic_battery_alert
             )
             PowerMode.SLEEP -> Triple(
-                \"Voice Ledger - Sleep Mode\",
-                \"Market closed | Minimal power usage\",
+                "Voice Ledger - Sleep Mode",
+                "Market closed | Minimal power usage",
                 R.drawable.ic_sleep
             )
         }
@@ -278,10 +278,10 @@ class PowerOptimizationService @Inject constructor(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIFICATION_CHANNEL_ID,
-                \"Power Optimization\",
+                "Power Optimization",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = \"Shows current power optimization status\"
+                description = "Shows current power optimization status"
                 setShowBadge(false)
             }
             notificationManager.createNotificationChannel(channel)
@@ -322,8 +322,8 @@ class PowerOptimizationService @Inject constructor(
      */
     fun cleanup() {
         notificationManager.cancel(NOTIFICATION_ID)
-        WorkManager.getInstance(context).cancelAllWorkByTag(\"power_save\")
-        WorkManager.getInstance(context).cancelAllWorkByTag(\"market_wakeup\")
+        WorkManager.getInstance(context).cancelAllWorkByTag("power_save")
+        WorkManager.getInstance(context).cancelAllWorkByTag("market_wakeup")
         WorkManager.getInstance(context).cancelAllWorkByTag(BATTERY_CHECK_WORK_TAG)
     }
 }

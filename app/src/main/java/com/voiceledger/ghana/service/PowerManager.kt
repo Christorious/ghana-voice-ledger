@@ -244,7 +244,7 @@ class PowerManager @Inject constructor(
         
         wakeLock = androidPowerManager.newWakeLock(
             wakeLockFlag,
-            \"VoiceLedger::PowerManager\"
+            "VoiceLedger::PowerManager"
         ).apply {
             acquire(10 * 60 * 1000L) // 10 minutes timeout
         }
@@ -299,19 +299,19 @@ class PowerManager @Inject constructor(
         
         return BatteryStatus(
             status = when (status) {
-                BatteryManager.BATTERY_STATUS_CHARGING -> \"Charging\"
-                BatteryManager.BATTERY_STATUS_DISCHARGING -> \"Discharging\"
-                BatteryManager.BATTERY_STATUS_FULL -> \"Full\"
-                BatteryManager.BATTERY_STATUS_NOT_CHARGING -> \"Not Charging\"
-                else -> \"Unknown\"
+                BatteryManager.BATTERY_STATUS_CHARGING -> "Charging"
+                BatteryManager.BATTERY_STATUS_DISCHARGING -> "Discharging"
+                BatteryManager.BATTERY_STATUS_FULL -> "Full"
+                BatteryManager.BATTERY_STATUS_NOT_CHARGING -> "Not Charging"
+                else -> "Unknown"
             },
             health = when (health) {
-                BatteryManager.BATTERY_HEALTH_GOOD -> \"Good\"
-                BatteryManager.BATTERY_HEALTH_OVERHEAT -> \"Overheating\"
-                BatteryManager.BATTERY_HEALTH_DEAD -> \"Dead\"
-                BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> \"Over Voltage\"
-                BatteryManager.BATTERY_HEALTH_COLD -> \"Cold\"
-                else -> \"Unknown\"
+                BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
+                BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheating"
+                BatteryManager.BATTERY_HEALTH_DEAD -> "Dead"
+                BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "Over Voltage"
+                BatteryManager.BATTERY_HEALTH_COLD -> "Cold"
+                else -> "Unknown"
             },
             temperature = temperature / 10.0f // Convert from tenths of degree Celsius
         )
@@ -356,8 +356,8 @@ class PowerManager @Inject constructor(
     fun getMarketHoursString(): String {
         val startTime = LocalTime.of(marketStartHour, 0)
         val endTime = LocalTime.of(marketEndHour, 0)
-        val formatter = DateTimeFormatter.ofPattern(\"h:mm a\")
-        return \"${startTime.format(formatter)} - ${endTime.format(formatter)}\"
+        val formatter = DateTimeFormatter.ofPattern("h:mm a")
+        return "${startTime.format(formatter)} - ${endTime.format(formatter)}"
     }
     
     /**
@@ -395,7 +395,7 @@ class PowerManager @Inject constructor(
     fun cleanup() {
         releaseWakeLock()
         // Cancel any pending work
-        WorkManager.getInstance(context).cancelAllWorkByTag(\"PowerManager\")
+        WorkManager.getInstance(context).cancelAllWorkByTag("PowerManager")
     }
 }
 
@@ -420,8 +420,8 @@ data class PowerState(
  * Battery status details
  */
 data class BatteryStatus(
-    val status: String = \"Unknown\",
-    val health: String = \"Unknown\",
+    val status: String = "Unknown",
+    val health: String = "Unknown",
     val temperature: Float = 0f
 )
 

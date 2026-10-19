@@ -54,7 +54,7 @@ jobs:
         ./gradlew testDevDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/unit.log" || status=$?
         if [ "$status" -ne 0 ]; then
           echo "::group::Compiler and processor errors"
-          grep -E '^(e:|w: \[ksp\]|> Task .* FAILED)' "$RUNNER_TEMP/unit.log" | head -200 || true
+          grep -E -A 20 '^(e:|w: \[ksp\]|> Task .* FAILED)|[0-9]+: error:|\[Dagger/' "$RUNNER_TEMP/unit.log" | head -300 || true
           echo "::endgroup::"
         fi
         exit "$status"
@@ -215,7 +215,7 @@ jobs:
         ./gradlew assembleDevDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log" || status=$?
         if [ "$status" -ne 0 ]; then
           echo "::group::Compiler and processor errors"
-          grep -E '^(e:|w: \[ksp\]|> Task .* FAILED)' "$RUNNER_TEMP/build.log" | head -200 || true
+          grep -E -A 20 '^(e:|w: \[ksp\]|> Task .* FAILED)|[0-9]+: error:|\[Dagger/' "$RUNNER_TEMP/build.log" | head -300 || true
           echo "::endgroup::"
         fi
         exit "$status"

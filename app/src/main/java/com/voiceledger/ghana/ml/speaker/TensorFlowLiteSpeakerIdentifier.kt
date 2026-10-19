@@ -68,7 +68,20 @@ class TensorFlowLiteSpeakerIdentifier @Inject constructor(
             
             // Load TensorFlow Lite model
             val modelBuffer = loadModelFile()
-            
+            if (modelBuffer == null) {
+                // No usable model. Report it and stay uninitialised: every method on
+                // this class already checks isInitialized and declines. Speaker
+                // identification is simply unavailable, and the rest of the pipeline
+                // — capture, VAD, transcription — carries on working.
+                isInitialized = false
+                return@withContext Result.failure(
+                    IllegalStateException(
+                        "Speaker identification unavailable: '$MODEL_FILE' is not a " +
+                            "TensorFlow Lite model. Ship a trained model to enable it."
+                    )
+                )
+            }
+
             // Configure interpreter options
             val options = Interpreter.Options().apply {
                 setNumThreads(2) // Optimize for budget devices
@@ -339,12 +352,20 @@ class TensorFlowLiteSpeakerIdentifier @Inject constructor(
     }
     
     /**
-     * Load TensorFlow Lite model from assets
+     * Load the TensorFlow Lite model from assets, or null if there isn't a real one.
+     *
+     * Null matters. The previous version fabricated a 1 KB buffer of dummy floats when
+     * the asset was missing and handed it to Interpreter — and the asset that ships
+     * today is a 217-byte text placeholder, so the real path produced garbage too.
+     * TensorFlow Lite rejects a malformed model in native code, which can abort the
+     * process rather than raise a Java exception the caller could catch. That is why
+     * the app died as soon as recording started.
+     *
+     * A .tflite file is a FlatBuffer carrying the identifier "TFL3" at offset 4. Any
+     * file without it is not a model, and we refuse to pass it on.
      */
-    // ByteBuffer, not MappedByteBuffer: the fallback path below allocates a plain
-    // direct buffer when the model asset is absent, and Interpreter accepts either.
-    private fun loadModelFile(): ByteBuffer {
-        return try {
+    private fun loadModelFile(): ByteBuffer? {
+        val buffer = try {
             val assetFileDescriptor = context.assets.openFd(MODEL_FILE)
             val inputStream = FileInputStream(assetFileDescriptor.fileDescriptor)
             val fileChannel = inputStream.channel
@@ -352,15 +373,28 @@ class TensorFlowLiteSpeakerIdentifier @Inject constructor(
             val declaredLength = assetFileDescriptor.declaredLength
             fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
         } catch (e: Exception) {
-            Log.w(TAG, "Model file not found, using mock implementation")
-            // Create a minimal mock model buffer for development
-            ByteBuffer.allocateDirect(1024).apply {
-                order(ByteOrder.nativeOrder())
-                // Fill with dummy data
-                repeat(256) { putFloat(0.1f) }
-                rewind()
-            }
+            Log.w(TAG, "Speaker model asset '$MODEL_FILE' is missing", e)
+            return null
         }
+
+        if (!looksLikeTfLiteModel(buffer)) {
+            Log.w(
+                TAG,
+                "Speaker model asset '$MODEL_FILE' is ${buffer.capacity()} bytes and is not a " +
+                    "TensorFlow Lite model (no TFL3 identifier). Speaker identification is off."
+            )
+            return null
+        }
+        return buffer
+    }
+
+    /** FlatBuffer identifier check: bytes 4..7 of a .tflite file spell "TFL3". */
+    private fun looksLikeTfLiteModel(buffer: ByteBuffer): Boolean {
+        if (buffer.capacity() < 8) return false
+        return buffer.get(4) == 'T'.code.toByte() &&
+            buffer.get(5) == 'F'.code.toByte() &&
+            buffer.get(6) == 'L'.code.toByte() &&
+            buffer.get(7) == '3'.code.toByte()
     }
     
     /**

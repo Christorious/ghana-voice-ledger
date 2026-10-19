@@ -1,5 +1,6 @@
 package com.voiceledger.ghana.service
 
+import android.util.Log
 import com.voiceledger.ghana.di.DefaultDispatcher
 import com.voiceledger.ghana.di.IoDispatcher
 import com.voiceledger.ghana.data.local.entity.AudioMetadata
@@ -46,12 +47,21 @@ class SpeechProcessingPipeline @Inject constructor(
     )
     val results: SharedFlow<ProcessingResult> = _results.asSharedFlow()
 
+    private companion object {
+        const val TAG = "SpeechProcessingPipeline"
+    }
+
     suspend fun initialize() = coroutineScope {
         val vadInit = async { vadManager.initialize(com.voiceledger.ghana.ml.vad.VADType.CUSTOM) }
         val speakerInit = async { speakerIdentifier.initialize() }
         val speechInit = async { speechRecognitionManager.optimizeForMarketEnvironment() }
         vadInit.await()
-        speakerInit.await()
+        // initialize() returns a Result, so awaiting it cannot throw. Log a failure
+        // instead of discarding it: speaker identification being unavailable is a
+        // real degradation, and silence here is how it went unnoticed.
+        speakerInit.await().onFailure {
+            Log.w(TAG, "Speaker identification unavailable; continuing without it: ${it.message}")
+        }
         speechInit.await()
     }
 

@@ -65,7 +65,25 @@ jobs:
 
     - name: Run lint checks
       if: always()
-      run: ./gradlew lintDevDebug --stacktrace
+      # Lint writes its findings to a report file on the runner and prints only a
+      # count plus the first failure, so the other ~127 were invisible. Print the
+      # errors from the report on failure.
+      run: |
+        set -o pipefail
+        status=0
+        ./gradlew lintDevDebug --stacktrace || status=$?
+        if [ "$status" -ne 0 ]; then
+          report=app/build/intermediates/lint_intermediate_text_report/devDebug/lint-results-devDebug.txt
+          echo "::group::Lint errors"
+          if [ -f "$report" ]; then
+            grep -E '^\S+\.(kt|xml|java):[0-9]+: Error:' "$report" | head -200 || true
+          else
+            echo "No lint text report at $report"
+            find app/build -name 'lint-results*.txt' -print 2>/dev/null | head || true
+          fi
+          echo "::endgroup::"
+        fi
+        exit "$status"
       
     - name: Generate test report
       uses: dorny/test-reporter@v1

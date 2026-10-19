@@ -4,6 +4,8 @@ import android.content.Context
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import com.voiceledger.ghana.security.DataProcessingPurpose
+import com.voiceledger.ghana.security.PrivacyManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,12 +27,25 @@ import javax.inject.Singleton
 class UsageDashboardService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val analyticsService: AnalyticsService,
-    private val crashlyticsService: CrashlyticsService
+    private val crashlyticsService: CrashlyticsService,
+    private val privacyManager: PrivacyManager
 ) {
-    
+
     private val firestore: FirebaseFirestore by lazy {
         Firebase.firestore
     }
+
+    /**
+     * Whether anything may leave the device.
+     *
+     * Every Firestore call in this class goes behind this. The app's promise to the
+     * trader is that her data stays on her phone, so usage telemetry is sent only
+     * where she has explicitly consented to cloud sync. Consent defaults to denied
+     * and can be revoked, and this is re-read on each call so a revocation takes
+     * effect immediately rather than at next launch.
+     */
+    private fun cloudSyncAllowed(): Boolean =
+        privacyManager.isDataProcessingAllowed(DataProcessingPurpose.CLOUD_SYNC)
     
     private val dashboardScope = CoroutineScope(Dispatchers.IO)
     
@@ -67,6 +82,7 @@ class UsageDashboardService @Inject constructor(
      * Record usage metrics
      */
     fun recordUsageMetrics(metrics: UsageMetrics) {
+        if (!cloudSyncAllowed()) return
         dashboardScope.launch {
             try {
                 val document = mapOf(
@@ -100,6 +116,7 @@ class UsageDashboardService @Inject constructor(
      * Record performance metrics
      */
     fun recordPerformanceMetrics(metrics: PerformanceMetrics) {
+        if (!cloudSyncAllowed()) return
         dashboardScope.launch {
             try {
                 val document = mapOf(
@@ -130,6 +147,7 @@ class UsageDashboardService @Inject constructor(
      * Record error metrics
      */
     fun recordErrorMetrics(metrics: ErrorMetrics) {
+        if (!cloudSyncAllowed()) return
         dashboardScope.launch {
             try {
                 val document = mapOf(
@@ -191,6 +209,7 @@ class UsageDashboardService @Inject constructor(
      * Create alert
      */
     fun createAlert(alert: Alert) {
+        if (!cloudSyncAllowed()) return
         dashboardScope.launch {
             try {
                 val document = mapOf(
@@ -228,6 +247,7 @@ class UsageDashboardService @Inject constructor(
      * Resolve alert
      */
     fun resolveAlert(alertId: String) {
+        if (!cloudSyncAllowed()) return
         dashboardScope.launch {
             try {
                 firestore.collection(COLLECTION_ALERTS)
@@ -279,6 +299,7 @@ class UsageDashboardService @Inject constructor(
     }
     
     private suspend fun loadExistingAlerts() {
+        if (!cloudSyncAllowed()) return
         try {
             val alertsSnapshot = firestore.collection(COLLECTION_ALERTS)
                 .whereEqualTo("resolved", false)
@@ -310,6 +331,7 @@ class UsageDashboardService @Inject constructor(
     }
     
     private suspend fun getUsageMetricsForDateRange(startDate: String, endDate: String): List<Map<String, Any>> {
+        if (!cloudSyncAllowed()) return emptyList()
         return try {
             val snapshot = firestore.collection(COLLECTION_USAGE_METRICS)
                 .whereGreaterThanOrEqualTo("date", startDate)
@@ -324,6 +346,7 @@ class UsageDashboardService @Inject constructor(
     }
     
     private suspend fun getPerformanceMetricsForDateRange(startDate: String, endDate: String): List<Map<String, Any>> {
+        if (!cloudSyncAllowed()) return emptyList()
         return try {
             val snapshot = firestore.collection(COLLECTION_PERFORMANCE_METRICS)
                 .whereGreaterThanOrEqualTo("date", startDate)
@@ -338,6 +361,7 @@ class UsageDashboardService @Inject constructor(
     }
     
     private suspend fun getErrorMetricsForDateRange(startDate: String, endDate: String): List<Map<String, Any>> {
+        if (!cloudSyncAllowed()) return emptyList()
         return try {
             val snapshot = firestore.collection(COLLECTION_ERROR_METRICS)
                 .whereGreaterThanOrEqualTo("date", startDate)

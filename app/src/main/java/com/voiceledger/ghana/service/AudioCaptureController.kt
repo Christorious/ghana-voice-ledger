@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
+import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.*
@@ -47,31 +48,50 @@ class AudioCaptureController @Inject constructor(
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    /**
+     * Open the microphone.
+     *
+     * Throws [SecurityException] if RECORD_AUDIO has not been granted — constructing
+     * an AudioRecord without it is what lint was flagging, and on a device it crashes
+     * the process. The check is here as well as in the caller so this class cannot be
+     * misused: [checkAudioPermission] was already available but nothing called it.
+     */
+    @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
     fun initialize() {
         if (audioRecord != null) return
-        
+
+        if (!checkAudioPermission()) {
+            throw SecurityException(
+                "RECORD_AUDIO has not been granted; the microphone cannot be opened"
+            )
+        }
+
         val bufferSize = AudioRecord.getMinBufferSize(
             SAMPLE_RATE,
             CHANNEL_CONFIG,
             AUDIO_FORMAT
         ) * BUFFER_SIZE_MULTIPLIER
-        
-        audioRecord = AudioRecord(
+
+        val record = AudioRecord(
             AUDIO_SOURCE,
             SAMPLE_RATE,
             CHANNEL_CONFIG,
             AUDIO_FORMAT,
             bufferSize
-        ).apply {
-            if (state != AudioRecord.STATE_INITIALIZED) {
-                throw IllegalStateException("AudioRecord initialization failed")
-            }
+        )
+        if (record.state != AudioRecord.STATE_INITIALIZED) {
+            // Release it rather than leaking the handle, which would keep the mic
+            // busy and make every later attempt fail too.
+            record.release()
+            throw IllegalStateException("AudioRecord initialization failed")
         }
+        audioRecord = record
     }
 
+    @RequiresPermission(android.Manifest.permission.RECORD_AUDIO)
     fun startRecording(scope: CoroutineScope, delayMs: Long = 10) {
         if (isRecording.get()) return
-        
+
         recordingJob = scope.launch(Dispatchers.IO) {
             audioRecord?.startRecording()
             isRecording.set(true)

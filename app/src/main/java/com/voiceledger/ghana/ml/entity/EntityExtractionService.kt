@@ -21,7 +21,8 @@ class EntityExtractionService @Inject constructor(
     companion object {
         private const val TAG = "EntityExtractionService"
         private const val CACHE_SIZE = 100
-        private const val CACHE_EXPIRY_MS = 5 * 60 * 1000L // 5 minutes
+        // Not private: the cache entry type below reads it to decide its own expiry.
+        internal const val CACHE_EXPIRY_MS = 5 * 60 * 1000L // 5 minutes
     }
     
     // Cache for recent extractions

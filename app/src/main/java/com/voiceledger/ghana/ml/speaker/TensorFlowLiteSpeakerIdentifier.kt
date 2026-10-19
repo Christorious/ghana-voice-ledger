@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -228,8 +229,11 @@ class TensorFlowLiteSpeakerIdentifier @Inject constructor(
             }
             
             // Check against known customers
-            val customerProfiles = speakerRepository.getCustomerProfiles()
-            customerProfiles.collect { customers ->
+            // first(), not collect(): collect's lambda is a separate suspend function,
+            // so a match inside it cannot return from identifySpeaker — and the flow
+            // would never complete, leaving the coroutine collecting forever.
+            val customers = speakerRepository.getCustomerProfiles().first()
+            run {
                 for (customer in customers) {
                     val similarity = calculateCosineSimilarity(embedding, customer.getEmbeddingArray())
                     if (similarity >= customer.confidenceThreshold) {
@@ -337,7 +341,9 @@ class TensorFlowLiteSpeakerIdentifier @Inject constructor(
     /**
      * Load TensorFlow Lite model from assets
      */
-    private fun loadModelFile(): MappedByteBuffer {
+    // ByteBuffer, not MappedByteBuffer: the fallback path below allocates a plain
+    // direct buffer when the model asset is absent, and Interpreter accepts either.
+    private fun loadModelFile(): ByteBuffer {
         return try {
             val assetFileDescriptor = context.assets.openFd(MODEL_FILE)
             val inputStream = FileInputStream(assetFileDescriptor.fileDescriptor)
@@ -470,8 +476,9 @@ class TensorFlowLiteSpeakerIdentifier @Inject constructor(
             }
         }
         
+        val divisor = embeddings.size.toFloat()
         for (i in result.indices) {
-            result[i] /= embeddings.size
+            result[i] = result[i] / divisor
         }
         
         return normalizeEmbedding(result)

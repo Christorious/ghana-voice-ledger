@@ -121,7 +121,11 @@ class LanguageDetector @Inject constructor() {
             ENGLISH to englishScore
         )
         
-        val (detectedLanguage, confidence) = scores.maxByOrNull { it.value } ?: (ENGLISH to 0f)
+        // maxByOrNull returns a Map.Entry; eliding to a Pair widens the type to Any,
+        // which cannot be destructured. Read the two fields instead.
+        val best = scores.maxByOrNull { it.value }
+        val detectedLanguage = best?.key ?: ENGLISH
+        val confidence = best?.value ?: 0f
         
         // Create alternatives list
         val alternatives = scores

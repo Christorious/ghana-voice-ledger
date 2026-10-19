@@ -55,11 +55,11 @@ data class AudioMetadata(
     val contributedToTransaction: Boolean = false,
     
     /** Transaction ID if this chunk was part of a transaction */
-    val transactionId: String?,
-    
+    val transactionId: String? = null,
+
     /** Error message if processing failed */
-    val errorMessage: String?,
-    
+    val errorMessage: String? = null,
+
     /** Battery level when this chunk was processed */
     val batteryLevel: Int?,
     

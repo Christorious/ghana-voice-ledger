@@ -231,6 +231,24 @@ class AnalyticsService @Inject constructor(
     }
 
     /**
+     * Log an event that has no typed method of its own.
+     *
+     * The methods above are preferred: they name their parameters and keep the
+     * event schema in one place. This exists for events that are genuinely
+     * open-ended — beta programme telemetry, for instance — where inventing a
+     * typed method per event would be noise. Values are strings because that is
+     * all the callers have.
+     */
+    fun trackEvent(eventName: String, params: Map<String, String> = emptyMap()) {
+        analyticsScope.launch {
+            val bundle = Bundle().apply {
+                params.forEach { (key, value) -> putString(key, value.take(100)) }
+            }
+            logEvent(eventName, bundle)
+        }
+    }
+
+    /**
      * Enable/disable analytics collection
      */
     fun setAnalyticsCollectionEnabled(enabled: Boolean) {

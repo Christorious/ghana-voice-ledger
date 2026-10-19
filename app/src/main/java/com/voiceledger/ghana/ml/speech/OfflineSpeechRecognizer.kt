@@ -265,7 +265,7 @@ class OfflineSpeechRecognizer @Inject constructor(
     /**
      * Clean up resources
      */
-    fun cleanup() {
+    override fun cleanup() {
         activeStreamingSessions.values.forEach { session ->
             runBlocking { session.cancel() }
         }

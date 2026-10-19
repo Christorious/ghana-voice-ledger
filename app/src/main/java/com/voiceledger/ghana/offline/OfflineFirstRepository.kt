@@ -1,6 +1,7 @@
 package com.voiceledger.ghana.offline
 
 import android.content.Context
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
@@ -131,6 +132,10 @@ class OfflineTransactionRepository @Inject constructor(
 ) : OfflineFirstRepository<com.voiceledger.ghana.data.local.entity.Transaction, String>(
     context, offlineQueueManager
 ) {
+
+    // Gson, not kotlinx.serialization: Transaction is a Room entity and is not
+    // @Serializable, and the rest of the offline package already uses Gson.
+    private val gson = Gson()
     
     override suspend fun getById(id: String): com.voiceledger.ghana.data.local.entity.Transaction? {
         // Always try local first
@@ -168,7 +173,7 @@ class OfflineTransactionRepository @Inject constructor(
         // Queue for remote sync
         queueForSync(
             operationType = OperationType.TRANSACTION_SYNC,
-            data = kotlinx.serialization.json.Json.encodeToString(item),
+            data = gson.toJson(item),
             priority = OperationPriority.NORMAL
         )
         
@@ -183,7 +188,7 @@ class OfflineTransactionRepository @Inject constructor(
             // Queue for remote deletion
             queueForSync(
                 operationType = OperationType.DELETE_DATA,
-                data = kotlinx.serialization.json.Json.encodeToString(mapOf("type" to "transaction", "id" to id)),
+                data = gson.toJson(mapOf("type" to "transaction", "id" to id)),
                 priority = OperationPriority.HIGH
             )
         }

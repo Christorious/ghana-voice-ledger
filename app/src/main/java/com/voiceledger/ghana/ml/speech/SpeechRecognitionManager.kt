@@ -174,7 +174,7 @@ class SpeechRecognitionManager @Inject constructor(
      * Get all supported languages
      */
     fun getSupportedLanguages(): List<String> {
-        val onlineLanguages = googleSpeechRecognizer.getSupportedLanguages()
+        val onlineLanguages = googleSpeechRecognizer?.getSupportedLanguages() ?: emptyList()
         val offlineLanguages = offlineSpeechRecognizer.getSupportedLanguages()
         return (onlineLanguages + offlineLanguages).distinct()
     }
@@ -183,7 +183,7 @@ class SpeechRecognitionManager @Inject constructor(
      * Check if a specific language is supported
      */
     fun isLanguageSupported(languageCode: String): Boolean {
-        return googleSpeechRecognizer.isLanguageSupported(languageCode) ||
+        return googleSpeechRecognizer?.isLanguageSupported(languageCode) == true ||
                 offlineSpeechRecognizer.isLanguageSupported(languageCode)
     }
     
@@ -253,10 +253,10 @@ class SpeechRecognitionManager @Inject constructor(
     }
     
     private fun setupLanguageModels() {
-        googleSpeechRecognizer.setLanguageModel(currentLanguages)
+        googleSpeechRecognizer?.setLanguageModel(currentLanguages)
         offlineSpeechRecognizer.setLanguageModel(currentLanguages)
         
-        googleSpeechRecognizer.setCodeSwitchingEnabled(codeSwitchingEnabled)
+        googleSpeechRecognizer?.setCodeSwitchingEnabled(codeSwitchingEnabled)
         offlineSpeechRecognizer.setCodeSwitchingEnabled(codeSwitchingEnabled)
     }
     
@@ -273,7 +273,7 @@ class SpeechRecognitionManager @Inject constructor(
      * Clean up resources
      */
     fun cleanup() {
-        googleSpeechRecognizer.cleanup()
+        googleSpeechRecognizer?.cleanup()
         offlineSpeechRecognizer.cleanup()
         Log.d(TAG, "Speech recognition manager cleaned up")
     }

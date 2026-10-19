@@ -103,6 +103,13 @@ class OfflineQueueManager @Inject constructor(
     /**
      * Add operation to queue and persist
      */
+    /**
+     * Queue an operation the caller has already built. The typed queue* methods
+     * above are preferred; OfflineFirstRepository composes its own operation and
+     * needs this entry point.
+     */
+    suspend fun enqueueOperation(operation: OfflineOperation) = addOperation(operation)
+
     private suspend fun addOperation(operation: OfflineOperation) {
         pendingOperations[operation.id] = operation
         persistOperation(operation)
@@ -430,7 +437,9 @@ class OfflineQueueManager @Inject constructor(
      */
     private fun schedulePeriodicSync() {
         val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
+            // Fully qualified: this package declares its own NetworkType (NetworkUtils),
+            // which shadows androidx.work's under the wildcard import.
+            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
             .setRequiresBatteryNotLow(true)
             .build()
         

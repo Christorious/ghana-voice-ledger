@@ -309,19 +309,20 @@ class DataValidator @Inject constructor() {
         }
         
         // Validate timestamps
-        if (summary.generatedAt <= 0) {
+        if (summary.timestamp <= 0) {
             errors.add("Generated timestamp must be positive")
         }
-        
-        // Validate profitable hour
+
+        // Validate profitable hour. The entity stores it as a two-digit "HH" string.
         summary.mostProfitableHour?.let { hour ->
-            if (hour < 0 || hour > 23) {
+            val parsed = hour.toIntOrNull()
+            if (parsed == null || parsed < 0 || parsed > 23) {
                 errors.add("Most profitable hour must be between 0 and 23")
             }
         }
-        
-        // Validate day-over-day change
-        summary.dayOverDayChange?.let { change ->
+
+        // Validate day-over-day change, which lives on the yesterday comparison.
+        summary.comparisonWithYesterday?.salesChange?.let { change ->
             if (change < -1.0 || change > 10.0) { // Allow up to 1000% increase, 100% decrease
                 errors.add("Day-over-day change seems unrealistic")
             }

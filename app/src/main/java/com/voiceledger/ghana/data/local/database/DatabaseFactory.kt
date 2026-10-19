@@ -3,7 +3,7 @@ package com.voiceledger.ghana.data.local.database
 import android.content.Context
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import net.sqlcipher.room.SupportFactory
+import net.sqlcipher.database.SupportFactory
 
 /**
  * Centralized factory for creating VoiceLedgerDatabase instances.

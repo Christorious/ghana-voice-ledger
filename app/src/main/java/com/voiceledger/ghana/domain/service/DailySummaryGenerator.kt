@@ -7,6 +7,10 @@ import com.voiceledger.ghana.domain.repository.SpeakerProfileRepository
 import com.voiceledger.ghana.domain.repository.DailySummaryRepository
 import com.voiceledger.ghana.util.DateUtils
 import kotlinx.coroutines.flow.first
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -68,7 +72,11 @@ class DailySummaryGenerator @Inject constructor(
     private val speakerProfileRepository: SpeakerProfileRepository,
     private val dailySummaryRepository: DailySummaryRepository
 ) {
-    
+
+    /** Summaries are keyed by calendar date; every date string in this class uses this format. */
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+
+
     /**
      * Generate daily summary for today
      */
@@ -123,10 +131,11 @@ class DailySummaryGenerator @Inject constructor(
      * Generate summary for a date range (weekly/monthly)
      */
     suspend fun generatePeriodSummary(startDate: String, endDate: String): PeriodSummary {
-        val transactions = transactionRepository.getSummariesByDateRange(startDate, endDate).first()
-            .flatMap { summary -> 
-                transactionRepository.getTransactionsByDate(summary.date).first()
-            }
+        // The date range comes from the summary repository, not the transaction one.
+        val summaries = dailySummaryRepository.getSummariesByDateRange(startDate, endDate).first()
+        val transactions = summaries.flatMap { summary ->
+            transactionRepository.getTransactionsByDate(summary.date).first()
+        }
         
         return PeriodSummary(
             startDate = startDate,
@@ -230,7 +239,7 @@ class DailySummaryGenerator @Inject constructor(
     }
     
     private fun calculateTotalQuantitySold(transactions: List<Transaction>): Double {
-        return transactions.sumOf { it.quantity ?: 0.0 }
+        return transactions.sumOf { (it.quantity ?: 0).toDouble() }
     }
     
     private fun findMostProfitableHour(transactions: List<Transaction>): String? {
@@ -309,7 +318,7 @@ class DailySummaryGenerator @Inject constructor(
                 ProductSummary(
                     totalSales = productTransactions.sumOf { it.amount },
                     transactionCount = productTransactions.size,
-                    totalQuantity = productTransactions.sumOf { it.quantity ?: 0.0 },
+                    totalQuantity = productTransactions.sumOf { (it.quantity ?: 0).toDouble() },
                     averagePrice = productTransactions.sumOf { it.amount } / productTransactions.size,
                     peakHour = productTransactions.groupBy { getHourFromTimestamp(it.timestamp) }
                         .maxByOrNull { it.value.size }?.key

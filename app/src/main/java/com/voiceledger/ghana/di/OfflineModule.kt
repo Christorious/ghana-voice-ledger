@@ -1,7 +1,10 @@
 package com.voiceledger.ghana.di
 
 import android.content.Context
+import com.google.gson.Gson
 import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
+import com.voiceledger.ghana.domain.repository.DailySummaryRepository
+import com.voiceledger.ghana.domain.repository.TransactionRepository
 import com.voiceledger.ghana.offline.ConflictResolver
 import com.voiceledger.ghana.offline.OfflineFirstRepository
 import com.voiceledger.ghana.offline.OfflineQueueManager
@@ -24,11 +27,17 @@ object OfflineModule {
     @Singleton
     fun provideOfflineQueueManager(
         @ApplicationContext context: Context,
-        database: VoiceLedgerDatabase
+        database: VoiceLedgerDatabase,
+        transactionRepository: TransactionRepository,
+        dailySummaryRepository: DailySummaryRepository,
+        gson: Gson
     ): OfflineQueueManager {
         return OfflineQueueManager(
             context = context,
-            operationDao = database.offlineOperationDao()
+            offlineOperationDao = database.offlineOperationDao(),
+            transactionRepository = transactionRepository,
+            dailySummaryRepository = dailySummaryRepository,
+            gson = gson
         )
     }
 

@@ -37,11 +37,9 @@ object DatabaseUtils {
                 backupDir.mkdirs()
             }
             
-            val timestamp = dateFormat.format(Date())
-            val sanitizedTimestamp = securityManager.sanitizeForFileName("voice_ledger_backup_$timestamp")
-            val backupFileName = "$sanitizedTimestamp.db"
             val timestamp = LocalDateTime.now().format(backupDateFormat)
-            val backupFileName = "voice_ledger_backup_$timestamp.db"
+            val backupFileName =
+                securityManager.sanitizeForFileName("voice_ledger_backup_$timestamp") + ".db"
             val backupFile = File(backupDir, backupFileName)
             
             val currentDbFile = context.getDatabasePath(VoiceLedgerDatabase.DATABASE_NAME)
@@ -159,7 +157,8 @@ object DatabaseUtils {
      */
     suspend fun checkDatabaseIntegrity(database: VoiceLedgerDatabase): Result<Boolean> = withContext(Dispatchers.IO) {
         try {
-            val cursor = database.openHelper.readableDatabase.rawQuery("PRAGMA integrity_check", null)
+            // SupportSQLiteDatabase exposes query(), not rawQuery().
+            val cursor = database.openHelper.readableDatabase.query("PRAGMA integrity_check")
             cursor.use {
                 if (it.moveToFirst()) {
                     val result = it.getString(0)
@@ -221,7 +220,7 @@ object DatabaseUtils {
         try {
             // This would be implemented to export all data to JSON format
             // For now, return a placeholder
-            val timestamp = dateFormat.format(Date())
+            val timestamp = LocalDateTime.now().format(backupDateFormat)
             val sanitizedFilename = securityManager.sanitizeForFileName("voice_ledger_export_$timestamp")
             val exportFileName = "$sanitizedFilename.json"
             val exportFile = File(context.getExternalFilesDir(null), exportFileName)

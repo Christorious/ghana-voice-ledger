@@ -13,6 +13,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
+import javax.inject.Provider
 import javax.inject.Singleton
 
 /**
@@ -23,7 +24,10 @@ import javax.inject.Singleton
 class DailySummaryRepositoryImpl @Inject constructor(
     private val dailySummaryDao: DailySummaryDao,
     private val transactionDao: TransactionDao,
-    private val dailySummaryGenerator: DailySummaryGenerator
+    // A Provider, not the generator itself: DailySummaryGenerator depends on
+    // DailySummaryRepository, so taking it directly is a dependency cycle Hilt rejects.
+    // Resolving it lazily, at call time, breaks the cycle without changing the design.
+    private val dailySummaryGenerator: Provider<DailySummaryGenerator>
 ) : DailySummaryRepository {
     
     private val timeFormat = DateTimeFormatter.ofPattern("HH:mm")
@@ -128,12 +132,12 @@ class DailySummaryRepositoryImpl @Inject constructor(
     
     override suspend fun generateDailySummary(date: String): DailySummary {
         // Delegate to the DailySummaryGenerator service for comprehensive analysis
-        return dailySummaryGenerator.generateDailySummary(date)
+        return dailySummaryGenerator.get().generateDailySummary(date)
     }
     
     override suspend fun generateTodaysSummary(): DailySummary {
         // Delegate to the DailySummaryGenerator service
-        return dailySummaryGenerator.generateTodaysSummary()
+        return dailySummaryGenerator.get().generateTodaysSummary()
     }
     
     override suspend fun regenerateSummary(date: String): DailySummary {

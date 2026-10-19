@@ -338,13 +338,14 @@ class DatabaseOptimizer @Inject constructor(
             
             // Get table sizes (approximate)
             val tableSizes = mutableMapOf<String, Long>()
-            val cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null)
-            
+            // SupportSQLiteDatabase exposes query(), not rawQuery().
+            val cursor = db.query("SELECT name FROM sqlite_master WHERE type='table'")
+
             cursor.use {
                 while (it.moveToNext()) {
                     val tableName = it.getString(0)
                     if (!tableName.startsWith("sqlite_") && !tableName.startsWith("android_")) {
-                        val countCursor = db.rawQuery("SELECT COUNT(*) FROM $tableName", null)
+                        val countCursor = db.query("SELECT COUNT(*) FROM $tableName")
                         countCursor.use { countCur ->
                             if (countCur.moveToFirst()) {
                                 tableSizes[tableName] = countCur.getLong(0)

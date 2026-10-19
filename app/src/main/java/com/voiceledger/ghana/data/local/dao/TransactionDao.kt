@@ -120,36 +120,8 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions WHERE amount BETWEEN :minAmount AND :maxAmount ORDER BY timestamp DESC")
     fun getTransactionsByAmountRange(minAmount: Double, maxAmount: Double): Flow<List<Transaction>>
     
-    @Query("SELECT DISTINCT product FROM transactions ORDER BY product ASC")
-    suspend fun getAllProducts(): List<String>
-    
-    @Query("SELECT DISTINCT customerId FROM transactions WHERE customerId IS NOT NULL ORDER BY customerId ASC")
-    suspend fun getAllCustomerIds(): List<String>
-    
-    // Additional analytics queries
-    @Query("SELECT COALESCE(SUM(amount), 0.0) FROM transactions WHERE date = :date")
-    suspend fun getTotalSalesForDate(date: String): Double
-    
-    @Query("SELECT COUNT(*) FROM transactions WHERE date = :date")
-    suspend fun getTransactionCountForDate(date: String): Int
-    
-    @Query("SELECT product FROM transactions WHERE date = :date GROUP BY product ORDER BY COUNT(*) DESC LIMIT 1")
-    suspend fun getTopProductForDate(date: String): String?
-    
-    @Query("SELECT COUNT(DISTINCT customerId) FROM transactions WHERE date = :date AND customerId IS NOT NULL")
-    suspend fun getUniqueCustomerCountForDate(date: String): Int
-    
-    @Query("SELECT COALESCE(AVG(amount), 0.0) FROM transactions WHERE date = :date")
-    suspend fun getAverageTransactionValueForDate(date: String): Double
-    
-    @Query("SELECT COUNT(*) FROM transactions WHERE date = :date AND needsReview = 0")
-    suspend fun getReviewedTransactionCountForDate(date: String): Int
-    
     // Additional methods for offline-first architecture
-    
-    @Query("SELECT * FROM transactions ORDER BY timestamp DESC")
-    suspend fun getAllTransactions(): List<Transaction>
-    
+
     @Query("SELECT * FROM transactions")
     fun getAllTransactionsFlow(): Flow<List<Transaction>>
     

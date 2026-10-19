@@ -9,6 +9,7 @@ import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import com.voiceledger.ghana.data.repository.*
 import com.voiceledger.ghana.domain.repository.*
 import com.voiceledger.ghana.domain.service.AnalyticsConsentProvider
+import com.voiceledger.ghana.domain.service.DailySummaryGenerator
 import com.voiceledger.ghana.security.SecurityManager
 import dagger.Module
 import dagger.Provides
@@ -16,7 +17,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.room.SupportFactory
+import net.sqlcipher.database.SupportFactory
+import javax.inject.Provider
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -236,9 +238,10 @@ object DatabaseModule {
     @Singleton
     fun provideDailySummaryRepository(
         dailySummaryDao: DailySummaryDao,
-        transactionDao: TransactionDao
+        transactionDao: TransactionDao,
+        dailySummaryGenerator: Provider<DailySummaryGenerator>
     ): DailySummaryRepository {
-        return DailySummaryRepositoryImpl(dailySummaryDao, transactionDao)
+        return DailySummaryRepositoryImpl(dailySummaryDao, transactionDao, dailySummaryGenerator)
     }
     
     @Provides

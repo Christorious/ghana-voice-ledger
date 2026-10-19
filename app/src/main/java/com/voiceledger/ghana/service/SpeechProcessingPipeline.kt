@@ -1,5 +1,7 @@
 package com.voiceledger.ghana.service
 
+import com.voiceledger.ghana.di.DefaultDispatcher
+import com.voiceledger.ghana.di.IoDispatcher
 import com.voiceledger.ghana.data.local.entity.AudioMetadata
 import com.voiceledger.ghana.domain.repository.AudioMetadataRepository
 import com.voiceledger.ghana.ml.speaker.SpeakerIdentifier
@@ -25,8 +27,10 @@ class SpeechProcessingPipeline @Inject constructor(
     private val speechRecognitionManager: SpeechRecognitionManager,
     private val transactionProcessor: TransactionProcessor,
     private val audioMetadataRepository: AudioMetadataRepository,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    // Qualified for Dagger, which ignores Kotlin defaults; the defaults remain so
+    // tests and plain callers can construct this without wiring dispatchers.
+    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     companion object {
         private const val CHUNK_DURATION_MS = 1000L

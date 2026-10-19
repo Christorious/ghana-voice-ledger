@@ -1,5 +1,6 @@
 package com.voiceledger.ghana.offline
 
+import com.voiceledger.ghana.di.IoDispatcher
 import android.content.Context
 import androidx.work.*
 import com.voiceledger.ghana.data.local.dao.OfflineOperationDao
@@ -32,7 +33,7 @@ class OfflineQueueManager @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val dailySummaryRepository: DailySummaryRepository,
     private val gson: Gson,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     
     companion object {

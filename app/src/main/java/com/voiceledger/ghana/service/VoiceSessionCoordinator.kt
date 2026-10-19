@@ -1,5 +1,6 @@
 package com.voiceledger.ghana.service
 
+import com.voiceledger.ghana.di.DefaultDispatcher
 import android.content.Context
 import android.os.PowerManager as AndroidPowerManager
 import com.voiceledger.ghana.ml.speech.SpeechRecognitionManager
@@ -25,7 +26,7 @@ class VoiceSessionCoordinator @Inject constructor(
     private val speechRecognitionManager: SpeechRecognitionManager,
     private val offlineQueueManager: OfflineQueueManager,
     private val powerManager: com.voiceledger.ghana.service.PowerManager,
-    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     companion object {
         private const val SLEEP_TIMEOUT_MS = 30000L

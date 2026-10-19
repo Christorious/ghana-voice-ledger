@@ -14,6 +14,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineDispatcher
 import javax.inject.Singleton
 
 /**
@@ -30,14 +31,16 @@ object OfflineModule {
         database: VoiceLedgerDatabase,
         transactionRepository: TransactionRepository,
         dailySummaryRepository: DailySummaryRepository,
-        gson: Gson
+        gson: Gson,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
     ): OfflineQueueManager {
         return OfflineQueueManager(
             context = context,
             offlineOperationDao = database.offlineOperationDao(),
             transactionRepository = transactionRepository,
             dailySummaryRepository = dailySummaryRepository,
-            gson = gson
+            gson = gson,
+            ioDispatcher = ioDispatcher
         )
     }
 

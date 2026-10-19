@@ -42,8 +42,8 @@ object VoiceServiceModule {
         speechRecognitionManager: SpeechRecognitionManager,
         transactionProcessor: TransactionProcessor,
         audioMetadataRepository: AudioMetadataRepository,
-        defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
-        ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+        @DefaultDispatcher defaultDispatcher: CoroutineDispatcher,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
     ): SpeechProcessingPipeline {
         return SpeechProcessingPipeline(
             vadManager,
@@ -67,7 +67,7 @@ object VoiceServiceModule {
         speechRecognitionManager: SpeechRecognitionManager,
         offlineQueueManager: OfflineQueueManager,
         powerManager: PowerManager,
-        defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
+        @DefaultDispatcher defaultDispatcher: CoroutineDispatcher
     ): VoiceSessionCoordinator {
         return VoiceSessionCoordinator(
             context,

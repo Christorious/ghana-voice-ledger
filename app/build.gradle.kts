@@ -474,6 +474,10 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    // Fourteen test files import kotlin.test.* for assertEquals/assertTrue/@Test, but
+    // the dependency was never declared, so every one of those references failed to
+    // resolve. kotlin("test") maps to kotlin-test-junit here, alongside JUnit 4.
+    testImplementation(kotlin("test"))
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -487,6 +491,7 @@ dependencies {
 
     // Android Testing
     androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(kotlin("test"))
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

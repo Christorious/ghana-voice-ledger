@@ -45,7 +45,19 @@ jobs:
     # Split into separate steps so a compilation failure, a failing test and an
     # unmet coverage threshold are distinguishable at a glance.
     - name: Run unit tests
-      run: ./gradlew testDevDebugUnitTest --stacktrace
+      # --stacktrace prints ~200 lines of Gradle internals after a compile
+      # failure, which buries the compiler's own messages. Repeat them at the
+      # end so the real errors are the last thing in the log.
+      run: |
+        set -o pipefail
+        status=0
+        ./gradlew testDevDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/unit.log" || status=$?
+        if [ "$status" -ne 0 ]; then
+          echo "::group::Compiler and processor errors"
+          grep -E '^(e:|w: \[ksp\]|> Task .* FAILED)' "$RUNNER_TEMP/unit.log" | head -200 || true
+          echo "::endgroup::"
+        fi
+        exit "$status"
 
     - name: Verify coverage threshold
       if: always()
@@ -195,7 +207,18 @@ jobs:
       run: chmod +x gradlew
       
     - name: Build debug APK
-      run: ./gradlew assembleDevDebug --stacktrace
+      # See "Run unit tests": the errors are repeated after the Gradle stack
+      # trace so they survive at the tail of the log.
+      run: |
+        set -o pipefail
+        status=0
+        ./gradlew assembleDevDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/build.log" || status=$?
+        if [ "$status" -ne 0 ]; then
+          echo "::group::Compiler and processor errors"
+          grep -E '^(e:|w: \[ksp\]|> Task .* FAILED)' "$RUNNER_TEMP/build.log" | head -200 || true
+          echo "::endgroup::"
+        fi
+        exit "$status"
       
     - name: Upload debug APK
       uses: actions/upload-artifact@v4

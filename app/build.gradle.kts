@@ -238,7 +238,17 @@ android {
             isIncludeAndroidResources = true
         }
     }
-    
+
+    // res/xml/shortcuts.xml needs the real applicationId in targetPackage, and a
+    // resource file cannot take a manifest placeholder. It used to be hard-coded to
+    // "com.voiceledger.ghana", which is wrong for every variant: the dev flavour and
+    // the debug build type each append a suffix, so the installed package is
+    // com.voiceledger.ghana.dev.debug and all four shortcuts pointed at a package
+    // that was not on the device. Emit it per variant instead.
+    applicationVariants.all {
+        resValue("string", "shortcut_target_package", applicationId)
+    }
+
     // Create alias tasks to avoid ambiguity in automated checks
     task("checkDebugAarMetadata") {
         dependsOn("checkDevDebugAarMetadata", "checkStagingDebugAarMetadata", "checkProdDebugAarMetadata")

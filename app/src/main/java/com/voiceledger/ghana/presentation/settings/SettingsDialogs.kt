@@ -1,5 +1,6 @@
 package com.voiceledger.ghana.presentation.settings
 
+import com.voiceledger.ghana.BuildConfig
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -697,8 +698,13 @@ fun AppInfoCard() {
                 )
             }
             
-            InfoRow("Version", "1.0.0")
-            InfoRow("Build", "2024.01.01")
+            // Read from BuildConfig, not hard-coded. These were "1.0.0" and
+            // "2024.01.01" regardless of what was actually installed, which made it
+            // impossible to tell one build on a phone from another. The package name
+            // is shown because the flavour and build type both suffix it.
+            InfoRow("Version", BuildConfig.VERSION_NAME)
+            InfoRow("Build", "${BuildConfig.VERSION_CODE} (${BuildConfig.BUILD_TYPE})")
+            InfoRow("Package", BuildConfig.APPLICATION_ID)
             InfoRow("Developer", "Ghana Voice Ledger Team")
         }
     }

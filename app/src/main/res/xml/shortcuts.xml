@@ -10,11 +10,10 @@
         android:shortcutDisabledMessage="@string/shortcut_disabled_message">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.voiceledger.ghana"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
             <extra android:name="action" android:value="quick_record" />
         </intent>
-        <categories android:name="android.shortcut.conversation" />
     </shortcut>
     
     <!-- View today's transactions -->
@@ -27,11 +26,10 @@
         android:shortcutDisabledMessage="@string/shortcut_disabled_message">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.voiceledger.ghana"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
             <extra android:name="action" android:value="today_transactions" />
         </intent>
-        <categories android:name="android.shortcut.conversation" />
     </shortcut>
     
     <!-- Daily summary -->
@@ -44,11 +42,10 @@
         android:shortcutDisabledMessage="@string/shortcut_disabled_message">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.voiceledger.ghana"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
             <extra android:name="action" android:value="daily_summary" />
         </intent>
-        <categories android:name="android.shortcut.conversation" />
     </shortcut>
     
     <!-- Settings -->
@@ -61,10 +58,9 @@
         android:shortcutDisabledMessage="@string/shortcut_disabled_message">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.voiceledger.ghana"
+            android:targetPackage="@string/shortcut_target_package"
             android:targetClass="com.voiceledger.ghana.presentation.MainActivity">
             <extra android:name="action" android:value="settings" />
         </intent>
-        <categories android:name="android.shortcut.conversation" />
     </shortcut>
 </shortcuts>

@@ -34,6 +34,7 @@ class SpeechProcessingPipeline @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     companion object {
+        private const val TAG = "SpeechProcessingPipeline"
         private const val CHUNK_DURATION_MS = 1000L
         private const val VAD_CONFIDENCE_THRESHOLD = 0.3f
     }
@@ -46,10 +47,6 @@ class SpeechProcessingPipeline @Inject constructor(
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val results: SharedFlow<ProcessingResult> = _results.asSharedFlow()
-
-    private companion object {
-        const val TAG = "SpeechProcessingPipeline"
-    }
 
     suspend fun initialize() = coroutineScope {
         val vadInit = async { vadManager.initialize(com.voiceledger.ghana.ml.vad.VADType.CUSTOM) }

@@ -47,13 +47,17 @@ object NetworkUtils {
      * Initialize network monitoring
      */
     fun initialize(context: Context) {
-        appContext = context.applicationContext
-        connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val applicationContext = context.applicationContext
+
+        // Check before assigning. My earlier repair of this file set appContext on the
+        // first line and then tested it for null, so the guard was always true — and
+        // it cast getSystemService unconditionally, which throws on a device that
+        // does not expose a ConnectivityManager.
         if (appContext != null) {
             stopNetworkMonitoring()
         }
         appContext = applicationContext
+        connectivityManager = null          // re-resolve against the new context
         obtainConnectivityManager(applicationContext)
         startNetworkMonitoring()
         updateNetworkState()

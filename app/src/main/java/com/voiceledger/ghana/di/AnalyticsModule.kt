@@ -1,5 +1,6 @@
 package com.voiceledger.ghana.di
 
+import com.voiceledger.ghana.security.PrivacyManager
 import android.content.Context
 import com.voiceledger.ghana.analytics.AnalyticsService
 import com.voiceledger.ghana.analytics.CrashlyticsService
@@ -50,8 +51,9 @@ object AnalyticsModule {
     fun provideUsageDashboardService(
         @ApplicationContext context: Context,
         analyticsService: AnalyticsService,
-        crashlyticsService: CrashlyticsService
+        crashlyticsService: CrashlyticsService,
+        privacyManager: PrivacyManager
     ): UsageDashboardService {
-        return UsageDashboardService(context, analyticsService, crashlyticsService)
+        return UsageDashboardService(context, analyticsService, crashlyticsService, privacyManager)
     }
 }

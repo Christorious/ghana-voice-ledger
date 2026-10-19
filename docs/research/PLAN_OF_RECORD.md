@@ -213,6 +213,65 @@ should not be raised on Statcounter's evidence. **The answer comes from counting
 at twenty stalls** — make and model — which is one line on the field study's observation
 sheet and gives us the floor that matters.
 
+## 4.2 What makes the app relevant, in numbers
+
+The app is relevant if the list it shows her at closing is **complete enough to replace her
+memory and correct enough to trust.** Four numbers decide it, and `sikabook-models` already
+measures three.
+
+**1. Coverage — of the sales she made, how many appear at all?**
+This is the product-defining number and the one with no measurement, because it needs real
+market audio. It is the product of three things: how much of a sale is spoken at all (never
+measured for Ghana), whether the gate catches her saying it, and whether sale detection
+finds it. If coverage is 50% she keeps her mental ledger and the app is dead weight she
+still has to check.
+
+**2. Correctness — wrong rows per 100 sales.** Measured: harmful writes 1–2%. This is good
+and it is the number to protect, not improve at coverage's expense.
+
+**3. Review burden — how many rows must she correct at closing?** Unmeasured. If it is
+thirty, paper wins.
+
+**4. Does it beat her head at anything?** She roughly knows her daily total. What memory
+genuinely cannot do is credit across weeks and demand across months. So relevance
+concentrates in **who owes her** and **what is moving** — which makes counterparty names
+matter more than expected, and proper nouns are the hardest thing for a recogniser. The
+Luxembourg Mooré ledger corpus scored entities by **phonetic skeleton** rather than exact
+match for exactly this reason; adopt that.
+
+### The bottleneck is the gate, by a wide margin
+
+At the dev-chosen threshold the gate scores FAR 10% and **FRR 46%**. In her day that is:
+nearly half of her own utterances rejected, so half her sales never reach the ledger
+however good the extractor is; and one bystander utterance in ten accepted as hers, which
+is a wrong row. No amount of work on slots or amounts matters while this holds.
+
+Three things follow, in order of leverage.
+
+**a. The global threshold is the wrong design.** Dev EER 13% against test EER 26%, with the
+dev threshold transferring to FAR 10% / FRR 46%, is threshold-transfer failure across unseen
+speakers. A fixed `GATE = 0.68` cannot work. Calibrate per trader at enrolment, and adapt
+over her first days.
+
+**b. Make the gate a ranker, not a filter.** With day-end confirmation, FRR 46% is only
+fatal if rejected audio is thrown away. Keep uncertain segments and surface them for
+review. The gate's job becomes prioritising what she checks, not deciding what exists —
+which trades FRR against review burden, a knob we control, instead of against coverage,
+which we cannot recover.
+
+**c. Replace the embedding floor.** The current voice print is log-mel plus MFCC statistics
+into LDA, which the script honestly calls "the honest floor, not a deep model". ECAPA-TDNN
+is already wired behind `--encoder ecapa` but frozen and VoxCeleb-trained with no Twi. Use
+it properly, enrol on more than one clip, and exploit the structural fact nobody has used
+yet: **across a whole market day, the most frequent speaker at the stall is her**, so her
+voiceprint can be adapted from her own audio without labels.
+
+### One caveat over every number above
+
+Every result in `sikabook-models` is on FISD and KasaSpeech read speech mixed with GESMA
+noise. Read speech flatters, as the feasibility memo says plainly. The numbers are honest
+about their method and they are still not evidence about a market.
+
 ## 5. Open risks, stated honestly
 
 1. **Is the sale even spoken?** The verbalisation ratio — how much of item, quantity, unit

@@ -256,6 +256,44 @@ class AnalyticsService @Inject constructor(
     }
     
     /**
+     * Record a performance problem: a slow operation, memory pressure, a hot CPU.
+     *
+     * AnalyticsIntegration and PerformanceMonitoringService both call this.
+     */
+    fun logPerformanceIssue(
+        issueType: String,
+        memoryUsageBytes: Long,
+        cpuUsage: Float,
+        batteryLevel: Int
+    ) {
+        analyticsScope.launch {
+            val bundle = Bundle().apply {
+                putString(PARAM_ERROR_TYPE, issueType)
+                putLong(PARAM_MEMORY_USAGE, memoryUsageBytes)
+                putDouble(PARAM_CPU_USAGE, cpuUsage.toDouble())
+                putInt(PARAM_BATTERY_LEVEL, batteryLevel)
+            }
+            logEvent(EVENT_PERFORMANCE_ISSUE_DETECTED, bundle)
+        }
+    }
+
+    /**
+     * Send one event to Firebase.
+     *
+     * Every log* method above funnels through here; the wrapper was lost when this
+     * file was corrupted, which is why eleven call sites could not resolve it.
+     * Public because AnalyticsIntegration logs session lifecycle events directly.
+     */
+    fun logEvent(eventName: String, params: Bundle = Bundle()) {
+        firebaseAnalytics.logEvent(eventName, params)
+    }
+
+    /** Set a user-scoped property. Same story as [logEvent]. */
+    private fun setUserProperty(name: String, value: String) {
+        firebaseAnalytics.setUserProperty(name, value)
+    }
+
+    /**
      * Get app version
      */
     private fun getAppVersion(): String {

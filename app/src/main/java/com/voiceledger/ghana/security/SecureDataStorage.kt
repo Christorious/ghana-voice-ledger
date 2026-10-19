@@ -213,7 +213,8 @@ class SecureDataStorage @Inject constructor(
             
             // Replace database file
             val dbFile = context.getDatabasePath(DATABASE_NAME)
-            dbFile.writeBytes(decryptedData.toByteArray())
+            // decryptWithKey already returns bytes; the database file is not text.
+            dbFile.writeBytes(decryptedData)
             
             // Verify integrity
             val restoredChecksum = calculateChecksum(dbFile)
@@ -433,7 +434,7 @@ data class RestoreResult(
     val success: Boolean,
     val restoredSize: Long = 0L,
     val error: String? = null,
-    val restoreTime: Long
+    val restoreTime: Long = System.currentTimeMillis()
 )
 
 /**

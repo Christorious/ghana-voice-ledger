@@ -216,7 +216,8 @@ class SummaryViewModel @Inject constructor(
     fun refreshSummary() {
         when (_uiState.value.summaryType) {
             SummaryType.DAILY -> {
-                if (_uiState.value.selectedDate == dateFormat.format(Date())) {
+                // dateFormat is a java.time DateTimeFormatter; it cannot format a java.util.Date.
+                if (_uiState.value.selectedDate == dateFormat.format(LocalDate.now())) {
                     loadTodaysSummary()
                 } else {
                     loadSummaryForDate(_uiState.value.selectedDate)

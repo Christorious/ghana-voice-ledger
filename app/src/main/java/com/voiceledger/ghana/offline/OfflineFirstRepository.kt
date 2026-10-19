@@ -3,6 +3,7 @@ package com.voiceledger.ghana.offline
 import android.content.Context
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
@@ -163,7 +164,8 @@ class OfflineTransactionRepository @Inject constructor(
     }
     
     override suspend fun getAll(): List<com.voiceledger.ghana.data.local.entity.Transaction> {
-        return localTransactionDao.getAllTransactions()
+        // getAllTransactions is a Flow; take its current value.
+        return localTransactionDao.getAllTransactions().first()
     }
     
     override suspend fun save(item: com.voiceledger.ghana.data.local.entity.Transaction): com.voiceledger.ghana.data.local.entity.Transaction {

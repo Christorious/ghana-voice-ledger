@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -332,6 +333,13 @@ data class HistoryUiState(
     /** Every transaction across the date groups, in group order: what the list renders. */
     val transactions: List<Transaction>
         get() = groupedTransactions.values.flatten()
+
+    /** The span the currently loaded transactions cover; what an export writes out. */
+    val exportDateRange: Pair<String, String>
+        get() {
+            val dates = transactions.map { it.date }.sorted()
+            return (dates.firstOrNull().orEmpty()) to (dates.lastOrNull().orEmpty())
+        }
 }
 
 /**

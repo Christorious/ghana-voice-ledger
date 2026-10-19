@@ -122,6 +122,11 @@ fun SummaryPresentationScreen(
             }
         )
         
+        // Hoisted out of the delegated state: uiState is read through a property
+        // delegate, so the compiler cannot smart-cast its nullable fields.
+        val presentation = uiState.presentation
+        val error = uiState.error
+
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -135,7 +140,7 @@ fun SummaryPresentationScreen(
                     Text("Generating summary...")
                 }
             }
-        } else if (uiState.presentation != null) {
+        } else if (presentation != null) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(16.dp),
@@ -146,7 +151,7 @@ fun SummaryPresentationScreen(
                     VoiceControlsCard(
                         isInitialized = presentationState.isInitialized,
                         isSpeaking = presentationState.isSpeaking,
-                        duration = uiState.presentation.duration,
+                        duration = presentation.duration,
                         onPlayPause = {
                             if (presentationState.isSpeaking) {
                                 viewModel.stopSpeaking()
@@ -160,16 +165,16 @@ fun SummaryPresentationScreen(
                 }
                 
                 // Summary sections
-                items(uiState.presentation.sections) { section ->
+                items(presentation.sections) { section ->
                     SummarySection(
                         section = section,
-                        language = uiState.presentation.language
+                        language = presentation.language
                     )
                 }
             }
-        } else if (uiState.error != null) {
+        } else if (error != null) {
             ErrorCard(
-                error = uiState.error,
+                error = error,
                 onRetry = { viewModel.loadSummary(summaryDate) }
             )
         } else {

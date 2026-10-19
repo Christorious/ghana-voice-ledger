@@ -420,6 +420,10 @@ dependencies {
     implementation("com.google.firebase:firebase-perf-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-config-ktx")
+    // UsageDashboardService writes aggregated usage metrics to Firestore. See the
+    // note in that class: nothing is sent unless Firebase is enabled and the
+    // trader has consented to cloud sync.
+    implementation("com.google.firebase:firebase-firestore-ktx")
     // Google Cloud Speech - Conditionally included based on feature flag
     // Note: Temporarily disabled due to protobuf dependency conflicts with Firebase
     // TODO: Re-enable with proper dependency resolution or use alternative speech recognition

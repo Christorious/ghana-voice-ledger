@@ -856,6 +856,155 @@ private fun RecommendationsCard(
     }
 }
 
+/**
+ * Headline figures for a week or a month.
+ *
+ * The weekly and monthly branches of this screen referenced this card, TopProductsCard
+ * and TrendsCard, but none of the three were ever written. They follow the same shape
+ * as the daily cards above.
+ */
+@Composable
+private fun PeriodMetricsCard(
+    summary: PeriodSummary,
+    summaryType: SummaryType,
+    formatCurrency: (Double) -> String,
+    formatPercentage: (Double) -> String,
+    formatDate: (String) -> String
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "${summaryType.name.lowercase().replaceFirstChar { it.uppercase() }} summary",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "${formatDate(summary.startDate)} – ${formatDate(summary.endDate)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            InsightRow(Icons.Default.Payments, "Total sales", formatCurrency(summary.totalSales))
+            InsightRow(Icons.Default.Receipt, "Transactions", summary.totalTransactions.toString())
+            InsightRow(Icons.Default.Analytics, "Average per day", formatCurrency(summary.averageDailySales))
+            summary.bestDay?.let { InsightRow(Icons.Default.Star, "Best day", formatDate(it)) }
+            summary.worstDay?.let { InsightRow(Icons.Default.Schedule, "Quietest day", formatDate(it)) }
+            InsightRow(Icons.Default.People, "Customer growth", formatPercentage(summary.customerGrowth))
+        }
+    }
+}
+
+/** The products that carried the period, in order. */
+@Composable
+private fun TopProductsCard(
+    topProducts: List<String>
+) {
+    Card {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Inventory,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Top products",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            topProducts.forEachIndexed { index, product ->
+                InsightRow(Icons.Default.Inventory, "${index + 1}.", product)
+            }
+        }
+    }
+}
+
+/** Whether sales and customers moved up or down over the period. */
+@Composable
+private fun TrendsCard(
+    summary: PeriodSummary,
+    formatPercentage: (Double) -> String
+) {
+    val salesUp = summary.salesTrend >= 0
+    val customersUp = summary.customerGrowth >= 0
+
+    Card {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 12.dp)
+            ) {
+                Icon(
+                    imageVector = if (salesUp) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Trends",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            InsightRow(
+                if (salesUp) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                if (salesUp) "Sales up" else "Sales down",
+                formatPercentage(summary.salesTrend)
+            )
+            InsightRow(
+                if (customersUp) Icons.Default.TrendingUp else Icons.Default.TrendingDown,
+                if (customersUp) "Customers up" else "Customers down",
+                formatPercentage(summary.customerGrowth)
+            )
+        }
+    }
+}
+
+/** Confirmation before writing a period summary out to a file. */
+@Composable
+private fun SummaryExportDialog(
+    isExporting: Boolean,
+    summaryType: SummaryType,
+    onExport: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isExporting) onDismiss() },
+        title = { Text("Export ${summaryType.name.lowercase()} summary") },
+        text = {
+            if (isExporting) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text("Exporting…")
+                }
+            } else {
+                Text("Save this summary as a file you can share or keep.")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onExport, enabled = !isExporting) {
+                Text("Export")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isExporting) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
 @Composable
 private fun EmptySummaryCard(
     summaryType: SummaryType,

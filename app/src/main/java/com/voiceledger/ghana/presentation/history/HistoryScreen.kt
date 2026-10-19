@@ -155,7 +155,7 @@ fun HistoryScreen(
                         formatTime = viewModel::formatTime,
                         onTransactionClick = { onNavigateToTransactionDetail(transaction.id) },
                         onDeleteClick = { viewModel.deleteTransaction(transaction) },
-                        onMarkReviewedClick = { viewModel.markAsReviewed(transaction) }
+                        onMarkReviewedClick = { viewModel.markTransactionAsReviewed(transaction.id) }
                     )
                 }
             }
@@ -168,13 +168,7 @@ fun HistoryScreen(
             filters = selectedFilters,
             availableProducts = uiState.availableProducts,
             availableCustomers = uiState.availableCustomers,
-            onFiltersChanged = { newFilters ->
-                viewModel.updateDateFilter(newFilters.startDate, newFilters.endDate)
-                viewModel.updateProductFilter(newFilters.selectedProducts)
-                viewModel.updateCustomerFilter(newFilters.selectedCustomers)
-                viewModel.updateAmountFilter(newFilters.minAmount, newFilters.maxAmount)
-                viewModel.updateReviewFilter(newFilters.showOnlyNeedsReview)
-            },
+            onFiltersChanged = { newFilters -> viewModel.updateFilters(newFilters) },
             onDismiss = { showFilterSheet = false }
         )
     }
@@ -184,7 +178,7 @@ fun HistoryScreen(
         ExportDialog(
             isExporting = uiState.isExporting,
             onExport = {
-                viewModel.exportTransactions()
+                viewModel.exportTransactions(uiState.exportDateRange)
                 showExportDialog = false
             },
             onDismiss = { showExportDialog = false }
@@ -602,9 +596,12 @@ private fun FilterBottomSheet(
                 // Review Filter
                 item {
                     ReviewFilter(
-                        showOnlyNeedsReview = tempFilters.showOnlyNeedsReview,
+                        showOnlyNeedsReview = tempFilters.reviewStatus == ReviewStatus.NEEDS_REVIEW,
                         onReviewFilterChanged = { needsReview ->
-                            tempFilters = tempFilters.copy(showOnlyNeedsReview = needsReview)
+                            tempFilters = tempFilters.copy(
+                                reviewStatus =
+                                    if (needsReview) ReviewStatus.NEEDS_REVIEW else ReviewStatus.ALL
+                            )
                         }
                     )
                 }

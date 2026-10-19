@@ -198,15 +198,19 @@ class CrashlyticsService @Inject constructor(
      * Enable/disable crash reporting
      */
     fun setCrashlyticsCollectionEnabled(enabled: Boolean) {
+        collectionEnabled = enabled
         crashlytics.setCrashlyticsCollectionEnabled(enabled)
     }
+
+    // Tracked here rather than read back from the SDK: FirebaseCrashlytics exposes
+    // the setter but not a readable property on this BOM version.
+    @Volatile
+    private var collectionEnabled: Boolean = true
     
     /**
      * Check if crash reporting is enabled
      */
-    fun isCrashlyticsCollectionEnabled(): Boolean {
-        return crashlytics.isCrashlyticsCollectionEnabled
-    }
+    fun isCrashlyticsCollectionEnabled(): Boolean = collectionEnabled
     
     /**
      * Send any unsent crash reports

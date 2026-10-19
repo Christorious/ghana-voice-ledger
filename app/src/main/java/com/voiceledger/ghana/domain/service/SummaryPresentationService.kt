@@ -10,15 +10,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-enum class SectionType { HEADER, METRICS, PRODUCTS, TIME, CUSTOMERS, RECOMMENDATIONS }
+enum class SectionType { HEADER, METRICS, PRODUCTS, TIME, CUSTOMERS, COMPARISON, RECOMMENDATIONS }
 
 data class PresentationSection(
     val type: SectionType,
     val title: String,
-    val lines: List<String> = emptyList()
+    /** The section's body as one block of text; the screen renders it directly. */
+    val content: String = ""
 )
 
 data class SummaryPresentation(
+    val title: String = "",
     val sections: List<PresentationSection> = emptyList(),
     val voiceScript: String = "",
     val duration: Int = 0,
@@ -31,6 +33,8 @@ sealed class PresentationResult {
 }
 
 data class PresentationState(
+    /** Whether the TTS engine is ready; the screen disables playback until it is. */
+    val isInitialized: Boolean = false,
     val isSpeaking: Boolean = false,
     val currentSection: SectionType? = null,
     val speechRate: Float = 1.0f,

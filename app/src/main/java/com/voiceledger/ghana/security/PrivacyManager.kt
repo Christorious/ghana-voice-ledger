@@ -17,6 +17,8 @@ data class PrivacySettings(
     val allowCloudSync: Boolean = false,
     val allowSpeakerIdentification: Boolean = false,
     val encryptSensitiveData: Boolean = true,
+    /** Delete data as soon as its retention window closes. Defaults on. */
+    val automaticDataDeletion: Boolean = true,
     val voiceRecordingRetentionDays: Int = 0,
     val transactionRetentionDays: Int = 365,
     val analyticsRetentionDays: Int = 90,
@@ -68,6 +70,8 @@ data class PrivacyComplianceReport(
     val complianceScore: Int = 0,
     val hasValidConsent: Boolean = false,
     val issues: List<ComplianceIssue> = emptyList(),
+    /** What to do about [issues], in the trader's terms. Shown under the score. */
+    val recommendations: List<String> = emptyList(),
     val generatedAt: Long = System.currentTimeMillis()
 )
 
@@ -114,6 +118,7 @@ class PrivacyManager @Inject constructor(
         private const val KEY_CLOUD_SYNC = "allow_cloud_sync"
         private const val KEY_SPEAKER_ID = "allow_speaker_identification"
         private const val KEY_ENCRYPT = "encrypt_sensitive_data"
+        private const val KEY_AUTO_DELETE = "automatic_data_deletion"
         private const val KEY_RETAIN_VOICE = "voice_recording_retention_days"
         private const val KEY_RETAIN_TRANSACTION = "transaction_retention_days"
         private const val KEY_RETAIN_ANALYTICS = "analytics_retention_days"
@@ -158,6 +163,7 @@ class PrivacyManager @Inject constructor(
             .putBoolean(KEY_CLOUD_SYNC, settings.allowCloudSync)
             .putBoolean(KEY_SPEAKER_ID, settings.allowSpeakerIdentification)
             .putBoolean(KEY_ENCRYPT, settings.encryptSensitiveData)
+            .putBoolean(KEY_AUTO_DELETE, settings.automaticDataDeletion)
             .putInt(KEY_RETAIN_VOICE, settings.voiceRecordingRetentionDays)
             .putInt(KEY_RETAIN_TRANSACTION, settings.transactionRetentionDays)
             .putInt(KEY_RETAIN_ANALYTICS, settings.analyticsRetentionDays)
@@ -254,10 +260,20 @@ class PrivacyManager @Inject constructor(
                 )
             )
         }
+        val recommendations = issues.map { issue ->
+            when (issue.type) {
+                ComplianceIssueType.MISSING_CONSENT -> "Ask the trader to review and accept the consent screen"
+                ComplianceIssueType.EXPIRED_CONSENT -> "Consent has lapsed — ask for it again"
+                ComplianceIssueType.WEAK_SECURITY -> "Turn encryption back on for sensitive fields"
+                ComplianceIssueType.EXCESSIVE_RETENTION ->
+                    "Shorten voice recording retention to $MAX_REASONABLE_VOICE_RETENTION_DAYS days or fewer"
+            }
+        }
         return PrivacyComplianceReport(
             complianceScore = (100 - issues.size * 25).coerceAtLeast(0),
             hasValidConsent = state.hasValidConsent,
-            issues = issues
+            issues = issues,
+            recommendations = recommendations
         )
     }
 
@@ -303,6 +319,7 @@ class PrivacyManager @Inject constructor(
             allowSpeakerIdentification =
                 prefs.getBoolean(KEY_SPEAKER_ID, defaults.allowSpeakerIdentification),
             encryptSensitiveData = prefs.getBoolean(KEY_ENCRYPT, defaults.encryptSensitiveData),
+            automaticDataDeletion = prefs.getBoolean(KEY_AUTO_DELETE, defaults.automaticDataDeletion),
             voiceRecordingRetentionDays =
                 prefs.getInt(KEY_RETAIN_VOICE, defaults.voiceRecordingRetentionDays),
             transactionRetentionDays =

@@ -70,7 +70,7 @@ class AudioBufferPool(
     private val bufferSize: Int = 4096,
     maxPoolSize: Int = 20
 ) {
-    private val pool = ObjectPool<ByteArray>(
+    internal val pool = ObjectPool<ByteArray>(
         factory = { ByteArray(bufferSize) },
         reset = { buffer -> buffer.fill(0) },
         validator = { buffer -> buffer.size == bufferSize },
@@ -90,7 +90,7 @@ class FloatArrayPool(
     private val arraySize: Int = 4096,
     maxPoolSize: Int = 15
 ) {
-    private val pool = ObjectPool<FloatArray>(
+    internal val pool = ObjectPool<FloatArray>(
         factory = { FloatArray(arraySize) },
         reset = { array -> array.fill(0f) },
         validator = { array -> array.size == arraySize },
@@ -110,10 +110,10 @@ class StringBuilderPool(
     private val initialCapacity: Int = 256,
     maxPoolSize: Int = 10
 ) {
-    private val pool = ObjectPool<StringBuilder>(
+    internal val pool = ObjectPool<StringBuilder>(
         factory = { StringBuilder(initialCapacity) },
         reset = { sb -> sb.clear() },
-        validator = { sb -> sb.capacity >= initialCapacity },
+        validator = { sb -> sb.capacity() >= initialCapacity },
         maxSize = maxPoolSize
     )
 

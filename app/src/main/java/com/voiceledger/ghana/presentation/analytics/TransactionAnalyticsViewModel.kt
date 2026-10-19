@@ -43,7 +43,7 @@ class TransactionAnalyticsViewModel @Inject constructor(
             selectedRange
                 .flatMapLatest { range ->
                     analyticsRepository.observeAnalytics(range)
-                        .map<Result<Pair<AnalyticsRange, TransactionAnalyticsOverview>>> { overview ->
+                        .map { overview ->
                             Result.success(range to overview)
                         }
                         .onStart {

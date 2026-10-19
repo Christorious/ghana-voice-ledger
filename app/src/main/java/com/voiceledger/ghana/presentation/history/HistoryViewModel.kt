@@ -111,6 +111,37 @@ class HistoryViewModel @Inject constructor(
         _selectedFilters.value = TransactionFilters()
         _searchQuery.value = ""
     }
+
+    /** True when anything is narrowing the list, so the screen can offer to clear it. */
+    fun hasActiveFilters(): Boolean {
+        val filters = _selectedFilters.value
+        return _searchQuery.value.isNotBlank() ||
+                filters != TransactionFilters()
+    }
+
+    /** One line naming what is currently filtered, for the summary card. */
+    fun getFilterSummary(): String {
+        val filters = _selectedFilters.value
+        val parts = buildList {
+            if (_searchQuery.value.isNotBlank()) add("search \"${_searchQuery.value}\"")
+            if (filters.startDate != null && filters.endDate != null) {
+                add("${filters.startDate} to ${filters.endDate}")
+            }
+            filters.selectedProduct?.let { add(it) }
+            filters.selectedCustomer?.let { add("customer $it") }
+            if (filters.minAmount != null || filters.maxAmount != null) {
+                val min = filters.minAmount?.let { formatCurrency(it) } ?: "any"
+                val max = filters.maxAmount?.let { formatCurrency(it) } ?: "any"
+                add("$min – $max")
+            }
+            when (filters.reviewStatus) {
+                ReviewStatus.NEEDS_REVIEW -> add("needs review")
+                ReviewStatus.REVIEWED -> add("reviewed")
+                ReviewStatus.ALL -> Unit
+            }
+        }
+        return if (parts.isEmpty()) "No filters" else parts.joinToString(" · ")
+    }
     
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
@@ -297,7 +328,11 @@ data class HistoryUiState(
     val availableCustomers: List<String> = emptyList(),
     val error: String? = null,
     val message: String? = null
-)
+) {
+    /** Every transaction across the date groups, in group order: what the list renders. */
+    val transactions: List<Transaction>
+        get() = groupedTransactions.values.flatten()
+}
 
 /**
  * Transaction filters

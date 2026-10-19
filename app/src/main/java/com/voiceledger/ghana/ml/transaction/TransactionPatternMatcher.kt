@@ -316,7 +316,10 @@ class TransactionPatternMatcher @Inject constructor() {
                     patternType = patternType
                 )
                 
-                if (bestMatch == null || currentMatch.confidence > bestMatch.confidence) {
+                // Read into a local: bestMatch is captured by this closure, so the
+                // compiler cannot smart-cast it from the null check.
+                val best = bestMatch
+                if (best == null || currentMatch.confidence > best.confidence) {
                     bestMatch = currentMatch
                 }
             }

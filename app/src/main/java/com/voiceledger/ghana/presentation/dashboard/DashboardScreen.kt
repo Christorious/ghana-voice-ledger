@@ -608,7 +608,7 @@ private fun ActionButtonsRow(
             }
             
             if (hasTodaysSummary) {
-                FilledButton(
+                Button(
                     onClick = onViewSummary,
                     modifier = Modifier.weight(1f)
                 ) {
@@ -620,7 +620,7 @@ private fun ActionButtonsRow(
                     Text("View Summary")
                 }
             } else {
-                FilledButton(
+                Button(
                     onClick = onGenerateSummary,
                     modifier = Modifier.weight(1f),
                     enabled = !isGeneratingSummary

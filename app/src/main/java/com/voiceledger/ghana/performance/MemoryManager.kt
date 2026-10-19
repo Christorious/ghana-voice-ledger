@@ -75,7 +75,9 @@ class MemoryManager @Inject constructor(
     /**
      * Update current memory state
      */
-    private fun updateMemoryState() {
+    // suspend: it reads pool statistics, which are guarded by a Mutex. Every
+    // caller is already a suspend function or inside scope.launch.
+    private suspend fun updateMemoryState() {
         val runtime = Runtime.getRuntime()
         val memInfo = ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memInfo)

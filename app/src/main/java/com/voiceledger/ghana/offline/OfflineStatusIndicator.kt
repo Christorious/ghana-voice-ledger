@@ -258,7 +258,8 @@ fun NetworkQualityIndicator(
             verticalAlignment = Alignment.Bottom
         ) {
             repeat(4) { index ->
-                val barHeight = (index + 1) * 3.dp
+                // Dp * Int, not Int * Dp: only the former is defined.
+                val barHeight = 3.dp * (index + 1)
                 val isActive = when (networkState.networkQuality) {
                     NetworkQuality.EXCELLENT -> true
                     NetworkQuality.GOOD -> index < 3

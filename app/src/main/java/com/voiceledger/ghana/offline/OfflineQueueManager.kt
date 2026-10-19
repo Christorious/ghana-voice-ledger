@@ -546,7 +546,11 @@ data class OfflineQueueState(
     val failedOperations: Int = 0,
     val completedOperations: Int = 0,
     val lastSyncTime: Long = 0L
-)
+) {
+    /** Everything the queue is tracking; what the sync progress indicator divides by. */
+    val totalOperations: Int
+        get() = pendingOperations + processingOperations + failedOperations + completedOperations
+}
 
 /**
  * Queue statistics

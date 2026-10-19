@@ -33,18 +33,18 @@ The previous draft of this document violated exactly this and must not be repeat
 
 | Stage | What happens | Her involvement |
 |---|---|---|
-| Open of day | She clips on a wired lapel mic, phone in pocket or pouch, taps once | One tap |
-| Trading | Continuous close-talk capture; silence dropped; stored encrypted on device | **None** |
+| Open of day | Phone in her pouch or paired to whatever earpiece she already owns; taps once | One tap |
+| Trading | Mic open, cheap VAD running; her voice wakes capture, silence sends it back to sleep; stored encrypted on device | **None** |
 | Understanding | Candidate sale segments detected, then recognised and decided, in batches when idle or charging | None |
 | Close of day | The phone speaks her day back in her language; she confirms or corrects | A few minutes |
 | Ledger | Only confirmed rows are committed | — |
 
 Four properties of this shape matter.
 
-**Close-talk, not far-field.** A wired lapel microphone with the phone in her pocket costs a
-few dollars and converts the acoustic problem from far-field to close-talk. This is the
-single change that makes capture viable at Kejetia's 68–77 dBA, and the feasibility memo
-(§7.2) already said so; the field study protocol already specifies this exact rig.
+**No special equipment.** A lapel microphone is out: a trader will not have one, and a tool
+that requires hardware she does not own is not a tool she will use. Capture uses the phone
+itself or a Bluetooth earpiece she already owns. §2.1 sets out the paths to measure and
+their ceilings.
 
 **One tap, not per-sale.** Android 14 forbids *starting* a microphone foreground service
 from the background or at boot. It does not forbid a long foreground session the user
@@ -59,7 +59,66 @@ stop to record while customers wait — separating capture from confirmation ans
 notices and can add. A wrong sale corrupts her record and, where an assistant is involved,
 can look like theft.
 
+### 2.1 Capture paths, and what each costs
+
+Four paths, to be measured side by side rather than argued about. None requires her to buy
+anything she would not already have.
+
+| Path | Audio quality | Cost to her | Risk |
+|---|---|---|---|
+| Phone in her waist pouch or apron pocket | Full rate (16 kHz+), muffled by cloth, semi-close | Nothing | Cloth occlusion; unknown how much survives |
+| Phone face-up on the stall surface | Full rate, far-field | Nothing | Worst acoustics; 70 dBA market at a metre |
+| Wired earbud with inline mic | Full rate, genuine close-talk | A few cedis, and many already own one | Cable at a stall; may not wear it all day |
+| Bluetooth earpiece (HFP) | **8 kHz narrowband, or 16 kHz if the headset negotiates mSBC** | Nothing if she has one | Codec ceiling; battery on both devices; holds the call audio route |
+
+The Bluetooth ceiling is the thing to know before committing to it. Hands-free Bluetooth
+carries voice over HFP, which is either 8 kHz narrowband with the old CVSD codec or 16 kHz
+wideband with mSBC. Android negotiates in the order LC3, mSBC, then CVSD, so a headset that
+supports mSBC gets wideband and a cheap one falls back to 8 kHz — telephone quality, with
+everything above 4 kHz gone. There is no high-quality *input* profile in classic Bluetooth;
+A2DP is output only. LE Audio fixes this but needs Android 13+ and hardware a budget phone
+will not have.
+
+Whether 8 kHz close-talk beats 16 kHz far-field in a 70 dBA market is an empirical
+question, not a matter of opinion, and it is cheap to settle. It also interacts with speaker
+verification, which is harder at 8 kHz — so the capture path and the voice gate must be
+measured together, not separately.
+
 ---
+
+## 2.2 The voice gate: wake on her, sleep otherwise
+
+This is a requirement, not an optimisation, and it puts speaker verification back at the
+centre of the work.
+
+Four tiers, cheapest always running:
+
+1. **Mic open, energy/VAD only.** Speech or not. Silero-class VAD is small and cheap.
+2. **Speech detected → speaker verification.** A short embedding compared against her
+   enrolled voice. Hers, or not hers.
+3. **Hers → capture the segment**, including a rolling pre-roll buffer of a second or two,
+   so the opening words are not lost while the gate was still deciding. Without the
+   pre-roll, "fifty cedis" arrives as "cedis", which is a wrong row rather than a missing
+   one.
+4. **Sustained silence or not-her → back to sleep.** Nothing buffered, nothing understood.
+
+**One expectation to set honestly: the microphone stays open all day.** The gate saves the
+expensive work — recognition and understanding — not the microphone. So the floor on battery
+is mic plus VAD for a whole market day on a 3000–5000 mAh phone, and that floor has to be
+measured on a real Tecno before anything is promised. Recognition runs on her segments
+only, batched, preferably while charging.
+
+**Tuning.** A false accept books a customer's words as her sale — a wrong row, which is the
+error that corrupts her books. A false reject loses a sale, which she has a chance of
+spotting in the day-end review. So the threshold is tuned for low false accept, and the
+review is what makes the false rejects survivable.
+
+**What this needs that does not exist.** A real speaker embedding model — ECAPA-TDNN or
+WeSpeaker class, converted for on-device use — an enrolment flow of a minute or two of her
+speech, and a calibrated threshold. There is currently zero evidence here: the asset in the
+repository is a 217-byte text placeholder. This is the component with the most risk and the
+least work done, and the owner identified it as a contribution area before I wrongly
+demoted it.
 
 ## 3. What the recognition step actually has to do
 
@@ -117,6 +176,43 @@ previous draft because the memo rated it high value per unit of effort; it is lo
 
 ---
 
+## 4.1 Platform: is Android right, and which Android?
+
+**Android is not a choice so much as the only option**, and the reason is this product
+specifically. All-day ambient capture needs a microphone we control, a long-running
+process, and local compute. Measured against that:
+
+- **Android app** — can do all three, with the OEM caveat below.
+- **iOS** — wrong demographic, and App Store review is hostile to always-listening.
+- **Web app or PWA** — cannot hold the microphone with the screen off. Dead end.
+- **WhatsApp voice notes** — she has to send them. That is push-to-talk wearing a different
+  hat, and it breaks the non-negotiable in §1.
+- **Telephony or USSD** — reaches feature phones but cannot capture ambiently at all.
+- **A dedicated device** — solves power and microphone cleanly, but cost and distribution
+  rule it out for this user, and the feasibility memo found the wearable-recorder stack
+  does not transfer.
+
+So the real question is not the operating system. It is **which Android versions, how much
+RAM, and which manufacturer skins a day-long foreground session has to survive.**
+
+On Statcounter's Ghana figures for mid-2026, Android 13 is the most common single version
+at roughly 17%, Android 14 second at about 13.5%, with 11, 12, 15 and 16 each somewhere
+near 10–12%. The distribution is flat and fragmented; there is no single version to target.
+
+Two warnings about using that number. Statcounter measures web traffic, which skews toward
+people who browse, and therefore toward better phones than a market trader is likely to
+carry — so it is an optimistic estimate of our floor. And the figure that actually binds is
+not the Android version: it is **Transsion's HiOS and XOS power managers, which kill
+long-running services regardless of foreground status.** Tecno, Infinix and itel together
+are roughly a third of the Ghanaian market and dominate entry-level unit sales at 2–4 GB of
+RAM, often as Android Go editions with tighter background limits. A day-long capture session
+that a Tecno kills at noon is useless however current the Android version is.
+
+The current `minSdk` of 24 is probably too conservative and costs us real complexity, but it
+should not be raised on Statcounter's evidence. **The answer comes from counting the phones
+at twenty stalls** — make and model — which is one line on the field study's observation
+sheet and gives us the floor that matters.
+
 ## 5. Open risks, stated honestly
 
 1. **Is the sale even spoken?** The verbalisation ratio — how much of item, quantity, unit
@@ -137,12 +233,16 @@ previous draft because the memo rated it high value per unit of effort; it is lo
 
 Each is cheap and each can kill or confirm the one after it. None needs the Android app.
 
-1. **Verbalisation.** Two or three hours of real stall audio, lapel mic, consent, one
-   stall. Hand-label every sale. Measure: what share of sales have item, quantity and
-   price recoverable from audio alone? *This is the experiment that decides whether the
-   product is possible.*
-2. **Candidate detection.** On that audio, can sale segments be found at all, without
-   transcribing everything?
+1. **Verbalisation, across capture paths.** Two or three hours of real stall audio at one
+   stall, with consent, recorded on all four paths in §2.1 at once — pouch, table, wired
+   earbud, Bluetooth earpiece. Hand-label every sale. Measure, per path: what share of
+   sales have item, quantity and price recoverable from audio alone? *This is the
+   experiment that decides whether the product is possible, and it settles the capture
+   argument with data in the same pass.* Log the headset's negotiated codec so we know
+   whether we got 8 kHz or 16 kHz.
+2. **The voice gate.** On the same audio: can VAD plus speaker verification separate her
+   turns from the customer's, per capture path? Report false accept and false reject at the
+   chosen threshold. Then: can sale segments be found without transcribing everything?
 3. **Row accuracy.** Candidates through recognition plus typed decisions. Measure sale-row
    accuracy and wrong rows per 100 sales, before and after review.
 4. **Only then** build the app slice.
@@ -195,5 +295,8 @@ for the core model.
   [how Jev works](https://newsletter.victordibia.com/p/how-jev-works-calibrated-decision),
   [Pinocchio paper](https://arxiv.org/pdf/2609.24881) for the calibration figures.
 - Mobile Use: [minitap-ai/mobile-use](https://gittrend.io/repo/minitap-ai/mobile-use).
+- Android versions in Ghana: [Statcounter](https://gs.statcounter.com/android-version-market-share/all/ghana).
+- Bluetooth voice: [Android SCO audio management](https://source.android.com/docs/core/audio/sco-audio-mgmt),
+  [mSBC codec](https://ittiam.com/driving-high-performance-bluetooth-devices-msbc-codec/).
 - Not opened: the two t.co links and the Gemini share link were blocked from this
   environment. Their content is not reflected here.

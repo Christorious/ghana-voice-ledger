@@ -289,8 +289,52 @@ class AnalyticsService @Inject constructor(
     }
 
     /** Set a user-scoped property. Same story as [logEvent]. */
-    private fun setUserProperty(name: String, value: String) {
+    fun setUserProperty(name: String, value: String) {
         firebaseAnalytics.setUserProperty(name, value)
+    }
+
+    /**
+     * Identify the trader to analytics.
+     *
+     * This is the install's own pseudonymous id, not a name or phone number —
+     * AnalyticsIntegration passes what PrivacyManager minted. Never pass anything
+     * that identifies a person.
+     */
+    fun setUserId(userId: String) {
+        firebaseAnalytics.setUserId(userId)
+    }
+
+    /** Which screen the trader is looking at. */
+    fun logScreenView(screenName: String, screenClass: String) {
+        analyticsScope.launch {
+            val bundle = Bundle().apply {
+                putString(FirebaseAnalytics.Param.SCREEN_NAME, screenName)
+                putString(FirebaseAnalytics.Param.SCREEN_CLASS, screenClass)
+            }
+            logEvent(FirebaseAnalytics.Event.SCREEN_VIEW, bundle)
+        }
+    }
+
+    /** A setting the trader changed, so we can see which ones matter. */
+    fun logSettingsChanged(settingName: String, settingValue: String) {
+        analyticsScope.launch {
+            val bundle = Bundle().apply {
+                putString(PARAM_SETTING_NAME, settingName)
+                putString(PARAM_SETTING_VALUE, settingValue)
+            }
+            logEvent(EVENT_SETTINGS_CHANGED, bundle)
+        }
+    }
+
+    /** A consent decision. The decision is recorded, never the data it governs. */
+    fun logPrivacyConsentGiven(consentType: String, granted: Boolean) {
+        analyticsScope.launch {
+            val bundle = Bundle().apply {
+                putString("consent_type", consentType)
+                putBoolean("granted", granted)
+            }
+            logEvent(EVENT_PRIVACY_CONSENT_GIVEN, bundle)
+        }
     }
 
     /**

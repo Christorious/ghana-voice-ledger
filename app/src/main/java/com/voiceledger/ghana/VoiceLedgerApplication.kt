@@ -8,9 +8,6 @@ import android.os.Build
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
-import com.microsoft.appcenter.AppCenter
-import com.microsoft.appcenter.analytics.Analytics
-import com.microsoft.appcenter.crashes.Crashes
 import com.voiceledger.ghana.security.SecurityManager
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +40,6 @@ class VoiceLedgerApplication : Application(), Configuration.Provider {
         }
         
         // Initialize App Center (for analytics and crash reporting)
-        initializeAppCenter()
         
         // Initialize logging
         initializeLogging()
@@ -55,21 +51,6 @@ class VoiceLedgerApplication : Application(), Configuration.Provider {
         initializeWorkManager()
         
         Timber.i("VoiceLedgerApplication initialized successfully")
-    }
-    
-    private fun initializeAppCenter() {
-        // App Center will be configured when you set up the app in App Center portal
-        // The app secret will be automatically added by App Center
-        // For now, we'll initialize it without a secret (it will be added later)
-        if (!AppCenter.isConfigured()) {
-            AppCenter.start(
-                this,
-                BuildConfig.APP_CENTER_SECRET,
-                Analytics::class.java,
-                Crashes::class.java
-            )
-            Timber.i("App Center initialized")
-        }
     }
     
     private fun initializeLogging() {

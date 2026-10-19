@@ -24,18 +24,6 @@ class DependencyConfigurationTest {
     }
 
     @Test
-    fun testAppCenterDependenciesAvailable() {
-        // Test that App Center classes are available
-        try {
-            Class.forName("com.microsoft.appcenter.AppCenter")
-            Class.forName("com.microsoft.appcenter.analytics.Analytics")
-            Class.forName("com.microsoft.appcenter.crashes.Crashes")
-        } catch (e: ClassNotFoundException) {
-            fail("App Center dependencies not available: ${e.message}")
-        }
-    }
-
-    @Test
     fun testTensorFlowLiteDependenciesAvailable() {
         // Test that TensorFlow Lite classes are available
         try {

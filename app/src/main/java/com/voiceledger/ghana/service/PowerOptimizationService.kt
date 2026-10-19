@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.work.*
 import com.voiceledger.ghana.R
 import com.voiceledger.ghana.presentation.MainActivity
+import com.voiceledger.ghana.presentation.dashboard.ServiceState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

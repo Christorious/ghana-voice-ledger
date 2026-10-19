@@ -5,18 +5,22 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /** What the trader has agreed to. Defaults are the privacy-preserving ones. */
 data class PrivacySettings(
+    val allowVoiceProcessing: Boolean = false,
+    val allowDataStorage: Boolean = false,
     val allowAnalytics: Boolean = false,
     val allowCloudSync: Boolean = false,
     val allowSpeakerIdentification: Boolean = false,
     val encryptSensitiveData: Boolean = true,
-    val deleteAudioAfterProcessing: Boolean = true,
-    val audioRetentionDays: Int = 0,
-    val transactionRetentionDays: Int = 365 * 2
+    val voiceRecordingRetentionDays: Int = 0,
+    val transactionRetentionDays: Int = 365,
+    val analyticsRetentionDays: Int = 90,
+    val speakerProfileRetentionDays: Int = 180
 )
 
 /** One consent decision, with the date it was given and when it lapses. */
@@ -31,38 +35,55 @@ data class UserConsent(
 )
 
 data class ConsentState(
-    val consent: UserConsent = UserConsent(),
+    val userConsent: UserConsent = UserConsent(),
     val hasValidConsent: Boolean = false,
     val isExpired: Boolean = false,
     val needsUpdate: Boolean = true
 )
 
 data class PrivacyState(
-    val settings: PrivacySettings = PrivacySettings()
+    val settings: PrivacySettings = PrivacySettings(),
+    val isInitialized: Boolean = false,
+    val lastUpdated: Long = 0L
 )
 
-enum class DataType { AUDIO, TRANSCRIPT, TRANSACTION, SPEAKER_PROFILE, ANALYTICS }
+/**
+ * The categories SecureDataStorage deletes by, and the trader can set retention on.
+ * These names are the contract: SecureDataStorage.deleteDataOlderThan branches on them.
+ */
+enum class DataType { VOICE_RECORDINGS, TRANSACTION_DATA, ANALYTICS_DATA, SPEAKER_PROFILES }
 
 enum class DataProcessingPurpose {
-    VOICE_PROCESSING, SPEAKER_IDENTIFICATION, ANALYTICS, CLOUD_SYNC, LEDGER_STORAGE
+    VOICE_RECOGNITION, TRANSACTION_STORAGE, ANALYTICS, CLOUD_SYNC, SPEAKER_IDENTIFICATION
 }
+
+enum class ComplianceIssueType { MISSING_CONSENT, EXPIRED_CONSENT, EXCESSIVE_RETENTION, WEAK_SECURITY }
+
+data class ComplianceIssue(
+    val type: ComplianceIssueType,
+    val description: String
+)
 
 data class PrivacyComplianceReport(
     val complianceScore: Int = 0,
     val hasValidConsent: Boolean = false,
-    val issues: List<String> = emptyList(),
+    val issues: List<ComplianceIssue> = emptyList(),
     val generatedAt: Long = System.currentTimeMillis()
 )
 
-data class DataExportResult(
-    val success: Boolean = false,
-    val payload: String = "",
-    val message: String? = null
+/** Everything the trader is entitled to a copy of under the Data Protection Act. */
+data class UserDataExport(
+    val userId: String,
+    val exportDate: Long,
+    val privacySettings: PrivacySettings,
+    val consentHistory: List<UserConsent>
 )
 
 data class DataDeletionResult(
     val success: Boolean = false,
-    val message: String? = null
+    val deletedCategories: List<DataType> = emptyList(),
+    val deletionDate: Long = System.currentTimeMillis(),
+    val error: String? = null
 )
 
 /**
@@ -72,10 +93,12 @@ data class DataDeletionResult(
  * so the UI reflects them immediately. Every default denies: a trader who has not
  * answered yet is treated as having refused, so no processing happens by accident.
  *
- * INCOMPLETE: [exportUserData] and [deleteAllUserData] record the request and report
- * failure rather than pretending to act. Both must reach the Room database and the
- * audio store before this ships — they are the Data Protection Act commitments the
- * site makes to traders. PrivacyManagerTest (395 lines) is the specification.
+ * INCOMPLETE: [deleteAllUserData] records the request and reports failure rather
+ * than pretending to act — it must reach the Room database and the audio store
+ * before this ships. [exportUserData] returns the settings and consent this class
+ * actually holds; the transactions and summaries still have to be added to it.
+ * PrivacyManagerTest (395 lines) is the specification, and its deletion test is
+ * expected to fail until the deletion is real.
  */
 @Singleton
 class PrivacyManager @Inject constructor(
@@ -85,16 +108,29 @@ class PrivacyManager @Inject constructor(
 
     companion object {
         private const val PREFS_NAME = "privacy_settings"
+        private const val KEY_VOICE_PROCESSING = "allow_voice_processing"
+        private const val KEY_DATA_STORAGE = "allow_data_storage"
         private const val KEY_ANALYTICS = "allow_analytics"
         private const val KEY_CLOUD_SYNC = "allow_cloud_sync"
         private const val KEY_SPEAKER_ID = "allow_speaker_identification"
         private const val KEY_ENCRYPT = "encrypt_sensitive_data"
+        private const val KEY_RETAIN_VOICE = "voice_recording_retention_days"
+        private const val KEY_RETAIN_TRANSACTION = "transaction_retention_days"
+        private const val KEY_RETAIN_ANALYTICS = "analytics_retention_days"
+        private const val KEY_RETAIN_SPEAKER = "speaker_profile_retention_days"
         private const val KEY_CONSENT_DATE = "consent_date"
         private const val KEY_CONSENT_EXPIRY = "consent_expiry"
         private const val KEY_VOICE_CONSENT = "voice_processing_consent"
         private const val KEY_STORAGE_CONSENT = "data_storage_consent"
+        private const val KEY_ANALYTICS_CONSENT = "analytics_consent"
+        private const val KEY_CLOUD_CONSENT = "cloud_sync_consent"
+        private const val KEY_SPEAKER_CONSENT = "speaker_identification_consent"
+        private const val KEY_USER_ID = "user_id"
 
-        private const val DAY_MS = 24 * 60 * 60 * 1000L
+        private const val DAY_MS = 24L * 60 * 60 * 1000
+
+        /** Beyond this, keeping voice recordings is hard to justify to a trader. */
+        private const val MAX_REASONABLE_VOICE_RETENTION_DAYS = 90
     }
 
     private val prefs by lazy { encryptionService.getEncryptedSharedPreferences(PREFS_NAME) }
@@ -106,24 +142,41 @@ class PrivacyManager @Inject constructor(
     val consentState: StateFlow<ConsentState> = _consentState.asStateFlow()
 
     init {
-        _privacyState.value = PrivacyState(readSettings())
+        _privacyState.value = PrivacyState(
+            settings = readSettings(),
+            isInitialized = true,
+            lastUpdated = System.currentTimeMillis()
+        )
         _consentState.value = toConsentState(readConsent())
     }
 
     fun updatePrivacySettings(settings: PrivacySettings) {
         prefs.edit()
+            .putBoolean(KEY_VOICE_PROCESSING, settings.allowVoiceProcessing)
+            .putBoolean(KEY_DATA_STORAGE, settings.allowDataStorage)
             .putBoolean(KEY_ANALYTICS, settings.allowAnalytics)
             .putBoolean(KEY_CLOUD_SYNC, settings.allowCloudSync)
             .putBoolean(KEY_SPEAKER_ID, settings.allowSpeakerIdentification)
             .putBoolean(KEY_ENCRYPT, settings.encryptSensitiveData)
+            .putInt(KEY_RETAIN_VOICE, settings.voiceRecordingRetentionDays)
+            .putInt(KEY_RETAIN_TRANSACTION, settings.transactionRetentionDays)
+            .putInt(KEY_RETAIN_ANALYTICS, settings.analyticsRetentionDays)
+            .putInt(KEY_RETAIN_SPEAKER, settings.speakerProfileRetentionDays)
             .apply()
-        _privacyState.value = PrivacyState(settings)
+        _privacyState.value = PrivacyState(
+            settings = settings,
+            isInitialized = true,
+            lastUpdated = System.currentTimeMillis()
+        )
     }
 
     fun recordConsent(consent: UserConsent) {
         prefs.edit()
             .putBoolean(KEY_VOICE_CONSENT, consent.voiceProcessingConsent)
             .putBoolean(KEY_STORAGE_CONSENT, consent.dataStorageConsent)
+            .putBoolean(KEY_ANALYTICS_CONSENT, consent.analyticsConsent)
+            .putBoolean(KEY_CLOUD_CONSENT, consent.cloudSyncConsent)
+            .putBoolean(KEY_SPEAKER_CONSENT, consent.speakerIdentificationConsent)
             .putLong(KEY_CONSENT_DATE, consent.consentDate)
             .putLong(KEY_CONSENT_EXPIRY, consent.expiryDate)
             .apply()
@@ -134,6 +187,9 @@ class PrivacyManager @Inject constructor(
         prefs.edit()
             .remove(KEY_VOICE_CONSENT)
             .remove(KEY_STORAGE_CONSENT)
+            .remove(KEY_ANALYTICS_CONSENT)
+            .remove(KEY_CLOUD_CONSENT)
+            .remove(KEY_SPEAKER_CONSENT)
             .remove(KEY_CONSENT_DATE)
             .remove(KEY_CONSENT_EXPIRY)
             .apply()
@@ -142,27 +198,34 @@ class PrivacyManager @Inject constructor(
 
     /** A purpose is allowed only when consent is valid and the matching setting is on. */
     fun isDataProcessingAllowed(purpose: DataProcessingPurpose): Boolean {
-        val consent = _consentState.value
-        if (!consent.hasValidConsent) return false
+        val state = _consentState.value
+        if (!state.hasValidConsent) return false
+        val consent = state.userConsent
         val settings = _privacyState.value.settings
         return when (purpose) {
-            DataProcessingPurpose.VOICE_PROCESSING -> consent.consent.voiceProcessingConsent
-            DataProcessingPurpose.LEDGER_STORAGE -> consent.consent.dataStorageConsent
-            DataProcessingPurpose.ANALYTICS -> settings.allowAnalytics
-            DataProcessingPurpose.CLOUD_SYNC -> settings.allowCloudSync
-            DataProcessingPurpose.SPEAKER_IDENTIFICATION -> settings.allowSpeakerIdentification
+            DataProcessingPurpose.VOICE_RECOGNITION ->
+                consent.voiceProcessingConsent && settings.allowVoiceProcessing
+            DataProcessingPurpose.TRANSACTION_STORAGE ->
+                consent.dataStorageConsent && settings.allowDataStorage
+            DataProcessingPurpose.ANALYTICS ->
+                consent.analyticsConsent && settings.allowAnalytics
+            DataProcessingPurpose.CLOUD_SYNC ->
+                consent.cloudSyncConsent && settings.allowCloudSync
+            DataProcessingPurpose.SPEAKER_IDENTIFICATION ->
+                consent.speakerIdentificationConsent && settings.allowSpeakerIdentification
         }
     }
 
-    /** Retention window in milliseconds. Audio defaults to zero: delete after processing. */
+    /** Retention window in milliseconds. Voice defaults to zero: delete after processing. */
     fun getDataRetentionPeriod(dataType: DataType): Long {
         val settings = _privacyState.value.settings
-        return when (dataType) {
-            DataType.AUDIO -> settings.audioRetentionDays * DAY_MS
-            DataType.TRANSCRIPT, DataType.TRANSACTION -> settings.transactionRetentionDays * DAY_MS
-            DataType.SPEAKER_PROFILE -> settings.transactionRetentionDays * DAY_MS
-            DataType.ANALYTICS -> 90 * DAY_MS
+        val days = when (dataType) {
+            DataType.VOICE_RECORDINGS -> settings.voiceRecordingRetentionDays
+            DataType.TRANSACTION_DATA -> settings.transactionRetentionDays
+            DataType.ANALYTICS_DATA -> settings.analyticsRetentionDays
+            DataType.SPEAKER_PROFILES -> settings.speakerProfileRetentionDays
         }
+        return days * DAY_MS
     }
 
     fun shouldDeleteData(dataType: DataType, creationTime: Long): Boolean {
@@ -172,31 +235,47 @@ class PrivacyManager @Inject constructor(
     }
 
     fun getPrivacyComplianceReport(): PrivacyComplianceReport {
-        val consent = _consentState.value
+        val state = _consentState.value
         val settings = _privacyState.value.settings
         val issues = buildList {
-            if (!consent.hasValidConsent) add("No valid consent on record")
-            if (consent.isExpired) add("Consent has expired and must be renewed")
-            if (!settings.encryptSensitiveData) add("Sensitive field encryption is switched off")
-            if (!settings.deleteAudioAfterProcessing) add("Audio is being retained after processing")
+            if (!state.hasValidConsent) add(
+                ComplianceIssue(ComplianceIssueType.MISSING_CONSENT, "No valid consent on record")
+            )
+            if (state.isExpired) add(
+                ComplianceIssue(ComplianceIssueType.EXPIRED_CONSENT, "Consent has expired and must be renewed")
+            )
+            if (!settings.encryptSensitiveData) add(
+                ComplianceIssue(ComplianceIssueType.WEAK_SECURITY, "Sensitive field encryption is switched off")
+            )
+            if (settings.voiceRecordingRetentionDays > MAX_REASONABLE_VOICE_RETENTION_DAYS) add(
+                ComplianceIssue(
+                    ComplianceIssueType.EXCESSIVE_RETENTION,
+                    "Voice recordings are kept for ${settings.voiceRecordingRetentionDays} days"
+                )
+            )
         }
-        val score = (100 - issues.size * 25).coerceAtLeast(0)
         return PrivacyComplianceReport(
-            complianceScore = score,
-            hasValidConsent = consent.hasValidConsent,
+            complianceScore = (100 - issues.size * 25).coerceAtLeast(0),
+            hasValidConsent = state.hasValidConsent,
             issues = issues
         )
     }
 
     /**
-     * INCOMPLETE: must gather the trader's transactions, summaries and speaker profile
-     * into a portable file. Reports failure rather than returning an empty export that
-     * could be mistaken for "you have no data".
+     * The settings and consent this class holds, with a stable per-install id.
+     *
+     * INCOMPLETE: the trader's transactions, summaries and speaker profile are not in
+     * here yet. What it does return is real, not a placeholder.
      */
-    fun exportUserData(): DataExportResult = DataExportResult(
-        success = false,
-        message = "Data export is not implemented yet"
-    )
+    fun exportUserData(): UserDataExport {
+        val consent = _consentState.value.userConsent
+        return UserDataExport(
+            userId = userId(),
+            exportDate = System.currentTimeMillis(),
+            privacySettings = _privacyState.value.settings,
+            consentHistory = if (consent.consentDate > 0L) listOf(consent) else emptyList()
+        )
+    }
 
     /**
      * INCOMPLETE: must erase the Room database, audio files and preferences. Reports
@@ -204,19 +283,43 @@ class PrivacyManager @Inject constructor(
      */
     fun deleteAllUserData(): DataDeletionResult = DataDeletionResult(
         success = false,
-        message = "Data deletion is not implemented yet"
+        deletedCategories = emptyList(),
+        error = "Data deletion is not implemented yet"
     )
 
-    private fun readSettings() = PrivacySettings(
-        allowAnalytics = prefs.getBoolean(KEY_ANALYTICS, false),
-        allowCloudSync = prefs.getBoolean(KEY_CLOUD_SYNC, false),
-        allowSpeakerIdentification = prefs.getBoolean(KEY_SPEAKER_ID, false),
-        encryptSensitiveData = prefs.getBoolean(KEY_ENCRYPT, true)
-    )
+    /** A random id minted on first export; it identifies the install, not the person. */
+    private fun userId(): String =
+        prefs.getString(KEY_USER_ID, null) ?: UUID.randomUUID().toString().also {
+            prefs.edit().putString(KEY_USER_ID, it).apply()
+        }
+
+    private fun readSettings(): PrivacySettings {
+        val defaults = PrivacySettings()
+        return PrivacySettings(
+            allowVoiceProcessing = prefs.getBoolean(KEY_VOICE_PROCESSING, defaults.allowVoiceProcessing),
+            allowDataStorage = prefs.getBoolean(KEY_DATA_STORAGE, defaults.allowDataStorage),
+            allowAnalytics = prefs.getBoolean(KEY_ANALYTICS, defaults.allowAnalytics),
+            allowCloudSync = prefs.getBoolean(KEY_CLOUD_SYNC, defaults.allowCloudSync),
+            allowSpeakerIdentification =
+                prefs.getBoolean(KEY_SPEAKER_ID, defaults.allowSpeakerIdentification),
+            encryptSensitiveData = prefs.getBoolean(KEY_ENCRYPT, defaults.encryptSensitiveData),
+            voiceRecordingRetentionDays =
+                prefs.getInt(KEY_RETAIN_VOICE, defaults.voiceRecordingRetentionDays),
+            transactionRetentionDays =
+                prefs.getInt(KEY_RETAIN_TRANSACTION, defaults.transactionRetentionDays),
+            analyticsRetentionDays =
+                prefs.getInt(KEY_RETAIN_ANALYTICS, defaults.analyticsRetentionDays),
+            speakerProfileRetentionDays =
+                prefs.getInt(KEY_RETAIN_SPEAKER, defaults.speakerProfileRetentionDays)
+        )
+    }
 
     private fun readConsent() = UserConsent(
         voiceProcessingConsent = prefs.getBoolean(KEY_VOICE_CONSENT, false),
         dataStorageConsent = prefs.getBoolean(KEY_STORAGE_CONSENT, false),
+        analyticsConsent = prefs.getBoolean(KEY_ANALYTICS_CONSENT, false),
+        cloudSyncConsent = prefs.getBoolean(KEY_CLOUD_CONSENT, false),
+        speakerIdentificationConsent = prefs.getBoolean(KEY_SPEAKER_CONSENT, false),
         consentDate = prefs.getLong(KEY_CONSENT_DATE, 0L),
         expiryDate = prefs.getLong(KEY_CONSENT_EXPIRY, 0L)
     )
@@ -225,7 +328,7 @@ class PrivacyManager @Inject constructor(
         val given = consent.consentDate > 0L
         val expired = given && consent.expiryDate in 1..System.currentTimeMillis()
         return ConsentState(
-            consent = consent,
+            userConsent = consent,
             hasValidConsent = given && !expired && consent.voiceProcessingConsent,
             isExpired = expired,
             needsUpdate = !given || expired

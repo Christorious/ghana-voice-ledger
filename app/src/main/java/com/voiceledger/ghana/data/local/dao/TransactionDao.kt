@@ -75,6 +75,14 @@ interface TransactionDao {
     
     @Query("DELETE FROM transactions WHERE date < :cutoffDate")
     suspend fun deleteOldTransactions(cutoffDate: String)
+
+    /**
+     * Retention enforcement: returns the number of rows removed, for the deletion report.
+     * Takes an epoch timestamp rather than a date string, because retention is computed
+     * from PrivacyManager.getDataRetentionPeriod, which works in milliseconds.
+     */
+    @Query("DELETE FROM transactions WHERE timestamp < :cutoffTime")
+    suspend fun deleteOlderThan(cutoffTime: Long): Int
     
     @Query("SELECT DISTINCT product FROM transactions ORDER BY product ASC")
     suspend fun getAllProducts(): List<String>

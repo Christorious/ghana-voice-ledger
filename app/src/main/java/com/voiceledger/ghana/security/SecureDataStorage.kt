@@ -7,6 +7,7 @@ import com.voiceledger.ghana.data.local.database.VoiceLedgerDatabase
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
 import net.sqlcipher.database.SQLiteDatabase
 import net.sqlcipher.database.SupportFactory
 import java.io.File
@@ -313,8 +314,9 @@ class SecureDataStorage @Inject constructor(
      * Encrypt file with custom key
      */
     private suspend fun encryptFile(file: File, key: ByteArray): EncryptedData {
-        val fileContent = file.readText()
-        return encryptionService.encryptWithKey(fileContent, key)
+        // Read as bytes, not text: a database file is not valid UTF-8, and readText()
+        // would corrupt it before it was ever encrypted.
+        return encryptionService.encryptWithKey(file.readBytes(), key)
     }
     
     /**

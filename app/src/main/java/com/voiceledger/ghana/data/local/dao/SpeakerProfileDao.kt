@@ -76,6 +76,13 @@ interface SpeakerProfileDao {
     
     @Query("DELETE FROM speaker_profiles WHERE id = :id")
     suspend fun deleteProfileById(id: String)
+
+    /**
+     * Retention enforcement: returns the number of rows removed, for the deletion report.
+     * Measured from creation, matching PrivacyManager.shouldDeleteData's creationTime.
+     */
+    @Query("DELETE FROM speaker_profiles WHERE createdAt < :cutoffTime")
+    suspend fun deleteOlderThan(cutoffTime: Long): Int
     
     @Query("UPDATE speaker_profiles SET synced = 1 WHERE id IN (:ids)")
     suspend fun markProfilesAsSynced(ids: List<String>)

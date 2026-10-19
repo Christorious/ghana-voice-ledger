@@ -52,6 +52,10 @@ interface AudioMetadataDao {
     
     @Query("DELETE FROM audio_metadata WHERE timestamp < :cutoffTime")
     suspend fun deleteOldMetadata(cutoffTime: Long)
+
+    /** Retention enforcement: returns the number of rows removed, for the deletion report. */
+    @Query("DELETE FROM audio_metadata WHERE timestamp < :cutoffTime")
+    suspend fun deleteOlderThan(cutoffTime: Long): Int
     
     @Query("UPDATE audio_metadata SET contributedToTransaction = 1, transactionId = :transactionId WHERE chunkId IN (:chunkIds)")
     suspend fun markAsContributingToTransaction(chunkIds: List<String>, transactionId: String)

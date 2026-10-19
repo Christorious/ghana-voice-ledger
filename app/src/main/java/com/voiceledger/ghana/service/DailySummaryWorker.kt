@@ -7,6 +7,9 @@ import androidx.work.WorkerParameters
 import com.voiceledger.ghana.domain.service.DailySummaryGenerator
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Background worker for generating daily summaries
@@ -21,9 +24,11 @@ class DailySummaryWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            // Generate daily summary for yesterday
-            val yesterday = System.currentTimeMillis() - (24 * 60 * 60 * 1000)
-            
+            // Generate daily summary for yesterday. The generator keys summaries by
+            // calendar date, so the worker passes a yyyy-MM-dd string, not a timestamp.
+            val yesterday = SimpleDateFormat("yyyy-MM-dd", Locale.US)
+                .format(Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000))
+
             dailySummaryGenerator.generateDailySummary(yesterday)
             
             Result.success()

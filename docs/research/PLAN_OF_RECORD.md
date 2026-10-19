@@ -246,31 +246,66 @@ nearly half of her own utterances rejected, so half her sales never reach the le
 however good the extractor is; and one bystander utterance in ten accepted as hers, which
 is a wrong row. No amount of work on slots or amounts matters while this holds.
 
-Three things follow, in order of leverage.
+Three things follow. The order below is the leverage **as since measured**, which inverted
+the first two: calibration was expected to be the lever and the ranker the convenience, and
+it is the other way round. Done in `sikabook-models`, branch `claude/voice-gate-v1`.
 
-**a. The global threshold is the wrong design.** Dev EER 13% against test EER 26%, with the
-dev threshold transferring to FAR 10% / FRR 46%, is threshold-transfer failure across unseen
-speakers. A fixed `GATE = 0.68` cannot work. Calibrate per trader at enrolment, and adapt
-over her first days.
-
-**b. Make the gate a ranker, not a filter.** With day-end confirmation, FRR 46% is only
+**a. Make the gate a ranker, not a filter.** With day-end confirmation, FRR 46% is only
 fatal if rejected audio is thrown away. Keep uncertain segments and surface them for
 review. The gate's job becomes prioritising what she checks, not deciding what exists —
 which trades FRR against review burden, a knob we control, instead of against coverage,
-which we cannot recover.
+which we cannot recover. **Measured: this is the dominant lever.** Three tiers (accept /
+review / reject) raise coverage of her own speech from roughly 75% to roughly 96% at an
+unchanged accept threshold, on every calibration and every seed, and on the synthetic audio
+corpus they cut lost speech from 42% to 6%. The binary gate stays reachable, and every
+number measured before the tier existed still reproduces.
+
+**b. Calibrate per trader instead of one global threshold.** Dev EER 13% against test EER
+26%, with the dev threshold transferring to FAR 10% / FRR 46%, looked like threshold-transfer
+failure across unseen speakers, so a fixed `GATE = 0.68` could not work. Implemented as
+cohort normalisation: her voiceprint is scored at enrolment against a cohort that ships with
+the app, and later scores are expressed in units of her own distribution. The enrolment-side
+form reduces at runtime to **two stored numbers per trader and a plain cosine**, with no
+cohort arithmetic while she trades. **Measured: second-order, and weaker than claimed.** The
+symmetric form consistently lowers test EER (33.3% → 22.9% on the synthetic corpus) and grows
+with encoder quality; the enrolment-side form does not reliably do anything; and *neither*
+closed the dev-to-test threshold gap across seeds, which was the reason for writing them. All
+three are reported side by side and the real corpora decide.
 
 **c. Replace the embedding floor.** The current voice print is log-mel plus MFCC statistics
 into LDA, which the script honestly calls "the honest floor, not a deep model". ECAPA-TDNN
 is already wired behind `--encoder ecapa` but frozen and VoxCeleb-trained with no Twi. Use
 it properly, enrol on more than one clip, and exploit the structural fact nobody has used
 yet: **across a whole market day, the most frequent speaker at the stall is her**, so her
-voiceprint can be adapted from her own audio without labels.
+voiceprint can be adapted from her own audio without labels. Session adaptation on the
+gate's own accepts — no labels at all — is implemented behind `--adapt` and reported as a
+session gain, never as a held-out one. Using ECAPA properly on the real corpora is the next
+job and the one most likely to move the numbers.
 
-### One caveat over every number above
+### Two caveats over every number above
 
-Every result in `sikabook-models` is on FISD and KasaSpeech read speech mixed with GESMA
-noise. Read speech flatters, as the feasibility memo says plainly. The numbers are honest
+**The gate's numbers are not yet measurements.** `fit_lda` iterated an unordered set, so the
+LDA basis followed `PYTHONHASHSEED` and changed from process to process; on the synthetic
+corpus that alone swung dev EER between 0% and 33% with nothing else altered. Dev EER 13% /
+test EER 26% / FAR 10% / FRR 46% are therefore one draw from a wide distribution and must be
+re-run. Fixed and verified identical across hash seeds; `train_tiny.py` was checked and is
+unaffected, so its 81% accuracy line stands.
+
+**Read speech flatters.** Every result in `sikabook-models` is on FISD and KasaSpeech read
+speech mixed with GESMA noise, as the feasibility memo says plainly. The numbers are honest
 about their method and they are still not evidence about a market.
+
+### The grader is currently scoring against the product
+
+Worth recording separately, because it would have misdirected everything downstream. The
+verifier pays +1.0 for cleanly blocking a bystander and +0.5 for recovering one of her sales,
+so when the review tier cut lost speech from 42% to 6% the total score **fell**, 68.0 to
+56.5. On that scale one cleanly blocked bystander is worth two recovered sales, and the
+grader would rather lose four sales in ten than put twenty lines in front of her at closing
+time. That is the opposite of "her sales get recorded without her having to think about
+anything else". The four numbers are now explicit (`verifier.Rewards`, defaults unchanged and
+tested to reproduce every earlier result) so the question can be settled by changing a number
+and re-running — but it is a product judgement, so it is flagged rather than retuned.
 
 ## 5. Open risks, stated honestly
 

@@ -201,6 +201,13 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+
+        // java.time arrived in API 26, but minSdk here is 24 and eight files import
+        // it (LocalDate, LocalDateTime, DateTimeFormatter, Instant, ZoneId). Without
+        // desugaring that is a NewApi lint error at every use and, worse, a
+        // NoClassDefFoundError at runtime on Android 7 — which is exactly the kind of
+        // phone this app is meant to run on.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -237,6 +244,15 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+    }
+
+    lint {
+        // Print findings to the build log. By default lint writes HTML and XML into
+        // app/build/reports and the console gets only a count plus the first failure,
+        // so the other ~127 errors were unreadable in CI. "stdout" is a value AGP
+        // special-cases for exactly this.
+        textReport = true
+        textOutput = file("stdout")
     }
 
     // res/xml/shortcuts.xml needs the real applicationId in targetPackage, and a
@@ -483,6 +499,10 @@ dependencies {
 
 
     // Testing
+    // Backports java.time (and a few other JDK APIs) to API 24. Required by
+    // isCoreLibraryDesugaringEnabled above.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
     testImplementation(libs.junit)
     // Fourteen test files import kotlin.test.* for assertEquals/assertTrue/@Test, but
     // the dependency was never declared, so every one of those references failed to

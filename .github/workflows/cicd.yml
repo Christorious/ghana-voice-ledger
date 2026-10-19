@@ -71,16 +71,12 @@ jobs:
       run: |
         set -o pipefail
         status=0
-        ./gradlew lintDevDebug --stacktrace || status=$?
+        ./gradlew lintDevDebug --stacktrace 2>&1 | tee "$RUNNER_TEMP/lint.log" || status=$?
         if [ "$status" -ne 0 ]; then
-          report=app/build/intermediates/lint_intermediate_text_report/devDebug/lint-results-devDebug.txt
           echo "::group::Lint errors"
-          if [ -f "$report" ]; then
-            grep -E '^\S+\.(kt|xml|java):[0-9]+: Error:' "$report" | head -200 || true
-          else
-            echo "No lint text report at $report"
-            find app/build -name 'lint-results*.txt' -print 2>/dev/null | head || true
-          fi
+          # The build file sets textOutput to stdout, so the findings are in the
+          # output we just teed, whatever path the report files end up at.
+          grep -E ': Error:' "$RUNNER_TEMP/lint.log" | head -200 || true
           echo "::endgroup::"
         fi
         exit "$status"

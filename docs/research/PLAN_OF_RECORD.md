@@ -325,7 +325,7 @@ the utterances it holds. The mouth is not a nicety at the end; it is load-bearin
 |---|---|---|---|
 | **Ears** | streaming ASR, Twi and Twi–English | 30–100 MB | open baselines exist in Akan |
 | **Gate** | is this her speaking | ~8 MB | **built** (§4.2), phone-sized already |
-| **Mouth** | read the day's ledger back in Twi | 10–70 MB | no Akan voice we can ship |
+| **Mouth** | read the day's ledger back in Twi | 10–70 MB | training data exists, model does not |
 
 Roughly 50–180 MB resident in total. That fits a 2–4 GB phone. For the first time the whole
 stack is plausibly on-device and offline, which also settles the capture-and-privacy argument
@@ -395,7 +395,9 @@ generated audio is a derivative work. This constrains the teacher choice, not ju
 | `gradium/phonon-31m-en` (weights, tokenizer, voices) | Apache-2.0 | yes |
 | `gradium/phonon-40m-*` (multilingual and per-language) | CC-BY-NC-4.0 | **no** |
 | `Paradee-8M-v1.1` + training pipeline | Apache-2.0 | yes |
-| `prince4332/CosyVoice2-0.5B-Akan` | Apache-2.0 (as tagged) | yes, verify |
+| `FunAudioLLM/CosyVoice2-0.5B` (the base) | Apache-2.0 | yes |
+| `prince4332/CosyVoice2-0.5B-Akan` | Apache-2.0 | yes — chain verified, see §4.3.1 |
+| **`google/WaxalNLP`, Akan ASR + Twi/Fante TTS** | **CC-BY-4.0** (Univ. of Ghana) | **yes, with attribution** |
 | `facebook/mms-tts` (incl. `aka`), MMS-derived Akan voices | CC-BY-NC-4.0 | **no** |
 | `asr-africa/wav2vec2-xls-r-akan-{20,50}-hours` | Apache-2.0 | yes |
 | UGSpeechData | CC-BY-NC-ND | **no** — ND forbids derivatives, so no training at all |
@@ -406,16 +408,137 @@ generated audio is a derivative work. This constrains the teacher choice, not ju
 It does not change the first thing to do. Three of the four numbers in §4.2 are still
 unmeasured and the verbalisation ratio still decides whether any of this is worth building.
 No release moves that. What it changes is the shape of the risk: the model problem is now
-three named problems with two credible open paths and one already built, and the binding
-constraint has moved off model availability and onto **Twi audio and a Twi G2P**. Those are
-data and linguistics problems, and they are the ones a KNUST project is actually well placed
-to solve — Mistral did Arabic with Morocco's national lab, and RAIL KNUST already produced
-GESMA under CC-BY-4.0.
+three named problems with two credible open paths and one already built.
 
-Unverified and load-bearing, in priority order: whether any open G2P covers Akan; whether
-CosyVoice2-Akan is good enough to teach and genuinely Apache-2.0; what the asr-africa Akan
-baselines actually score; and whether 23.9 hours of teacher audio is enough for a tonal
-language whose standard orthography does not mark tone.
+**Correction, same day.** This section first concluded that the binding constraint had moved
+onto "Twi audio and a Twi G2P". Checking it (§4.3.1, §4.3.2) showed that half of that was
+wrong. The audio exists — about 1,250 hours of CC-BY-4.0 Akan ASR speech with
+speaker-disjoint splits, and Twi and Fante single-speaker read-script TTS corpora — and the
+G2P is a half-day mapping table or avoidable altogether. **What actually binds is neither
+data nor models. It is that nobody has trained the Akan voice yet, and that the one number
+that decides the product — the verbalisation ratio — still needs two hours at a real stall.**
+The first is a laptop week against a known corpus. The second is blocked on ethics approval
+and nothing else.
+
+That is a far better position than this section claimed an hour earlier, and it is still a
+KNUST-shaped position: Mistral did Arabic with Morocco's national lab, the University of
+Ghana supplied the Akan half of Waxal, and RAIL KNUST produced GESMA under CC-BY-4.0.
+
+### 4.3.1 Those four unknowns, checked (20 October 2026)
+
+All four were checked the same day. Three came back better than feared and one came back as a
+flat no that turns out not to matter. The checking also found the corpus that makes most of
+this section's teacher-and-distillation reasoning unnecessary, so read §4.3.2 before acting on
+anything above.
+
+**1. Does any open grapheme-to-phoneme front end cover Akan? No.** Not eSpeak NG (its
+`docs/languages.md` lists Amharic, Oromo, Setswana and Swahili, and no Ghanaian language at
+all), not epitran, and not misaki — which is Paradee's own front end and covers only English,
+Japanese, Korean, Chinese and Vietnamese, so Paradee's G2P is unusable for Akan whatever we do.
+**This is nevertheless not a blocker, and the risk should be downgraded**, because there are
+three ways round it and all are small. Epitran documents its extension path explicitly: one
+`map/aka-Latn.csv` mapping file, which for a near-phonemic orthography is a half-day of
+careful work and a worthwhile contribution back. CosyVoice2 takes **raw text** and has an
+explicit `text_frontend=False`, so the grapheme route needs no G2P at all. And Lux and Vu
+(ACL 2022) fine-tune a high-quality TTS on **30 minutes** of a previously unseen language with
+a previously unseen speaker by using **articulatory feature vectors in place of phoneme
+identities**, which sidesteps a language-specific phoneme inventory entirely.
+
+**2. Is CosyVoice2-Akan licence-clean and good enough to teach? Clean, but weak — and now
+beside the point.** The licence chain holds end to end: `FunAudioLLM/CosyVoice2-0.5B` is
+Apache-2.0, and its training data is the `aka_asr` subset of `google/WaxalNLP`, whose Akan
+portion comes from the University of Ghana under **CC BY 4.0** — commercial use permitted,
+attribution required, which the model card does not currently give. But only the **LLM head
+was fine-tuned**; the flow model, HiFi-GAN vocoder, speech tokeniser and speaker encoder were
+all left frozen, so the entire acoustic stack is still Mandarin and English. There are no
+evaluation numbers, no audio samples, 86 downloads and no likes, and the data is 101 speakers
+of natural **ASR** speech, not studio read script. Keep it as a fallback; do not build on it.
+
+**3. What do the Akan ASR baselines actually score?** `wav2vec2-xls-r-akan-50-hours`: **WER
+30.65%, CER 9.49%**, loss 0.8027 at step 7000. `-20-hours`: **WER 34.12%, CER 10.76%**. Both
+Apache-2.0, both fine-tuned from `facebook/wav2vec2-xls-r-300m`, and more data helps as you
+would expect. But both cards say the training set is "an unknown dataset" and both leave
+intended use and limitations as "More information needed", and the evaluation set is unnamed.
+The collection blurb mentions the "Asheshi financial dataset" — which would be the FISD this
+project already uses — but no card confirms it. So they are citable as published numbers and
+useless as a controlled comparison. **The real external benchmark is SimbaBench** (Elmadany
+et al., "Voice of a Continent: Mapping Africa's Speech Technology Frontier", EMNLP 2025),
+which unifies African ASR, TTS and spoken-language-ID resources and ships the Simba model
+family. Measure against that, and cite asr-africa as context.
+
+Note the ratio in those numbers: **WER is about 3.2× CER.** That is the same signature as the
+Voxtral Arabic card, and it is corroborated from the other direction by Ahia et al. (EMNLP
+2024), whose Yorùbá dialect work saw Whisper **exceed 100% WER** partly because it dropped
+diacritics. Reporting WER alone for Akan would be close to meaningless. CER is the metric.
+
+**4. Is ~24 hours enough for a tonal language with unmarked tone? The volume is generous; the
+tone is the real question, and it is narrower than it looked.** On volume, Pine et al. (ACL
+2022) built neural TTS for three Indigenous Canadian languages from **25 minutes to 3.46
+hours**, and report that **FastSpeech2 at one hour of data matches Tacotron2 at ten** — their
+express warning being that Tacotron2 should never be used to set data requirements, which is
+how the field acquired an inflated sense of the floor. With a non-autoregressive model,
+single-digit hours is a working corpus.
+
+On tone, Adebara and Abdul-Mageed (ACL 2022) confirm the hazard precisely: around 80% of
+African languages are tonal, and **Akan carries both lexical and grammatical tone** while its
+standard orthography marks neither. Their own worked example is Akan — *Ama dá ha* "Ama
+sleeps here" against *Ama dà ha* "Ama is sleeping here", habitual against stative. But the
+same paper supplies the limiting principle: **"no tone marking makes little difference in tone
+languages with few minimal pairs."** So this is not a general question about Akan, it is a
+domain question about *our* vocabulary — numbers, prices, fish names, quantities and customer
+names — and it is measurable from the Waxal transcripts without recording anything. That same
+paper calls empirical work on tone in TTS "a fruitful direction", which is a contribution hook
+rather than only a risk. Ahia et al. add one more design consequence: a ~12-point WER gap
+between standard Yorùbá and its regional dialects, closable by dialect-adaptive fine-tuning.
+Pick a dialect deliberately — Asante Twi — and expect to pay for Fante separately.
+
+### 4.3.2 The corpus that changes the plan: WaxalNLP
+
+Checking the licence on a mediocre teacher turned up the dataset underneath it, and it is a
+better find than anything else in this section.
+
+**`google/WaxalNLP`** — funded by Google and the Gates Foundation under an agreement to make
+the data openly accessible, assembled with Makerere University, **the University of Ghana**,
+Digital Umuganda, Media Trust, Loud and Clear and AIMS Senegal. About 3.38 million rows and
+821 GB. Licensed `cc-by-4.0` / `cc-by-sa-4.0` by provider, and **the Akan portion is
+University of Ghana under CC BY 4.0** — commercial use allowed, attribution required. Per the
+card, licences differ by provider, so each subset must be checked before use.
+
+- **ASR: about 1,250 hours** of transcribed natural speech across 19 African languages.
+  `aka_asr` and `aka_asr_v2` hold 188k rows each — six train shards, one validation, one test,
+  and 270 unlabelled shards. **Akan is documented as speaker-disjoint with 0.00% speaker
+  leakage in its test split**, which is the exact discipline `speaker_gate.py` enforces by hand
+  and had to construct itself from FISD and KasaSpeech.
+- **TTS: over 180 hours of single-speaker recordings reading phonetically balanced scripts**
+  across 17 languages — and **both Twi and Fante are in it** (`data/TTS/twi/` and
+  `data/TTS/fat/`, one train, validation and test shard each; per-language hours are not in
+  the card and need the parquet metadata).
+
+"Single-speaker, phonetically balanced, read from script" is not approximately a TTS corpus,
+it *is* one — the thing you would commission if you had the budget. So the mouth does not need
+a teacher, a distillation or CosyVoice2-Akan at all for a first voice: **it can be trained
+directly, on licence-clean Akan data, at a volume well above the floor Pine et al. establish.**
+Paradee's pipeline stays useful, but for shrinking a model we trained rather than for copying
+one we cannot evaluate.
+
+### 4.3.3 The mouth feeds the ears
+
+The reason to build the voice first is not only that it is cheaper. It is that a TTS is the
+ASR's data engine, and two results put numbers on it.
+
+Wang et al. (EMNLP 2025) show **Speech Back-Translation**: tens of hours of real transcribed
+speech are enough to train a TTS that then generates synthetic speech at hundreds of times the
+original volume. They produced over 500,000 hours across ten languages, continued pre-training
+Whisper-large-v3 on it, and cut transcription error by **more than 30% on average** — with an
+intelligibility-based framework that sets thresholds for when synthetic data helps rather than
+hurts. Bartelds et al. (ACL 2023) show the same effect at our scale and in our direction: from
+24 minutes of transcribed speech, self-training bought up to **20.5%** relative WER reduction
+while **TTS augmentation bought up to 25.5%** — the synthetic voice beat self-training.
+
+So the order of work inverts. Build the Akan voice from Waxal's read-script data; use it to
+turn Twi and Twi–English text into synthetic speech; use that to train the ears. The voice is
+simultaneously the day-end review, the ASR's training data, and — via §4.3.1's point 3 — the
+regression harness that scores itself.
 
 ## 5. Open risks, stated honestly
 
@@ -428,10 +551,15 @@ language whose standard orthography does not mark tone.
    Twi, and there is no Akan voice we are allowed to ship (§4.3). If this is not solved the
    review tier has nowhere to put what the gate holds, and the coverage numbers in §4.2
    describe a review that cannot happen.
-4. **Tone and orthography.** Standard Akan orthography does not mark tone, and the one
-   open distillation recipe we have was validated on English. Whether ~24 hours of teacher
-   audio suffices for a tonal language is unknown, and whether any open grapheme-to-phoneme
-   front end covers Akan is unverified.
+4. **Tone, narrowed (§4.3.1).** Akan carries both lexical and grammatical tone and its
+   standard orthography marks neither, so some pairs are genuinely ambiguous in text. But
+   unmarked tone matters little where there are few minimal pairs, so the live question is
+   how many tone-minimal pairs occur in *our* vocabulary — numbers, prices, fish names,
+   customer names. Answerable from the Waxal transcripts without recording anything.
+   Data volume is no longer a risk: single-digit hours suffices with a non-autoregressive
+   model, and Waxal has Twi and Fante read-script corpora. No open G2P covers Akan, but
+   that is a half-day mapping table or avoidable entirely, so it is not a risk either.
+   Dialect is a real choice: expect a WER gap between Asante Twi and Fante, as Yorùbá does.
 5. Decision-model calibration and Twi coverage are unverified.
 6. Transsion HiOS and XOS power managers kill long-running services regardless of
    foreground status. Needs the battery-optimisation exemption and testing on a real Tecno.
@@ -465,21 +593,30 @@ weeks, so that paperwork starts now, in parallel.
 **What can run during those weeks, needing no field data, no consent and no clearance** —
 because experiments 1–3 are all blocked on approval and the model work is not:
 
-- **A Twi voice, end to end, on a laptop.** Check whether an open grapheme-to-phoneme front
-  end covers Akan; confirm `prince4332/CosyVoice2-0.5B-Akan` is usable and genuinely
-  Apache-2.0; generate a few hours from it; run Paradee's open distillation pipeline; and
-  judge the ~8 MB result by pairwise listening tests with Twi speakers, not by a text metric.
-  Pass: Twi speakers prefer it to nothing and can repeat back amounts and names correctly.
-  This de-risks risk 3, costs a laptop week, and if it fails it fails now rather than after
-  the fieldwork.
+- **Train the Twi voice from Waxal.** Not distilled from CosyVoice2-Akan, which cannot be
+  evaluated — trained directly on the `data/TTS/twi/` single-speaker read-script corpus
+  (§4.3.2), with a non-autoregressive model, since FastSpeech2 at one hour matches
+  Tacotron2 at ten. Decide the G2P question by trying graphemes first, because Akan
+  orthography is near-phonemic and CosyVoice2 shows raw text works; write `aka-Latn.csv`
+  for epitran only if graphemes fall short. Judge it by **pairwise listening tests with Twi
+  speakers**, not a text metric. Pass: Twi speakers can repeat back amounts and customer
+  names correctly from the synthesised line. This is the step that de-risks risk 3, it is a
+  laptop week against a corpus that already exists, and if it fails it fails now rather than
+  after the fieldwork.
+- **Count the tone-minimal pairs in our own vocabulary.** From the Waxal Akan transcripts,
+  with no recording and no clearance: how many of the numbers, prices, fish names and
+  customer names we need are tone-distinguished pairs? This converts risk 4 from a general
+  worry about Akan into a number, and it is an afternoon.
 - **Score the synthesiser with the recogniser.** Run an Akan ASR model over the TTS output
   and track the error rate as a regression test, the way Phonon and Paradee both report
   theirs. Two models we need anyway, checking each other, with no human in the loop for
-  routine checks.
-- **Re-run the gate's numbers.** Every figure in §4.2 predates the determinism fix (§4.2,
-  caveats), so they are one draw rather than a measurement and have to be measured again.
-  Then situate the result against the public Akan ASR baselines in §4.3, which nobody has
-  checked yet.
+  routine checks. Report CER, not WER (§4.3.1).
+- **Re-run the gate's numbers, then rebase them on Waxal.** Every figure in §4.2 predates
+  the determinism fix, so they are one draw rather than a measurement. Re-run them, then
+  re-run again on Waxal's Akan ASR data, which is real Ghanaian speech with documented
+  speaker-disjoint splits — better suited to the gate than FISD plus KasaSpeech, and it
+  removes the hand-built split the current harness has to construct. Situate the result
+  against SimbaBench rather than the undocumented asr-africa cards (§4.3.1).
 
 ---
 
@@ -558,3 +695,39 @@ card or the Hugging Face API, not from an announcement or press coverage:
   `facebook/mms-tts` was confirmed only as far as the `aka` config files.
 - Name collision worth noting: `FermionResearch/Phonon-1`/`Phonon-2` and their CoreML, ONNX,
   GGUF and MLX ports are **ASR** models unrelated to Gradium's TTS Phonon.
+
+Sources read for §4.3.1 to §4.3.3 (20 October 2026):
+
+- G2P coverage: [eSpeak NG `docs/languages.md`](https://github.com/espeak-ng/espeak-ng/blob/master/docs/languages.md),
+  [epitran](https://github.com/dmort27/epitran) (and its documented `map/<iso639>-<iso15924>.csv`
+  extension path), [misaki](https://github.com/hexgrad/misaki). None lists Akan.
+- Teacher chain: [`prince4332/CosyVoice2-0.5B-Akan`](https://huggingface.co/prince4332/CosyVoice2-0.5B-Akan),
+  [`FunAudioLLM/CosyVoice2-0.5B`](https://huggingface.co/FunAudioLLM/CosyVoice2-0.5B).
+- Corpus: [`google/WaxalNLP`](https://huggingface.co/datasets/google/WaxalNLP) card and
+  dataset API file listing. Per-language hours for `data/TTS/twi/` and `data/TTS/fat/` are
+  **not** in the card and have not been measured.
+- Akan ASR baselines: [`asr-africa/wav2vec2-xls-r-akan-50-hours`](https://huggingface.co/asr-africa/wav2vec2-xls-r-akan-50-hours),
+  [`-20-hours`](https://huggingface.co/asr-africa/wav2vec2-xls-r-akan-20-hours). Both cards
+  name no corpus and no evaluation set.
+- Data volume for low-resource TTS: Pine, Wells, Brinklow, Littell & Richmond, "Requirements
+  and Motivations of Low-Resource Speech Synthesis for Language Revitalization", ACL 2022
+  ([10.18653/v1/2022.acl-long.507](https://doi.org/10.18653/v1/2022.acl-long.507)); Lux & Vu,
+  "Language-Agnostic Meta-Learning for Low-Resource Text-to-Speech with Articulatory
+  Features", ACL 2022 ([arXiv 2203.03191](https://arxiv.org/abs/2203.03191)).
+- Tone: Adebara & Abdul-Mageed, "Towards Afrocentric NLP for African Languages", ACL 2022
+  ([10.18653/v1/2022.acl-long.265](https://doi.org/10.18653/v1/2022.acl-long.265)) — source
+  of the Akan habitual/stative tone example and of the few-minimal-pairs principle; Ahia et
+  al., "Voices Unheard: NLP Resources and Models for Yorùbá Regional Dialects", EMNLP 2024
+  ([10.18653/v1/2024.emnlp-main.251](https://doi.org/10.18653/v1/2024.emnlp-main.251)) — the
+  diacritic-dropping WER blow-up and the dialect gap.
+- TTS as ASR training data: Wang, Xu, Lu & Cheng, "From Tens of Hours to Tens of Thousands:
+  Scaling Back-Translation for Speech Recognition", EMNLP 2025
+  ([10.18653/v1/2025.emnlp-main.629](https://doi.org/10.18653/v1/2025.emnlp-main.629));
+  Bartelds, San, McDonnell, Jurafsky & Wieling, "Making More of Little Data", ACL 2023
+  ([10.18653/v1/2023.acl-long.42](https://doi.org/10.18653/v1/2023.acl-long.42)).
+- Benchmark: Elmadany, Kwon, Toyin, Alcoba Inciarte, Aldarmaki & Abdul-Mageed, "Voice of a
+  Continent: Mapping Africa's Speech Technology Frontier" (SimbaBench), EMNLP 2025
+  ([10.18653/v1/2025.emnlp-main.559](https://doi.org/10.18653/v1/2025.emnlp-main.559)).
+- MameTTS (Kizuna Intelligence): announced via the owner's pasted post text. The site is
+  DNS-blocked here and the SDK is GitHub-Sponsors-gated, not open, so nothing is recorded
+  from it beyond the direction of travel.

@@ -325,7 +325,7 @@ the utterances it holds. The mouth is not a nicety at the end; it is load-bearin
 |---|---|---|---|
 | **Ears** | streaming ASR, Twi and Twi–English | 30–100 MB | open baselines exist in Akan |
 | **Gate** | is this her speaking | ~8 MB | **built** (§4.2), phone-sized already |
-| **Mouth** | read the day's ledger back in Twi | 10–70 MB | training data exists, model does not |
+| **Mouth** | read the day's ledger back in Twi | 10–70 MB | Asante Twi candidates exist (§4.3.4); licences in doubt |
 
 Roughly 50–180 MB resident in total. That fits a 2–4 GB phone. For the first time the whole
 stack is plausibly on-device and offline, which also settles the capture-and-privacy argument
@@ -400,8 +400,17 @@ generated audio is a derivative work. This constrains the teacher choice, not ju
 | **`google/WaxalNLP`, Akan ASR + Twi/Fante TTS** | **CC-BY-4.0** (Univ. of Ghana) | **yes, with attribution** |
 | `facebook/mms-tts` (incl. `aka`), MMS-derived Akan voices | CC-BY-NC-4.0 | **no** |
 | `asr-africa/wav2vec2-xls-r-akan-{20,50}-hours` | Apache-2.0 | yes |
+| `ghana-g2p` + `africa-g2p` (PyPI) | Apache-2.0 | yes — the G2P question, closed |
+| `ghananlpcommunity/Simba-TTS-twi-{asanti,akuapem}` | CC-BY-4.0 as tagged | probably — MMS lineage unresolved |
+| `ghananlpcommunity/w2v-bert-2.0_twi_alpha_v1-onnx-int8`, `twi-kenlm-5gram-small` | Apache-2.0 | yes |
+| `ghananlpcommunity/nano-twi` | MIT as tagged, **NC training data** | **doubtful** — see §4.3.4 |
+| `ghananlpcommunity/ghana-speech` (200 h Asante Twi) | CC-BY-NC-4.0 | **no** |
+| `ghanaopenai/*` Twi speech and text sets | CC-BY-NC-4.0 | **no** |
+| `ffatty/plaintext-wikipedia-full-twi` | CC-BY-SA-3.0 | yes, with share-alike |
+| `ghananlpcommunity/xlsr-twi-codeswitch-ipa` | AGPL-3.0 | **no** for a closed product |
 | UGSpeechData | CC-BY-NC-ND | **no** — ND forbids derivatives, so no training at all |
-| KasaSpeech, FISD, GESMA | Apache-2.0 / CC-BY-4.0 | yes |
+| FISD, GESMA | Apache-2.0 / CC-BY-4.0 | yes |
+| KasaSpeech | **disputed** — recorded Apache-2.0 here, AGPL-3.0 per §4.3.4 | resolve before relying on it |
 
 ### What this does and does not change
 
@@ -426,23 +435,53 @@ Ghana supplied the Akan half of Waxal, and RAIL KNUST produced GESMA under CC-BY
 
 ### 4.3.1 Those four unknowns, checked (20 October 2026)
 
-All four were checked the same day. Three came back better than feared and one came back as a
-flat no that turns out not to matter. The checking also found the corpus that makes most of
-this section's teacher-and-distillation reasoning unnecessary, so read §4.3.2 before acting on
-anything above.
+All four were checked the same day, and so was the follow-up round they triggered. Three came
+back better than feared, one came back a flat no that **was itself wrong** and had to be
+corrected within the hour, and the checking turned up both the corpus that makes this
+section's teacher-and-distillation reasoning unnecessary (§4.3.2) and an entire Ghanaian
+open-speech ecosystem nobody here had looked at (§4.3.4). Read those two before acting on
+anything above them.
 
-**1. Does any open grapheme-to-phoneme front end cover Akan? No.** Not eSpeak NG (its
-`docs/languages.md` lists Amharic, Oromo, Setswana and Swahili, and no Ghanaian language at
-all), not epitran, and not misaki — which is Paradee's own front end and covers only English,
-Japanese, Korean, Chinese and Vietnamese, so Paradee's G2P is unusable for Akan whatever we do.
-**This is nevertheless not a blocker, and the risk should be downgraded**, because there are
-three ways round it and all are small. Epitran documents its extension path explicitly: one
-`map/aka-Latn.csv` mapping file, which for a near-phonemic orthography is a half-day of
-careful work and a worthwhile contribution back. CosyVoice2 takes **raw text** and has an
-explicit `text_frontend=False`, so the grapheme route needs no G2P at all. And Lux and Vu
-(ACL 2022) fine-tune a high-quality TTS on **30 minutes** of a previously unseen language with
-a previously unseen speaker by using **articulatory feature vectors in place of phoneme
-identities**, which sidesteps a language-specific phoneme inventory entirely.
+**1. Does any open grapheme-to-phoneme front end cover Akan? Yes — this section's first answer
+was wrong.** The first pass checked the three obvious places and stopped there: eSpeak NG's
+`docs/languages.md` has no Ghanaian language at all, epitran has none, and misaki — Paradee's
+own front end — covers only English, Japanese, Korean, Chinese and Vietnamese. All true, and
+all beside the point, because the tool that does exist is Ghanaian and was never going to be
+in a Western package's language table. Checking three incumbents and concluding "none exists"
+was a search failure, not a finding.
+
+**`ghana-g2p`** (PyPI 0.1.1, **Apache-2.0**, `GhanaNLP/ghana-g2p`) does grapheme-to-phoneme
+for Ghanaian languages, built on **`africa-g2p`** (PyPI 0.3.2, **Apache-2.0**, 869 African
+languages). Both are pure Python with no runtime dependencies. From its own README:
+
+    from ghana_g2p import GhanaG2P
+    tw = GhanaG2P("Asante Twi")
+    tw.ipa("Mfiase no Onyankopɔn bɔɔ ɔsoro.")   # 'mfiasenooɲankʰopʰɔnbɔɔɔsoɾo'
+    tw.ipa("Akwaaba", sep=" ")                   # 'a kʷ a a b a'
+
+It names Asante Twi as a dialect, handles ɛ and ɔ and their codepoint variants, and exists
+*because* its authors ran the 2,246-hour `ghana-speech` corpus through `africa-g2p` and fixed
+what broke — so it has been exercised at a scale we will not reach for some time.
+
+Two things in it are worth more than the convenience. First, `africa-g2p` states a design
+recommendation that cuts against the instinct this document had been following: segmenting
+text into **the language's own alphabet**, keeping multigraphs such as `ny`, `kp` and `gb` as
+single units, "trains TTS/ASR models better than IPA". So the grapheme route is not the
+budget option, it is plausibly the better one, and `ghana-g2p` exposes both (`.grapheme()` and
+`.ipa()`) so it is an experiment rather than an argument. Second, the IPA it emits marks
+aspiration and the flap (kʰ, pʰ, ɾ) but **no tone** — consistent with the orthography, and
+confirmation that the tone question in point 4 is not solved by adding a phonemiser.
+
+Two other routes remain live and are now alternatives rather than necessities: CosyVoice2
+takes raw text with an explicit `text_frontend=False`, and Lux and Vu (ACL 2022) fine-tune a
+TTS on **30 minutes** of an unseen language using **articulatory feature vectors in place of
+phoneme identities**. And a third, which is what a shipped Twi voice actually does today:
+`nano-twi` bundles eSpeak NG's **`lfn` voice data as a phonemiser proxy** for Twi (§4.3.4) —
+an ugly trick that works, because Lingua Franca Nova's orthography is near-phonemic in the
+same way Akan's is.
+
+**The G2P risk is closed, not downgraded.** What is open is which representation trains
+better, which is a half-day experiment with both already installed.
 
 **2. Is CosyVoice2-Akan licence-clean and good enough to teach? Clean, but weak — and now
 beside the point.** The licence chain holds end to end: `FunAudioLLM/CosyVoice2-0.5B` is
@@ -540,6 +579,68 @@ turn Twi and Twi–English text into synthetic speech; use that to train the ear
 simultaneously the day-end review, the ASR's training data, and — via §4.3.1's point 3 — the
 regression harness that scores itself.
 
+### 4.3.4 The Ghanaian open-speech ecosystem, and the licence pattern running through it
+
+Checking point 1 properly meant looking where Ghanaian tools actually live, and there is far
+more there than this document assumed. `ghananlpcommunity` alone publishes around fifty
+models, many of them Twi. The relevant ones, **all facts from the model or dataset card**:
+
+- **`ghananlpcommunity/nano-twi`** — an **Asante Twi text-to-speech** that already does what
+  §4.3 wants the mouth to do. Matcha-TTS acoustic model plus a Vocos vocoder, exported to
+  **ONNX** and run under **sherpa-onnx on desktop, Android, iOS and web**, at several times
+  real time on desktop. Standard orthography **including ɛ and ɔ**. Single voice, explicitly
+  not voice cloning. Ships two acoustic checkpoints (4 ODE steps for quality, 2 for speed), a
+  universal 22 kHz Vocos vocoder, a phoneme table, and the eSpeak NG `lfn` data that
+  phonemises the text. Tagged **MIT** — but see the licence problem below. No parameter count,
+  file size or quality number is given, so **this needs listening to before anything else.**
+- **`ghananlpcommunity/Simba-TTS-twi-asanti`** (and a separate `-akuapem`) — **CC-BY-4.0**,
+  MMS-TTS loaded as VITS, about **36.3M parameters**, dialect-specific. It credits
+  **SimbaBench** and the EMNLP 2025 "Voice of a Continent" paper, so this is the academic
+  baseline from the very benchmark §4.3.1 says to measure against. Its card is mis-tagged as
+  ASR and its usage snippet has a placeholder model name, so verify behaviour rather than
+  trusting the card. Note also that Meta's MMS-TTS is CC-BY-NC-4.0; whether these weights
+  descend from it or merely share its architecture is not stated and matters.
+- **`ghananlpcommunity/w2v-bert-2.0_twi_alpha_v1-onnx-int8`** — **Apache-2.0**, int8 ONNX Twi
+  ASR, about 60% smaller than fp32 and 2–4× faster on CPU. Offline rather than streaming, and
+  the card states no hours, no dialect and no WER. A starting point, not a baseline.
+- **`ghananlpcommunity/twi-kenlm-5gram-small`** — **Apache-2.0** KenLM 5-gram for Twi, which
+  is the cheapest accuracy a CTC recogniser can buy.
+- **`ghananlpcommunity/xlsr-twi-codeswitch-ipa`** — a **phoneme recogniser for Ghanaian
+  English–Twi code-switched speech** that outputs IPA. Wav2Vec2 CTC from
+  `KoelLabs/xlsr-english-01`, trained on **69.1 hours / 49,033 utterances of KasaSpeech** with
+  IPA targets generated by G2P rules, reaching **PER 0.280 on test** against the base model's
+  0.687 on validation. Its card is admirably honest that the targets are rule-generated rather
+  than human-annotated and that the 79-token inventory is lossy for Twi (tʰ→t, vowel length
+  dropped). **AGPL-3.0**, which the card says matches "the base model and source corpus" — and
+  this project's licence matrix records KasaSpeech as Apache-2.0, so one of the two is wrong
+  and it needs resolving before KasaSpeech is relied on further.
+- **`ffatty/plaintext-wikipedia-full-twi`** — **CC-BY-SA-3.0** Twi Wikipedia plaintext, usable
+  but only 4.27 MB gzipped, and Wikipedia register is nothing like a market stall. A seed for
+  back-translation text, not a corpus.
+
+**The pattern, which matters more than any single model.** The large Ghanaian speech corpus
+everything here is built on, `ghananlpcommunity/ghana-speech`, is **CC-BY-NC-4.0** — 2,246.89
+hours across 42 subsets, with **Asante Twi the largest at 200.02 hours / 143,383 segments**,
+Fante at 122.03 hours, and Akuapem Twi apparently Bible text by its `source_file` values.
+Against that, `nano-twi` is tagged MIT while being fine-tuned on that corpus's Asante Twi
+subset. **A permissive tag on a model trained on non-commercial data does not make the model
+permissive**, and this is the same derivative problem §4.3's licence matrix already names for
+teachers. It is not an accusation of bad faith — it is a common and easy mistake — but it
+means the single best-fitting Twi voice we have found cannot be assumed shippable, and that
+assumption has to be settled before it is built on.
+
+So the state of play is better and narrower at once. There is much more Twi material than this
+document claimed, and the **shippable** subset is much smaller than the raw count: `ghana-g2p`
+and `africa-g2p` (Apache-2.0), `Simba-TTS-twi-{asanti,akuapem}` (CC-BY-4.0, pending the MMS
+question), the int8 ASR and the KenLM (Apache-2.0), and `google/WaxalNLP` (CC-BY-4.0) as the
+one large corpus we can train on and sell. Everything else is research-only.
+
+Which leaves the first job unchanged in kind but much cheaper in effort: **listen to
+`nano-twi` and `Simba-TTS-twi-asanti` before training anything.** If either is good enough,
+the mouth is a licence problem rather than a modelling one, and a licence problem is solved by
+retraining the same architecture on Waxal — which is a laptop week we were going to spend
+anyway.
+
 ## 5. Open risks, stated honestly
 
 1. **Is the sale even spoken?** The verbalisation ratio — how much of item, quantity, unit
@@ -557,14 +658,19 @@ regression harness that scores itself.
    how many tone-minimal pairs occur in *our* vocabulary — numbers, prices, fish names,
    customer names. Answerable from the Waxal transcripts without recording anything.
    Data volume is no longer a risk: single-digit hours suffices with a non-autoregressive
-   model, and Waxal has Twi and Fante read-script corpora. No open G2P covers Akan, but
-   that is a half-day mapping table or avoidable entirely, so it is not a risk either.
-   Dialect is a real choice: expect a WER gap between Asante Twi and Fante, as Yorùbá does.
-5. Decision-model calibration and Twi coverage are unverified.
-6. Transsion HiOS and XOS power managers kill long-running services regardless of
+   model, and Waxal has Twi and Fante read-script corpora. G2P is no longer a risk either —
+   `ghana-g2p` is Apache-2.0 and handles Asante Twi, ɛ and ɔ included (§4.3.1). Dialect is a
+   real choice: expect a WER gap between Asante Twi and Fante, as Yorùbá does.
+5. **Derivative licences on everything that fits.** The Twi models that best match what we
+   need are tagged permissively while being trained on CC-BY-NC corpora, `nano-twi` on
+   `ghana-speech` most importantly (§4.3.4). A permissive tag does not make a model
+   permissive, so each candidate's training data has to be traced before it is built on, and
+   KasaSpeech's own licence is now disputed between two sources.
+6. Decision-model calibration and Twi coverage are unverified.
+7. Transsion HiOS and XOS power managers kill long-running services regardless of
    foreground status. Needs the battery-optimisation exemption and testing on a real Tecno.
-7. Battery and storage across a full market day, on a 2–4 GB phone.
-8. Customer consent for ambient capture, and the assistant's standing if one sells at the
+8. Battery and storage across a full market day, on a 2–4 GB phone.
+9. Customer consent for ambient capture, and the assistant's standing if one sells at the
    stall.
 
 ---
@@ -593,16 +699,27 @@ weeks, so that paperwork starts now, in parallel.
 **What can run during those weeks, needing no field data, no consent and no clearance** —
 because experiments 1–3 are all blocked on approval and the model work is not:
 
-- **Train the Twi voice from Waxal.** Not distilled from CosyVoice2-Akan, which cannot be
+- **Listen before building anything.** `nano-twi` (Matcha-TTS + Vocos ONNX under sherpa-onnx,
+  Asante Twi, runs on Android) and `Simba-TTS-twi-asanti` (CC-BY-4.0, 36.3M params) already
+  exist and neither card gives a quality number (§4.3.4). An afternoon with headphones and a
+  few Twi speakers decides whether the mouth is a modelling problem at all. If one of them is
+  good enough, the remaining problem is the licence, and that is solved by retraining the same
+  architecture on Waxal rather than by inventing anything.
+- **Then train the Twi voice from Waxal.** Not distilled from CosyVoice2-Akan, which cannot be
   evaluated — trained directly on the `data/TTS/twi/` single-speaker read-script corpus
-  (§4.3.2), with a non-autoregressive model, since FastSpeech2 at one hour matches
-  Tacotron2 at ten. Decide the G2P question by trying graphemes first, because Akan
-  orthography is near-phonemic and CosyVoice2 shows raw text works; write `aka-Latn.csv`
-  for epitran only if graphemes fall short. Judge it by **pairwise listening tests with Twi
-  speakers**, not a text metric. Pass: Twi speakers can repeat back amounts and customer
+  (§4.3.2), with a non-autoregressive model, since FastSpeech2 at one hour matches Tacotron2
+  at ten. Settle the front end by experiment, not argument: `ghana-g2p` exposes both
+  `.grapheme()` and `.ipa()`, and `africa-g2p` claims own-alphabet segmentation trains better
+  than IPA, so run both and report both. Judge the result by **pairwise listening tests with
+  Twi speakers**, not a text metric. Pass: Twi speakers can repeat back amounts and customer
   names correctly from the synthesised line. This is the step that de-risks risk 3, it is a
   laptop week against a corpus that already exists, and if it fails it fails now rather than
   after the fieldwork.
+- **Trace the licence on every candidate before building on it.** For each Twi model or
+  corpus we might use, follow the chain to the training data and record it in §4.3's matrix.
+  `nano-twi` is the live example: MIT tag, CC-BY-NC training corpus. Also resolve KasaSpeech,
+  which two sources now disagree about. This is desk work, it costs an hour, and getting it
+  wrong invalidates a thesis chapter rather than a build.
 - **Count the tone-minimal pairs in our own vocabulary.** From the Waxal Akan transcripts,
   with no recording and no clearance: how many of the numbers, prices, fish names and
   customer names we need are tone-distinguished pairs? This converts risk 4 from a general
@@ -731,3 +848,39 @@ Sources read for §4.3.1 to §4.3.3 (20 October 2026):
 - MameTTS (Kizuna Intelligence): announced via the owner's pasted post text. The site is
   DNS-blocked here and the SDK is GitHub-Sponsors-gated, not open, so nothing is recorded
   from it beyond the direction of travel.
+
+Sources read for §4.3.4 (20 October 2026), all model, dataset or package pages:
+
+- G2P: [`ghana-g2p` on PyPI](https://pypi.org/project/ghana-g2p/) (0.1.1, Apache-2.0,
+  `GhanaNLP/ghana-g2p`) and [`africa-g2p`](https://pypi.org/project/africa-g2p/) (0.3.2,
+  Apache-2.0, 869 languages). The Asante Twi examples and the own-alphabet-beats-IPA claim
+  are quoted from their package descriptions.
+- Twi TTS: [`ghananlpcommunity/nano-twi`](https://huggingface.co/ghananlpcommunity/nano-twi),
+  [`Simba-TTS-twi-asanti`](https://huggingface.co/ghananlpcommunity/Simba-TTS-twi-asanti).
+- Twi ASR: [`w2v-bert-2.0_twi_alpha_v1-onnx-int8`](https://huggingface.co/ghananlpcommunity/w2v-bert-2.0_twi_alpha_v1-onnx-int8),
+  [`xlsr-twi-codeswitch-ipa`](https://huggingface.co/ghananlpcommunity/xlsr-twi-codeswitch-ipa),
+  [`umclarence1/whisper-small-twi`](https://huggingface.co/umclarence1/whisper-small-twi) —
+  the last is a useful calibration point rather than a candidate: a decoder-only fine-tune on
+  **2.5 hours** of Asante Twi from FISD, scoring WER 173.3% → 79.9% and CER 54.5% on a
+  speaker- and sentence-disjoint test set, and needing `language="yoruba"` as a proxy token
+  because Twi is not a Whisper language. It says plainly that FISD's Asante Twi portion alone
+  is nowhere near enough.
+- Corpora: [`ghananlpcommunity/ghana-speech`](https://huggingface.co/datasets/michsethowusu/ghana-speech)
+  (CC-BY-NC-4.0; 2,246.89 h over 42 subsets; Asante Twi 200.02 h / 143,383 segments; Fante
+  122.03 h; Akuapem apparently Bible text),
+  [`ffatty/plaintext-wikipedia-full-twi`](https://huggingface.co/datasets/ffatty/plaintext-wikipedia-full-twi)
+  (CC-BY-SA-3.0, 4.27 MB gzipped),
+  [`ghanaopenai/ghana-speech-female-22khz`](https://huggingface.co/datasets/ghanaopenai/ghana-speech-female-22khz)
+  — **not** the single-speaker corpus its name suggests: 28,835 rows over 10 Ghanaian
+  languages, all **voice-converted with Seed-VC** to one profile from AfriSpeech recordings,
+  CC-BY-NC-4.0. Training a voice on voice-converted audio inherits its artefacts, and the
+  card reports no quality figures, so Waxal's real read-script data remains the right base.
+- The on-device pipeline: [`huggingface/speech-to-speech`](https://github.com/huggingface/speech-to-speech)
+  (Apache-2.0) — Silero VAD v5, swappable STT/LLM/TTS, streaming, offline after first run.
+  Its README is also where the Phonon licence trap is stated outright: the default Phonon
+  checkpoint is gated and CC-BY-NC-4.0, and only the 31M variant is Apache-2.0.
+- Not read: the NTT Interspeech 2024 Mixture-of-Adapters page (`ntt-hilab-gensp.github.io` is
+  DNS-blocked and Lune does not index Interspeech), so its numbers are not recorded here. The
+  adapter idea it describes is relevant to getting several dialects out of one small voice,
+  and the nearest verified anchors are AdaMix (EMNLP 2022, a mixture of adapters at 0.1–0.2%
+  of parameters) and MobileSpeech (ACL 2024, zero-shot TTS deployed on mobile).

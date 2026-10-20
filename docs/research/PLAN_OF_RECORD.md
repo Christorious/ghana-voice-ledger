@@ -307,18 +307,136 @@ anything else". The four numbers are now explicit (`verifier.Rewards`, defaults 
 tested to reproduce every earlier result) so the question can be settled by changing a number
 and re-running — but it is a product judgement, so it is flagged rather than retuned.
 
+---
+
+## 4.3 The three models, not one
+
+Until now this document treated the model problem as a single hard thing: Twi ASR. That was
+wrong, and it hid a dependency. **The product needs three models, and the one that was never
+named is the one the whole day-end design rests on.**
+
+She is low-literate. The closing review is therefore not a screen she reads — it is a list
+**read back to her aloud, in Twi**. Android's built-in TextToSpeech has no Akan voice. So
+every coverage number in §4.2 quietly assumed a review she can actually perform, and without
+a Twi voice there is no review, and without a review the three-tier gate has nowhere to put
+the utterances it holds. The mouth is not a nicety at the end; it is load-bearing.
+
+| | job | target size | status |
+|---|---|---|---|
+| **Ears** | streaming ASR, Twi and Twi–English | 30–100 MB | open baselines exist in Akan |
+| **Gate** | is this her speaking | ~8 MB | **built** (§4.2), phone-sized already |
+| **Mouth** | read the day's ledger back in Twi | 10–70 MB | no Akan voice we can ship |
+
+Roughly 50–180 MB resident in total. That fits a 2–4 GB phone. For the first time the whole
+stack is plausibly on-device and offline, which also settles the capture-and-privacy argument
+in §2.1: nothing has to leave the handset.
+
+### The pattern that makes all three affordable: distil a big teacher into a tiny student
+
+Two independent releases on 20 October 2026 demonstrate the same recipe at the size we need,
+and one of them published the code.
+
+- **Gradium Phonon** (`gradium/phonon-31m-en`, Apache-2.0): 31M params, **64.5 MB as int8
+  GGUF**, flow-matching transformer over Kyutai's Mimi codec, streams while generating,
+  explicitly sized for a phone CPU. No training code, no new-language guidance. Its sibling
+  40M models — multilingual and per-language — are **CC-BY-NC-4.0 and cannot ship.**
+- **Paradee** (`sahilmahendrakar/Paradee-8M-v1.1`, Apache-2.0 **including the training
+  pipeline**): 7.88M params, **8.5 MB as int8 ONNX**, distilled from a frozen Kokoro-82M.
+  UTMOS 4.39 against the teacher's 4.52 and WER 5.9% against 5.7% — roughly a tenth the size
+  at near-teacher quality. ~62× real time on one CPU thread. Trained **on one MacBook Pro
+  from 23.9 hours of teacher-generated audio.**
+
+That last sentence is the one that matters for a thesis with no budget: a shippable voice is
+a laptop week and a day of synthetic audio, *provided a teacher exists in the language.*
+Paradee's own design shows why the language sits almost entirely outside the small model — it
+consumes **phoneme IDs**, not letters, so what is language-specific is the grapheme-to-phoneme
+front end and the teacher, not the 8 MB of weights. Akan orthography is close to phonemic,
+which should make that front end easier than English; whether eSpeak NG or any open G2P covers
+Akan is unverified and worth half an hour.
+
+The same teacher-to-student pattern applies to the ears. `mistralai/Voxtral-Mini-4B-Realtime-2602`
+is Apache-2.0 streaming ASR with per-language fine-tunes already published for Arabic (with
+Morocco's MTNRA, code-switching-focused), Estonian, Turkish and Bengali, plus GGUF conversions
+by ggml-org and ONNX by onnx-community. At 4.4 B it is too large to ship on a budget handset,
+so it is a **teacher and an annotation engine**: fine-tune on Twi, pseudo-label stall audio,
+distil into the phone-sized student. That turns the absence of labelled Twi market audio from a
+blocker into a pipeline. Mistral's Voxtral 3 announcement of the same day is API-first and its
+weights were not on Hugging Face when checked; do not plan on them.
+
+### What already exists in Akan, which changes the contribution claim
+
+This had not been checked before, and it should have been. Public Akan speech models exist,
+including licence-clean ones. From Hugging Face listings — **licences as tagged, none of these
+verified for quality, dialect or card accuracy:**
+
+- **ASR:** `asr-africa/wav2vec2-xls-r-akan-50-hours` and `-20-hours` (Apache-2.0, hours stated
+  in the name), `techolise/mms-1b-akan-asante-twi` (Asante Twi specifically), plus several
+  Whisper-Akan fine-tunes with no licence tag.
+- **TTS:** `prince4332/CosyVoice2-0.5B-Akan` and `-Akan-Bible` (**Apache-2.0** — the only
+  licence-clean Akan teacher candidate found), and several MMS/VITS Akan voices which are
+  CC-BY-NC-4.0 and therefore unusable in a product.
+
+Two consequences. First, the thesis cannot claim Twi ASR as untouched ground; it has to
+situate against the asr-africa 20-hour and 50-hour baselines, and the honest contribution is
+narrower and better defined — streaming, speaker-gated, code-switched, market-noise, on-device.
+Second, the mouth has a candidate path that is licence-clean end to end: CosyVoice2-Akan as
+teacher, Paradee's open pipeline as the distiller, ~8–20 MB as the student.
+
+### Licence matrix correction
+
+Several of the most capable options are non-commercial and therefore **barred from shipping**,
+not merely discouraged. Distilling from a non-commercial teacher does not launder this: the
+generated audio is a derivative work. This constrains the teacher choice, not just the student.
+
+| asset | licence | shippable |
+|---|---|---|
+| `Voxtral-Mini-4B-Realtime-2602` + Arabic/Estonian fine-tunes | Apache-2.0 | yes |
+| `Voxtral-4B-TTS-2603` | CC-BY-NC-4.0 | **no** |
+| `gradium/phonon-31m-en` (weights, tokenizer, voices) | Apache-2.0 | yes |
+| `gradium/phonon-40m-*` (multilingual and per-language) | CC-BY-NC-4.0 | **no** |
+| `Paradee-8M-v1.1` + training pipeline | Apache-2.0 | yes |
+| `prince4332/CosyVoice2-0.5B-Akan` | Apache-2.0 (as tagged) | yes, verify |
+| `facebook/mms-tts` (incl. `aka`), MMS-derived Akan voices | CC-BY-NC-4.0 | **no** |
+| `asr-africa/wav2vec2-xls-r-akan-{20,50}-hours` | Apache-2.0 | yes |
+| UGSpeechData | CC-BY-NC-ND | **no** — ND forbids derivatives, so no training at all |
+| KasaSpeech, FISD, GESMA | Apache-2.0 / CC-BY-4.0 | yes |
+
+### What this does and does not change
+
+It does not change the first thing to do. Three of the four numbers in §4.2 are still
+unmeasured and the verbalisation ratio still decides whether any of this is worth building.
+No release moves that. What it changes is the shape of the risk: the model problem is now
+three named problems with two credible open paths and one already built, and the binding
+constraint has moved off model availability and onto **Twi audio and a Twi G2P**. Those are
+data and linguistics problems, and they are the ones a KNUST project is actually well placed
+to solve — Mistral did Arabic with Morocco's national lab, and RAIL KNUST already produced
+GESMA under CC-BY-4.0.
+
+Unverified and load-bearing, in priority order: whether any open G2P covers Akan; whether
+CosyVoice2-Akan is good enough to teach and genuinely Apache-2.0; what the asr-africa Akan
+baselines actually score; and whether 23.9 hours of teacher audio is enough for a tonal
+language whose standard orthography does not mark tone.
+
 ## 5. Open risks, stated honestly
 
 1. **Is the sale even spoken?** The verbalisation ratio — how much of item, quantity, unit
    and price is recoverable from speech alone — has never been measured for a Ghanaian
    market. If it is low, ambient capture cannot work no matter how good the models are.
    This is the first thing to find out and it is cheap to find out.
-2. ASR remains on the critical path (§3).
-3. Decision-model calibration and Twi coverage are unverified.
-4. Transsion HiOS and XOS power managers kill long-running services regardless of
+2. ASR remains on the critical path (§3), though open Akan baselines now exist (§4.3).
+3. **The day-end review has no voice.** She cannot read the list, so it must be spoken in
+   Twi, and there is no Akan voice we are allowed to ship (§4.3). If this is not solved the
+   review tier has nowhere to put what the gate holds, and the coverage numbers in §4.2
+   describe a review that cannot happen.
+4. **Tone and orthography.** Standard Akan orthography does not mark tone, and the one
+   open distillation recipe we have was validated on English. Whether ~24 hours of teacher
+   audio suffices for a tonal language is unknown, and whether any open grapheme-to-phoneme
+   front end covers Akan is unverified.
+5. Decision-model calibration and Twi coverage are unverified.
+6. Transsion HiOS and XOS power managers kill long-running services regardless of
    foreground status. Needs the battery-optimisation exemption and testing on a real Tecno.
-5. Battery and storage across a full market day, on a 2–4 GB phone.
-6. Customer consent for ambient capture, and the assistant's standing if one sells at the
+7. Battery and storage across a full market day, on a 2–4 GB phone.
+8. Customer consent for ambient capture, and the assistant's standing if one sells at the
    stall.
 
 ---
@@ -343,6 +461,25 @@ Each is cheap and each can kill or confirm the one after it. None needs the Andr
 
 Ethics and Data Protection Commission registration gate experiment 1 and take four to eight
 weeks, so that paperwork starts now, in parallel.
+
+**What can run during those weeks, needing no field data, no consent and no clearance** —
+because experiments 1–3 are all blocked on approval and the model work is not:
+
+- **A Twi voice, end to end, on a laptop.** Check whether an open grapheme-to-phoneme front
+  end covers Akan; confirm `prince4332/CosyVoice2-0.5B-Akan` is usable and genuinely
+  Apache-2.0; generate a few hours from it; run Paradee's open distillation pipeline; and
+  judge the ~8 MB result by pairwise listening tests with Twi speakers, not by a text metric.
+  Pass: Twi speakers prefer it to nothing and can repeat back amounts and names correctly.
+  This de-risks risk 3, costs a laptop week, and if it fails it fails now rather than after
+  the fieldwork.
+- **Score the synthesiser with the recogniser.** Run an Akan ASR model over the TTS output
+  and track the error rate as a regression test, the way Phonon and Paradee both report
+  theirs. Two models we need anyway, checking each other, with no human in the loop for
+  routine checks.
+- **Re-run the gate's numbers.** Every figure in §4.2 predates the determinism fix (§4.2,
+  caveats), so they are one draw rather than a measurement and have to be measured again.
+  Then situate the result against the public Akan ASR baselines in §4.3, which nobody has
+  checked yet.
 
 ---
 
@@ -392,5 +529,32 @@ for the core model.
 - Android versions in Ghana: [Statcounter](https://gs.statcounter.com/android-version-market-share/all/ghana).
 - Bluetooth voice: [Android SCO audio management](https://source.android.com/docs/core/audio/sco-audio-mgmt),
   [mSBC codec](https://ittiam.com/driving-high-performance-bluetooth-devices-msbc-codec/).
-- Not opened: the two t.co links and the Gemini share link were blocked from this
-  environment. Their content is not reflected here.
+- Not opened: the Gemini share link, and `x.com` and `mistral.ai` and `gradium.ai` are all
+  blocked from this environment (HTTP 402 and DNS refusal respectively). Where a post could
+  not be read, the owner pasted its text and that is noted as the source.
+
+Sources read for §4.3 (20 October 2026). Every size and licence below comes from the model
+card or the Hugging Face API, not from an announcement or press coverage:
+
+- Voxtral: [`Voxtral-Mini-4B-Realtime-2602`](https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-2602),
+  [`Voxtral-Mini-4B-Realtime-Arabic`](https://huggingface.co/mistralai/Voxtral-Mini-4B-Realtime-Arabic)
+  (4.4 B, Apache-2.0, co-developed with Morocco's MTNRA, CER 8.82% at 480 ms delay against
+  7.91% non-streaming), and the HF model listing for the Estonian, Turkish and Bengali
+  fine-tunes and the ggml-org/onnx-community/MLX conversions. Voxtral 3 was announced the
+  same day via the owner's pasted post text; no weights were on Hugging Face when checked.
+- Phonon: [`gradium/phonon-31m-en`](https://huggingface.co/gradium/phonon-31m-en) (Apache-2.0,
+  64.5 MB q8 GGUF, Mimi codec, built on Kyutai's Pocket TTS),
+  [`gradium/phonon-40m-multilingual`](https://huggingface.co/gradium/phonon-40m-multilingual)
+  (CC-BY-NC-4.0, five languages, Elo and WER tables). The 7 ms time-to-first-audio figure is
+  from [their release post](https://gradium.ai/blog/release-phonon-open-weight) via search,
+  not the card; the card gives no latency number.
+- Paradee: [`sahilmahendrakar/Paradee-8M-v1.1`](https://huggingface.co/sahilmahendrakar/Paradee-8M-v1.1)
+  and [the code](https://github.com/sahilmahendrakar/paradee) — 7.88 M params, 8.5 MB int8
+  ONNX, Apache-2.0 training pipeline, distilled from a frozen Kokoro-82M on 23.9 hours over
+  12,000 WikiText-103 sentences, UTMOS 4.39 vs 4.52 and WER 5.9% vs 5.7%, trained on one
+  MacBook Pro. Announced via the owner's pasted post text.
+- Existing Akan models: Hugging Face API listing, searched for "akan". Licences as tagged;
+  **none of these has been downloaded, listened to, or evaluated**, and the Akan entry in
+  `facebook/mms-tts` was confirmed only as far as the `aka` config files.
+- Name collision worth noting: `FermionResearch/Phonon-1`/`Phonon-2` and their CoreML, ONNX,
+  GGUF and MLX ports are **ASR** models unrelated to Gradium's TTS Phonon.

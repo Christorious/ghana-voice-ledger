@@ -1,3 +1,8 @@
+> **VISION — not yet built.** This document describes the aspirational UI design (multiple
+> metaphor-driven views, Adinkra symbols, animations). The shipping app currently has a single
+> calm warm ledger UI; the ideas here are a roadmap, not a description of the current build.
+> See [`PROJECT_STATUS.md`](PROJECT_STATUS.md) for what actually exists today.
+
 # Culturally-Congruent UI Design & Implementation Guide
 ## Building Interfaces That Match Market Women's Financial Cognition
 

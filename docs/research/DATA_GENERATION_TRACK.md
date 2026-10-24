@@ -88,6 +88,69 @@ and church or Bible audio, which is abundant and in-register for nothing we need
 Akuapem Twi in `ghana-speech` appears to be Bible text, and register mismatch is why that
 matters.
 
+### 1.1 How to actually run it (Chai, October 2026)
+
+A practitioner's write-up — Bella Chai, *"You Found a Million Audio Links. How Many Can You
+Actually Use?"*, 20 October 2026 — gives the operational detail the papers omit, from running
+this at a scale of tens of millions of URLs. The engineering is mostly overscaled for us; the
+**discipline** is not, and three parts transfer directly.
+
+**Start from indexes, not searches.** Podcast directories (Apple Podcasts, gPodder) expose RSS
+feeds, and an RSS feed enumerates every episode's audio URL in one document — title, date,
+GUID, `enclosure` URL — without visiting a single episode page. Same move as the papers, stated
+as a procedure. Film and TV catalogues and the YouTube Data API are the other entry points.
+
+**Read the whole feed. This is the finding worth the most to us.** Her 200 feeds contained
+~71,000 episode entries; a 99-item-per-feed cap in her parser meant she read about 20,000 —
+**28%** — and nothing told her. Her conclusion: *"before looking for more sources, I needed to
+check whether I was fully reading the ones I already had. Data missed during discovery won't be
+recovered automatically at the download stage."* At her scale that is waste. At ours it is
+fatal, because Ghanaian-language feeds will be scarce and losing 70% of a thin seam leaves
+nothing. Parsing fully still cannot recover episodes a publisher has dropped from the current
+feed, so expect a hole in older history and say so.
+
+**Provenance must survive deduplication — and this binds harder for us than for her.** The same
+show appears in several directories, so the same feed and the same audio URLs get discovered
+repeatedly. Deleting duplicates shrinks the inventory and destroys the record of where each item
+came from. She merges duplicate feeds while keeping every directory → show → episode link, and
+records both the original `asset_url` and the post-redirect `final_url`, deduplicating on the
+latter. **Method 3 of this document depends on exactly that chain**: a corpus whose provenance
+was deduplicated away cannot be licence-audited, which makes it unusable for a thesis regardless
+of its size.
+
+**Verify before downloading, and record why a check failed.** HTTP `HEAD` first — status,
+`Content-Type`, `Content-Length`. When that is not enough (many servers omit metadata or reject
+HEAD), a `Range: bytes=0-4095` GET and inspect the first 4 KiB for an audio magic number; a
+200 with an HTML body is common. Keep the method, response and failure reason, because **a 404
+and a timeout are different facts**: one is a dead resource, the other is an unfinished check.
+
+**What to skip.** Her Source Library, her concurrency tuning and her resumable checkpointing are
+answers to a scale we will not reach. Her own concurrency experiment is instructive about
+restraint rather than about concurrency: moving 2,000 URLs from 16 to 32 workers raised
+throughput 50.3%, raised timeouts from 10 to 15, and let four *fewer* URLs pass — and she says
+plainly that *"one experiment with such a small difference doesn't establish that 16 is better
+than 32."* At a few thousand URLs this whole stage is a few hundred lines of Python.
+
+**And skip the film and television half entirely.** Her acquisition route there is BitTorrent
+with a cached-HTTPS fallback. We need conversational Twi, not dubbed film audio, and the
+legal position is bad. She draws the line herself, and it is the same wall this project hit with
+`nano-twi`: *"A publicly accessible resource isn't automatically authorized for model training.
+Access, permission to download, and the right to use data for training are separate matters."*
+
+### 1.2 Where this runs: not in a cloud session
+
+Attempting step zero from the cloud container settled this. A probe of the public iTunes Search
+API for Twi, Akan, Ewe, Ga, Dagbani and Ghana podcast feeds returned `403 Forbidden` on the
+proxy's CONNECT for every query, as `treg.to`, `mistral.ai`, `gradium.ai` and others had before
+it. The pipeline is network work almost end to end, against hosts a restricted egress policy
+refuses by default.
+
+Widening the allowlist would fix the symptom, but three properties say this belongs elsewhere:
+it transfers audio at volume, it runs for hours and resumes, and its output must persist. A
+container that is reclaimed after inactivity has none of those. **Build it on the owner's own
+machine** — the bridge environments already point at `DESKTOP-DOTS-SYSTEMS` — and bring the
+resulting manifest, not the audio, back into the repository.
+
 **Artefact.** A URL manifest plus pipeline code plus a first verbalisation estimate — and
 **not** redistributed audio. Javed et al. released URLs and code, not the audio, and that is
 the move that keeps a corpus publishable. Assume you cannot redistribute scraped audio.
@@ -95,7 +158,9 @@ the move that keeps a corpus publishable. Assume you cannot redistribute scraped
 **Pass/fail.** Pass: ≥20 hours of segmented Twi speech with timestamps and provenance, plus a
 verbalisation estimate from at least 50 observable transactions. Fail: market video turns out to
 be voiceover over music, in which case radio and parliament carry the method and verbalisation
-waits for the stall.
+waits for the stall. Before either, the unresolved prior question stands: **do Ghanaian-language
+feeds exist in usable quantity at all?** One hour against an unblocked index answers it, and
+nothing downstream is worth building until it does.
 
 ---
 
@@ -208,6 +273,85 @@ corpus exists that cannot be shared.
 
 ---
 
+## Method 5 — Preference data: making a voice better by ranking its own output
+
+**The source.** Bella Chai, *"Your TTS Model Can Speak. Why Does It Still Sound Wrong?"*,
+18 October 2026, drawing on Hussain et al., *Koel-TTS* (EMNLP 2025) and *Preference Alignment
+Improves Language Model-Based TTS*. This is the only method here that generates its data from a
+model we already have, which is why it comes last.
+
+**Sequencing first, because the post assumes a stage we are not at.** Post-training presumes a
+base model that already produces speech. We have no Twi voice at all. The order is: train from
+Waxal (Method 2), measure, and reach for preference alignment only if the result is
+intelligible-but-wrong rather than absent. Two of its decisions nevertheless bind *before* the
+first training run:
+
+- **Classifier-free guidance requires condition dropout during base training.** Koel-TTS drops
+  the text and reference-audio conditioning with probability 0.1 while training the base model,
+  which teaches one model to make both conditional and unconditional predictions; at inference
+  they are combined as `γ·ℓ_c + (1−γ)·ℓ_u`. Retrofitting is not possible. Decide now.
+- **The evaluation harness comes before the model**, which is the same habit the Semitic and
+  Hebrew groups follow (§4.3.1 of the plan of record) and the same one Method 3 argues for.
+
+**How preference pairs are built.** For each text and reference clip, hold the conditioning and
+sampling settings fixed, draw several samples, score them, rank them, and keep a strong one as
+*chosen* and a weak one as *rejected*. Three metrics are used because all three automate:
+
+| Dimension | Metric | Direction |
+|---|---|---|
+| Text accuracy | CER or WER from an ASR pass over the output | lower better |
+| Speaker similarity | cosine between speaker embeddings of output and reference | higher better |
+| Perceptual quality | a proxy MOS predictor such as UTMOS | higher better |
+
+Two practical findings worth having. **Do not use ground-truth recordings as the chosen side**:
+pairing a human recording against a model generation performed *worse* than drawing both sides
+from the model's own output, because the distribution gap in discrete token space makes the
+comparison too easy to teach anything about quality. And **a difficult-text set built from
+observed failures** beats more random text — she collected real failure cases, grouped them by
+error type and expanded each group with an LLM, then verified the new items actually trip the
+base model. Ours is better defined than hers: tone-minimal pairs plus the ledger vocabulary of
+numbers, prices, fish names and customer names.
+
+### 5.1 Every one of those three metrics is blind to tone
+
+This is the contribution, and it follows from facts already established in this project.
+
+- **CER cannot see a tone error.** It transcribes the output and compares against the input
+  text. Standard Akan orthography marks no tone, so the reference carries none, so a tone error
+  produces no character error. Blind by construction.
+- **Speaker similarity cannot see it.** It asks whether this is the right voice. A correctly
+  voiced utterance with the wrong tone scores high.
+- **Proxy MOS cannot see it.** UTMOS predicts naturalness, trained overwhelmingly on English and
+  Japanese. It has no notion that a pitch contour is *lexically* wrong in Akan — and whether it
+  transfers to a tonal African language at all is itself unvalidated.
+
+So a Twi voice can score well on all three while saying *Ama dà ha*, "Ama is sleeping here",
+when the text said *Ama dá ha*, "Ama sleeps here" — the Adebara and Abdul-Mageed example
+already cited in the plan of record. Optimising DPO against these three would make the model
+confidently better at everything except the distinction the language actually uses.
+
+**Three independent lines now converge on the same hole.** MFCCs smear tone across the low mel
+bands rather than representing it (`verifier/tests/pitch_leak.py`). pGSLM's answer to exactly
+this, in the textless-speech literature, is to model prosody as a **separate stream** beside the
+content units. And the standard TTS preference metrics cannot measure it. A **fourth preference
+dimension — tone accuracy** — is therefore a real and well-motivated contribution rather than a
+tidy-up.
+
+**A buildable first version.** Extract F0 over voiced regions of the generated and the reference
+audio, mean-normalise each utterance in log-F0 to remove speaker pitch, and score contour
+agreement on syllable nuclei. Validate it against a targeted test set of tone-minimal pairs
+drawn from the Waxal Akan transcripts — which is the same count Method 3 produces, reused.
+
+**Artefact.** A tone-accuracy metric with a validation study, plus the preference pairs it
+labels. The metric is publishable on its own; the pairs are only useful once a base voice exists.
+
+**Pass/fail.** Pass: the metric separates tone-minimal pairs that human Twi speakers also
+distinguish, and disagrees with CER often enough to be adding information rather than restating
+it. Fail: it tracks CER, in which case it is redundant and should be dropped rather than
+defended.
+
+---
+
 ## Order of work
 
 Not the order they are numbered. The order their dependencies and costs imply:
@@ -216,11 +360,15 @@ Not the order they are numbered. The order their dependencies and costs imply:
    trains on a corpus whose licence is in dispute.
 2. **Method 4 next**, because it has to precede any collection and the ethics paperwork is
    running now anyway. Four to eight weeks of waiting is exactly the time to settle it.
-3. **Method 1 during that wait.** No clearance needed, and it is what makes the eventual stall
-   visit short and well-aimed. Begin with step zero.
-4. **Method 2 last**, because it needs the voice, which needs Waxal, which needs nothing but a
+3. **Method 1 during that wait**, on the owner's own machine rather than in a cloud session
+   (§1.2). No clearance needed, and it is what makes the eventual stall visit short and
+   well-aimed. Begin with step zero: do Ghanaian-language feeds exist in usable quantity?
+4. **Method 2 next**, because it needs the voice, which needs Waxal, which needs nothing but a
    laptop week — but a laptop week spent after Method 3 has established what we are allowed to
-   train on.
+   train on. Decide condition dropout (§5) *before* this run, not after.
+5. **Method 5 last**, and only partly. The tone-accuracy metric (§5.1) can and should be built
+   early, because it is the contribution and because Method 2 needs something to be judged by.
+   The preference pairs themselves wait until a base voice exists.
 
 ## Where the value actually is
 
@@ -255,6 +403,13 @@ Stated plainly so it is not mistaken for fact:
 - The KasaSpeech licence, now disputed between two sources.
 - Every licence tag in the plan of record's matrix is as-tagged, not legally reviewed. None of
   this is legal advice and a licence decision for collected data should not rest on it alone.
+- Both Chai posts are a practitioner's blog, not peer-reviewed, and she says herself of the
+  second that she does not yet have a complete experimental record to share. Her numbers are
+  taken as reported. The §5.1 tone argument does not depend on them — it follows from how CER,
+  speaker similarity and proxy MOS are each defined.
+- Whether UTMOS, or any proxy MOS predictor, transfers to Akan at all. It is trained
+  predominantly on English and Japanese. Using it on Twi without checking would be the same
+  class of error as reporting WER for a language whose orthography omits tone.
 
 ## Primary reading
 
@@ -272,3 +427,10 @@ In the order they should be read, not cited:
    that between them set the real data floor.
 7. Ahia et al., *Voices Unheard*, EMNLP 2024, and Elmadany et al., *Voice of a Continent*,
    EMNLP 2025 — dialect fieldwork, and the benchmark to measure against.
+8. Hussain et al., *Koel-TTS: Enhancing LLM based Speech Generation with Preference Alignment
+   and Classifier Free Guidance*, EMNLP 2025, CC BY 4.0 — preference alignment and CFG for TTS,
+   and the source of the condition-dropout decision in §5.
+
+Practitioner write-ups, read for operational detail rather than cited as evidence: Bella Chai,
+*"You Found a Million Audio Links. How Many Can You Actually Use?"* (20 Oct 2026) and *"Your TTS
+Model Can Speak. Why Does It Still Sound Wrong?"* (18 Oct 2026).

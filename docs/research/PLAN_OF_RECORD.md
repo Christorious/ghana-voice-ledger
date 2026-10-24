@@ -641,6 +641,55 @@ the mouth is a licence problem rather than a modelling one, and a licence proble
 retraining the same architecture on Waxal — which is a laptop week we were going to spend
 anyway.
 
+### 4.3.5 How we will know the Twi voice is good, and the one thing no metric sees
+
+The standard way to judge a TTS model, and to improve one by preference alignment, uses three
+automatable measures: **CER** from an ASR pass over the output, **speaker similarity** between
+output and reference embeddings, and a **proxy MOS** predictor such as UTMOS. Koel-TTS (EMNLP
+2025) and the preference-alignment literature rank candidates on these to build chosen/rejected
+pairs for DPO.
+
+**For Akan, all three are blind to tone.**
+
+- **CER cannot see a tone error.** It compares a transcript of the output against the input
+  text. Standard Akan orthography marks no tone, so the reference carries none, so a tone error
+  cannot produce a character error. Blind by construction, not by accident.
+- **Speaker similarity cannot see it.** It asks whether this is the right voice. A correctly
+  voiced utterance carrying the wrong tone scores high.
+- **Proxy MOS cannot see it.** UTMOS predicts naturalness and is trained overwhelmingly on
+  English and Japanese. It has no notion that a pitch contour is *lexically* wrong in Akan, and
+  whether it transfers to a tonal African language is unverified.
+
+A Twi voice can therefore score well on every metric in standard use while saying *Ama dà ha*,
+"Ama is sleeping here", when the text said *Ama dá ha*, "Ama sleeps here" (§4.3.1, point 4).
+Optimising against these three would make the model confidently better at everything except the
+distinction the language actually uses.
+
+**Three independent findings in this project now converge on that hole.** MFCCs smear tone
+across the low mel bands rather than representing it, measured in
+`sikabook-models/verifier/tests/pitch_leak.py`. pGSLM's answer to the same problem in the
+textless-speech literature is to model prosody as a **separate stream** beside the content
+units. And the TTS evaluation stack cannot measure it at all. So **a tone-accuracy metric for
+Akan speech synthesis is a stated contribution of this project**, not a loose end: it is
+well-motivated from three directions, it is buildable from what is already in the repository,
+and nothing in the literature we have read supplies it.
+
+First version: extract F0 over voiced regions of generated and reference audio, mean-normalise
+each utterance in log-F0 to remove speaker pitch, and score contour agreement at syllable
+nuclei. Validate against a test set of tone-minimal pairs drawn from the Waxal Akan transcripts
+— the same count §6 already asks for. It earns its place only if it disagrees with CER often
+enough to be adding information; if it tracks CER it is redundant and should be dropped.
+
+**One decision this forces before the first training run.** Classifier-free guidance requires
+**condition dropout during base training** — Koel-TTS drops text and reference-audio
+conditioning with probability 0.1 while training the base model, so that one model learns both
+conditional and unconditional prediction, combined at inference as `γ·ℓ_c + (1−γ)·ℓ_u`. It
+cannot be retrofitted. Decide it before training from Waxal, not after.
+
+Method 5 of `DATA_GENERATION_TRACK.md` carries the preference-data procedure and the sequencing:
+we are three stages earlier than the post-training literature assumes, since we have no base
+voice yet, so the metric comes first and the preference pairs wait.
+
 ## 5. Open risks, stated honestly
 
 1. **Is the sale even spoken?** The verbalisation ratio — how much of item, quantity, unit
@@ -652,7 +701,12 @@ anyway.
    Twi, and there is no Akan voice we are allowed to ship (§4.3). If this is not solved the
    review tier has nowhere to put what the gate holds, and the coverage numbers in §4.2
    describe a review that cannot happen.
-4. **Tone, narrowed (§4.3.1).** Akan carries both lexical and grammatical tone and its
+4. **No metric in standard use can see a tone error (§4.3.5).** CER, speaker similarity and
+   proxy MOS are each blind to it, so a Twi voice can score well on all three while saying the
+   wrong thing. Until a tone-accuracy metric exists, every number we report about the voice is
+   silent on the feature the language uses — and preference alignment against those metrics
+   would actively optimise the problem away from view.
+5. **Tone, narrowed (§4.3.1).** Akan carries both lexical and grammatical tone and its
    standard orthography marks neither, so some pairs are genuinely ambiguous in text. But
    unmarked tone matters little where there are few minimal pairs, so the live question is
    how many tone-minimal pairs occur in *our* vocabulary — numbers, prices, fish names,
@@ -661,16 +715,16 @@ anyway.
    model, and Waxal has Twi and Fante read-script corpora. G2P is no longer a risk either —
    `ghana-g2p` is Apache-2.0 and handles Asante Twi, ɛ and ɔ included (§4.3.1). Dialect is a
    real choice: expect a WER gap between Asante Twi and Fante, as Yorùbá does.
-5. **Derivative licences on everything that fits.** The Twi models that best match what we
+6. **Derivative licences on everything that fits.** The Twi models that best match what we
    need are tagged permissively while being trained on CC-BY-NC corpora, `nano-twi` on
    `ghana-speech` most importantly (§4.3.4). A permissive tag does not make a model
    permissive, so each candidate's training data has to be traced before it is built on, and
    KasaSpeech's own licence is now disputed between two sources.
-6. Decision-model calibration and Twi coverage are unverified.
-7. Transsion HiOS and XOS power managers kill long-running services regardless of
+7. Decision-model calibration and Twi coverage are unverified.
+8. Transsion HiOS and XOS power managers kill long-running services regardless of
    foreground status. Needs the battery-optimisation exemption and testing on a real Tecno.
-8. Battery and storage across a full market day, on a 2–4 GB phone.
-9. Customer consent for ambient capture, and the assistant's standing if one sells at the
+9. Battery and storage across a full market day, on a 2–4 GB phone.
+10. Customer consent for ambient capture, and the assistant's standing if one sells at the
    stall.
 
 ---
@@ -722,12 +776,19 @@ because experiments 1–3 are all blocked on approval and the model work is not:
   wrong invalidates a thesis chapter rather than a build.
 - **Count the tone-minimal pairs in our own vocabulary.** From the Waxal Akan transcripts,
   with no recording and no clearance: how many of the numbers, prices, fish names and
-  customer names we need are tone-distinguished pairs? This converts risk 4 from a general
-  worry about Akan into a number, and it is an afternoon.
+  customer names we need are tone-distinguished pairs? This converts risk 5 from a general
+  worry about Akan into a number, and it also supplies the validation set the tone metric
+  needs (§4.3.5). An afternoon.
 - **Score the synthesiser with the recogniser.** Run an Akan ASR model over the TTS output
   and track the error rate as a regression test, the way Phonon and Paradee both report
   theirs. Two models we need anyway, checking each other, with no human in the loop for
-  routine checks. Report CER, not WER (§4.3.1).
+  routine checks. Report CER, not WER (§4.3.1). Necessary but **not sufficient**: against a
+  reference text that marks no tone, CER cannot register a tone error at all (§4.3.5).
+- **Build the tone-accuracy metric.** F0 over voiced regions of generated and reference audio,
+  mean-normalised per utterance in log-F0 to remove speaker pitch, scored for contour agreement
+  at syllable nuclei, validated against the tone-minimal pairs counted above. No audio
+  collection, no clearance, and it is the project's stated contribution (§4.3.5) rather than a
+  utility. Keep it only if it disagrees with CER often enough to be adding information.
 - **Re-run the gate's numbers, then rebase them on Waxal.** Every figure in §4.2 predates
   the determinism fix, so they are one draw rather than a measurement. Re-run them, then
   re-run again on Waxal's Akan ASR data, which is real Ghanaian speech with documented
@@ -848,6 +909,18 @@ Sources read for §4.3.1 to §4.3.3 (20 October 2026):
 - MameTTS (Kizuna Intelligence): announced via the owner's pasted post text. The site is
   DNS-blocked here and the SDK is GitHub-Sponsors-gated, not open, so nothing is recorded
   from it beyond the direction of travel.
+
+Sources read for §4.3.5 (24 October 2026):
+
+- Hussain, Neekhara et al., *Koel-TTS: Enhancing LLM based Speech Generation with Preference
+  Alignment and Classifier Free Guidance*, EMNLP 2025 (CC BY 4.0) — the three preference
+  metrics, Pareto ranking, and the condition-dropout requirement for classifier-free guidance.
+- Bella Chai, *"Your TTS Model Can Speak. Why Does It Still Sound Wrong?"* (18 October 2026)
+  and *"You Found a Million Audio Links. How Many Can You Actually Use?"* (20 October 2026),
+  supplied as pasted text by the owner. A practitioner's blog, not peer-reviewed, and the
+  second says plainly that its experimental record is incomplete. Read for operational detail;
+  its numbers are taken as reported. **The tone argument in §4.3.5 does not rest on them** — it
+  follows from how CER, speaker similarity and proxy MOS are each defined.
 
 Sources read for §4.3.4 (20 October 2026), all model, dataset or package pages:
 
